@@ -2898,11 +2898,20 @@ async function findGist(){
     let best=null, bestCount=-1;
     for(const g of gists){
       if(!g.files || !g.files["workbench-data.json"]) continue;
+      // 列表接口不含 content，需用详细接口获取内容
+      let d=null;
       try{
-        const d = JSON.parse(g.files["workbench-data.json"].content);
-        const c = countRecords(d);
-        if(c > bestCount){ best=g; bestCount=c; }
-      }catch(e){}
+        const detail = await fetch("https://api.github.com/gists/"+g.id, {
+          headers:{"Authorization":"Bearer "+token}
+        });
+        if(!detail.ok) continue;
+        const full = await detail.json();
+        const content = full.files && full.files["workbench-data.json"] && full.files["workbench-data.json"].content;
+        if(!content) continue;
+        d = JSON.parse(content);
+      }catch(e){ continue; }
+      const c = countRecords(d);
+      if(c > bestCount){ best=g; bestCount=c; }
     }
     return best;
   }catch(e){ return null; }
