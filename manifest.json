@@ -1,0 +1,19 @@
+{
+  "name": "momo",
+  "short_name": "momo",
+  "description": "个人工作台 - 记录生理期、体重、围度、饮食、运动、工资、囤货",
+  "start_url": "工作台.html",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F0E8E0",
+  "theme_color": "#F0E8E0",
+  "icons": [
+    {
+      "src": "icon.jpg",
+      "sizes": "1024x1024",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ]
+}
