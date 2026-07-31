@@ -531,7 +531,7 @@ const DEFAULTS = {
     api:{endpoint:"https://api.openai.com/v1/chat/completions", key:"", model:"gpt-4o-mini", enabled:false},
     modules:{weight:"cumulative", measure:"cumulative", diet:"daily", exercise:"daily", balance:"cumulative"}, period:90,
     navOpen:{fitness:false, period:false, salary:false},
-    gistToken:"", gistId:"", gistLastSync:null, gistLastSyncStatus:"",
+    gistToken:"", gistId:"", gistLastSync:null, gistLastSyncStatus:"", gistDebug:"",
     spaces: {
       id:"root", name:"全部空间", children:[
         {id:"space_1", name:"客厅", children:[
@@ -1331,6 +1331,7 @@ function pageSettings(){
         <button class="btn ghost sm" id="syncNowBtn">立即同步</button>
       </div>
       <div id="gistStatus" class="hint" style="text-align:center"></div>
+      <div id="gistDebugBox" style="white-space:pre-wrap;font-size:11px;color:var(--ink-muted);margin-top:8px;max-height:140px;overflow-y:auto;display:${s.gistDebug?"block":"none"}">${esc(s.gistDebug)}</div>
     </div>
 
     <div class="card">
@@ -2889,12 +2890,14 @@ function countRecords(d){
 async function findGist(){
   const token=state.settings.gistToken;
   if(!token) return null;
+  glog("findGist: 开始查找云端 Gist...");
   try{
     const res = await fetch("https://api.github.com/gists?per_page=100", {
       headers:{"Authorization":"Bearer "+token}
     });
-    if(!res.ok) return null;
+    if(!res.ok){ glog("findGist: 列表接口失败 HTTP "+res.status); return null; }
     const gists = await res.json();
+    glog("findGist: 共 "+gists.length+" 个 Gist");
     let best=null, bestCount=-1;
     for(const g of gists){
       if(!g.files || !g.files["workbench-data.json"]) continue;
@@ -2911,10 +2914,13 @@ async function findGist(){
         d = JSON.parse(content);
       }catch(e){ continue; }
       const c = countRecords(d);
+      glog("findGist: "+g.id.slice(0,8)+" 记录数="+c);
       if(c > bestCount){ best=g; bestCount=c; }
     }
+    if(best) glog("findGist: 选定 "+best.id.slice(0,8)+"（"+bestCount+" 条）");
+    else glog("findGist: 未找到任何数据 Gist");
     return best;
-  }catch(e){ return null; }
+  }catch(e){ glog("findGist: 异常 "+e.message); return null; }
 }
 // 合并远程数据：远程数据更全或更新时覆盖本地（保留本地 settings）
 function mergeRemote(remote){
@@ -2934,6 +2940,11 @@ function updateSyncStatus(){
   const el=document.getElementById("gistStatus");
   if(!el) return;
   const s=state.settings;
+  const dbg=document.getElementById("gistDebugBox");
+  if(dbg){
+    dbg.style.display = s.gistDebug ? "block" : "none";
+    dbg.textContent = s.gistDebug || "";
+  }
   if(!s.gistToken){ el.textContent="未配置 Token，请在输入框填写后保存。"; return; }
   if(!s.gistId){ el.textContent="Token 已保存，点击「立即同步」自动连接云端并同步数据。"; return; }
   const status = s.gistLastSyncStatus;
@@ -2944,6 +2955,15 @@ function updateSyncStatus(){
 }
 function persistGistState(){
   try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }catch(e){}
+}
+// 同步调试日志（写入 localStorage，设置页可见）
+function glog(msg){
+  try{
+    const t = new Date();
+    const time = String(t.getHours()).padStart(2,"0")+":"+String(t.getMinutes()).padStart(2,"0")+":"+String(t.getSeconds()).padStart(2,"0");
+    state.settings.gistDebug = time+" "+msg+"\n"+(state.settings.gistDebug||"").slice(0,600);
+    persistGistState();
+  }catch(e){}
 }
 // 解析目标 Gist：优先云端数据最全的 Gist，否则沿用当前 ID
 async function resolveGist(){
@@ -2974,23 +2994,30 @@ async function resolveGist(){
 async function syncToGist(){
   const token=state.settings.gistToken;
   if(!token) return;
+  glog("syncToGist: 开始同步");
   try{
     // 1. 确定目标 Gist：自动发现云端最全的，没有则创建
     let gistId = await resolveGist();
+    glog("syncToGist: 目标 gistId="+(gistId||"无"));
     if(!gistId){
+      glog("syncToGist: 创建新 Gist...");
       const createRes = await fetch("https://api.github.com/gists", {
         method:"POST",
         headers:{"Authorization":"Bearer "+token,"Content-Type":"application/json"},
         body:JSON.stringify({description:"工作台数据同步", public:false, files:{"workbench-data.json":{content:"{}"}}})
       });
-      if(!createRes.ok) throw new Error("HTTP "+createRes.status);
+      if(!createRes.ok){ glog("syncToGist: 创建失败 HTTP "+createRes.status); throw new Error("HTTP "+createRes.status); }
       const g = await createRes.json();
       gistId = g.id;
       state.settings.gistId = gistId;
+      glog("syncToGist: 已创建 "+gistId.slice(0,8));
     }
     // 2. 上传前先拉取云端数据，更全或更新则先合并
+    glog("syncToGist: 拉取云端数据...");
     const remote = await pullFromGist(gistId);
+    if(remote) glog("syncToGist: 云端记录数="+countRecords(remote));
     const merged = remote ? mergeRemote(remote) : false;
+    glog("syncToGist: 合并结果="+merged+"，本地记录数="+countRecords(state));
     // 3. 上传（合并后的）数据
     const body = JSON.stringify(getSyncData(), null, 2);
     const res = await fetch("https://api.github.com/gists/"+gistId, {
@@ -2998,7 +3025,8 @@ async function syncToGist(){
       headers:{"Authorization":"Bearer "+token,"Content-Type":"application/json"},
       body:JSON.stringify({files:{"workbench-data.json":{content:body}}})
     });
-    if(!res.ok){ const err=await res.text(); throw new Error("HTTP "+res.status); }
+    if(!res.ok){ const err=await res.text(); glog("syncToGist: 上传失败 HTTP "+res.status); throw new Error("HTTP "+res.status); }
+    glog("syncToGist: 上传成功");
     state.settings.gistId = gistId;
     state.settings.gistLastSync=Date.now();
     state.settings.gistLastSyncStatus="ok";
@@ -3008,6 +3036,7 @@ async function syncToGist(){
     // 若合并了远程数据，刷新当前页面显示
     if(merged && currentPage) navigate(currentPage);
   }catch(e){
+    glog("syncToGist: 异常 "+e.message);
     state.settings.gistLastSync=Date.now();
     state.settings.gistLastSyncStatus="error:"+e.message;
     persistGistState();
@@ -3029,20 +3058,22 @@ async function pullFromGist(gistId){
     const res = await fetch("https://api.github.com/gists/"+gistId, {
       headers:{"Authorization":"Bearer "+token}
     });
-    if(!res.ok) return null;
+    if(!res.ok){ glog("pullFromGist: 获取失败 HTTP "+res.status); return null; }
     const gist = await res.json();
     const content = gist.files && gist.files["workbench-data.json"] && gist.files["workbench-data.json"].content;
-    if(!content) return null;
+    if(!content){ glog("pullFromGist: 文件内容为空"); return null; }
     return JSON.parse(content);
-  }catch(e){ return null; }
+  }catch(e){ glog("pullFromGist: 异常 "+e.message); return null; }
 }
 async function initSync(){
   const s=state.settings;
   if(!s.gistToken) return;
+  glog("initSync: 启动拉取");
   const gistId = await resolveGist();
-  if(!gistId) return;
+  if(!gistId){ glog("initSync: 无目标 Gist"); return; }
   const remote = await pullFromGist(gistId);
   const merged = remote ? mergeRemote(remote) : false;
+  glog("initSync: 合并="+merged+"，本地记录数="+countRecords(state));
   if(merged){
     save(); // 写回 localStorage
     toast("已从云端同步最新数据");
