@@ -2936,28 +2936,48 @@ function updateSyncStatus(){
 function persistGistState(){
   try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }catch(e){}
 }
+// 解析目标 Gist：优先云端数据最全的 Gist，否则沿用当前 ID
+async function resolveGist(){
+  const token=state.settings.gistToken;
+  if(!token) return null;
+  const found = await findGist();
+  let foundCount = -1;
+  if(found){
+    try{ foundCount = countRecords(JSON.parse(found.files["workbench-data.json"].content)); }catch(e){}
+  }
+  const curId = state.settings.gistId;
+  if(!curId){
+    if(found){ state.settings.gistId = found.id; persistGistState(); return found.id; }
+    return null; // 需要新建
+  }
+  if(found && curId === found.id) return curId;
+  // 比较当前 Gist 与云端最全 Gist 的数据量
+  let curCount = 0;
+  const cur = await pullFromGist(curId);
+  if(cur) curCount = countRecords(cur);
+  if(foundCount > curCount){
+    state.settings.gistId = found.id;
+    persistGistState();
+    return found.id;
+  }
+  return curId;
+}
 async function syncToGist(){
   const token=state.settings.gistToken;
   if(!token) return;
   try{
-    // 1. 确定目标 Gist：优先用已有 ID，否则自动发现云端最全的，实在没有才创建
-    let gistId = state.settings.gistId;
+    // 1. 确定目标 Gist：自动发现云端最全的，没有则创建
+    let gistId = await resolveGist();
     if(!gistId){
-      const found = await findGist();
-      if(found){
-        gistId = found.id;
-        state.settings.gistId = gistId;
-      }else{
-        const createRes = await fetch("https://api.github.com/gists", {
-          method:"POST",
-          headers:{"Authorization":"Bearer "+token,"Content-Type":"application/json"},
-          body:JSON.stringify({description:"工作台数据同步", public:false, files:{"workbench-data.json":{content:"{}"}}})
-        });
-        if(!createRes.ok) throw new Error("HTTP "+createRes.status);
-        const g = await createRes.json();
-        gistId = g.id;
-        state.settings.gistId = gistId;
-      }
+      const createRes = await fetch("https://api.github.com/gists", {
+        method:"POST",
+        headers:{"Authorization":"Bearer "+token,"Content-Type":"application/json"},
+        body:JSON.stringify({description:"工作台数据同步", public:false, files:{"workbench-data.json":{content:"{}"}}})
+      });
+      if(!createRes.ok) throw new Error("HTTP "+createRes.status);
+      const g = await createRes.json();
+      gistId = g.id;
+      state.settings.gistId = gistId;
     }
     // 2. 上传前先拉取云端数据，更全或更新则先合并
     const remote = await pullFromGist(gistId);
@@ -3010,7 +3030,9 @@ async function pullFromGist(gistId){
 async function initSync(){
   const s=state.settings;
   if(!s.gistToken) return;
-  const remote = await pullFromGist();
+  const gistId = await resolveGist();
+  if(!gistId) return;
+  const remote = await pullFromGist(gistId);
   const merged = remote ? mergeRemote(remote) : false;
   if(merged){
     save(); // 写回 localStorage
