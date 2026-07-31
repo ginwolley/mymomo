@@ -2870,6 +2870,7 @@ window.bindStockAdd = bindStockAdd;
 window.bindStockAll = bindStockAll;
 window.bindStockDetail = bindStockDetail;
 window.bindStockSpaces = bindStockSpaces;
+})();
 
 /* ============== 密码管理 ============== */
 const PASSWORD_CATEGORIES = ["工作","社交","银行","购物","娱乐","其他"];
@@ -2885,7 +2886,6 @@ function pagePasswords(){
     html += '<div class="card"><div class="empty"><div class="sym">🔐</div>还没有密码记录</div></div>';
     return html;
   }
-  // 按分类分组
   const grouped = {};
   list.forEach(p => {
     const cat = p.category || "其他";
@@ -3003,8 +3003,6 @@ function bindPasswordDetail(id){
     navigate("passwords");
   });
 }
-
-})();
 
 /* ============== 导入导出 ============== */
 function exportData(){
