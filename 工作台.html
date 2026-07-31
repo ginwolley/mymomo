@@ -2877,67 +2877,126 @@ function fmtTime(t){
   const d=new Date(t);
   return d.getFullYear()+"-"+(d.getMonth()+1).toString().padStart(2,"0")+"-"+d.getDate().toString().padStart(2,"0")+" "+d.getHours().toString().padStart(2,"0")+":"+d.getMinutes().toString().padStart(2,"0");
 }
+// 数据记录数（用于判断哪份数据更全）
+function countRecords(d){
+  let n = 0;
+  ["periods","salary","housingAllowance","weight","measure","diet","exercise","stock"].forEach(k=>{
+    if(Array.isArray(d[k])) n += d[k].length;
+  });
+  return n;
+}
+// 自动发现云端已有的工作台 Gist（取数据最全的一个）
+async function findGist(){
+  const token=state.settings.gistToken;
+  if(!token) return null;
+  try{
+    const res = await fetch("https://api.github.com/gists?per_page=100", {
+      headers:{"Authorization":"Bearer "+token}
+    });
+    if(!res.ok) return null;
+    const gists = await res.json();
+    let best=null, bestCount=-1;
+    for(const g of gists){
+      if(!g.files || !g.files["workbench-data.json"]) continue;
+      try{
+        const d = JSON.parse(g.files["workbench-data.json"].content);
+        const c = countRecords(d);
+        if(c > bestCount){ best=g; bestCount=c; }
+      }catch(e){}
+    }
+    return best;
+  }catch(e){ return null; }
+}
+// 合并远程数据：远程数据更全或更新时覆盖本地（保留本地 settings）
+function mergeRemote(remote){
+  if(!remote || !remote.meta) return false;
+  const lc = countRecords(state);
+  const rc = countRecords(remote);
+  const remoteNewer = remote.meta.lastModified > state.meta.lastModified;
+  const useRemote = (rc > 0 && lc === 0) || (rc > 0 && lc > 0 && remoteNewer) || (rc === 0 && lc === 0 && remoteNewer);
+  if(!useRemote) return false;
+  const localSettings = state.settings;
+  Object.assign(state, remote);
+  state.settings = localSettings;
+  state.meta.lastModified = remote.meta.lastModified;
+  return true;
+}
 function updateSyncStatus(){
   const el=document.getElementById("gistStatus");
   if(!el) return;
   const s=state.settings;
   if(!s.gistToken){ el.textContent="未配置 Token，请在输入框填写后保存。"; return; }
-  if(!s.gistId){ el.textContent="Token 已保存，点击「立即同步」创建初始备份。"; return; }
+  if(!s.gistId){ el.textContent="Token 已保存，点击「立即同步」自动连接云端并同步数据。"; return; }
   const status = s.gistLastSyncStatus;
   const time = fmtTime(s.gistLastSync);
   if(status==="ok") el.textContent="✅ 上次同步成功："+time;
   else if(status && status.startsWith("error")) el.textContent="❌ 同步失败："+status.slice(6)+"（"+time+"）";
   else el.textContent="⏳ 状态未知";
 }
+function persistGistState(){
+  try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }catch(e){}
+}
 async function syncToGist(){
   const token=state.settings.gistToken;
-  const gistId=state.settings.gistId;
   if(!token) return;
-  const data = getSyncData();
-  const body = JSON.stringify(data, null, 2);
   try{
-    let res;
-    if(gistId){
-      // 更新已有 Gist
-      res = await fetch("https://api.github.com/gists/"+gistId, {
-        method:"PATCH",
-        headers:{"Authorization":"Bearer "+token,"Content-Type":"application/json"},
-        body:JSON.stringify({files:{"workbench-data.json":{content:body}}})
-      });
-    }else{
-      // 首次创建 Gist
-      res = await fetch("https://api.github.com/gists", {
-        method:"POST",
-        headers:{"Authorization":"Bearer "+token,"Content-Type":"application/json"},
-        body:JSON.stringify({description:"工作台数据同步", public:false,files:{"workbench-data.json":{content:body}}})
-      });
-      if(res.ok){
-        const gist = await res.json();
-        state.settings.gistId = gist.id;
-        // 保存 gistId 到 localStorage
-        try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }catch(e){}
+    // 1. 确定目标 Gist：优先用已有 ID，否则自动发现云端最全的，实在没有才创建
+    let gistId = state.settings.gistId;
+    if(!gistId){
+      const found = await findGist();
+      if(found){
+        gistId = found.id;
+        state.settings.gistId = gistId;
+      }else{
+        const createRes = await fetch("https://api.github.com/gists", {
+          method:"POST",
+          headers:{"Authorization":"Bearer "+token,"Content-Type":"application/json"},
+          body:JSON.stringify({description:"工作台数据同步", public:false, files:{"workbench-data.json":{content:"{}"}}})
+        });
+        if(!createRes.ok) throw new Error("HTTP "+createRes.status);
+        const g = await createRes.json();
+        gistId = g.id;
+        state.settings.gistId = gistId;
       }
     }
-    if(!res.ok){ const err=await res.text(); throw new Error("HTTP "+res.status+": "+err); }
+    // 2. 上传前先拉取云端数据，更全或更新则先合并
+    const remote = await pullFromGist(gistId);
+    const merged = remote ? mergeRemote(remote) : false;
+    // 3. 上传（合并后的）数据
+    const body = JSON.stringify(getSyncData(), null, 2);
+    const res = await fetch("https://api.github.com/gists/"+gistId, {
+      method:"PATCH",
+      headers:{"Authorization":"Bearer "+token,"Content-Type":"application/json"},
+      body:JSON.stringify({files:{"workbench-data.json":{content:body}}})
+    });
+    if(!res.ok){ const err=await res.text(); throw new Error("HTTP "+res.status); }
+    state.settings.gistId = gistId;
     state.settings.gistLastSync=Date.now();
     state.settings.gistLastSyncStatus="ok";
-    // 持久化同步状态
-    try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }catch(e){}
+    persistGistState();
     updateSyncStatus();
-    toast("同步成功");
+    toast(merged ? "已合并云端数据并同步" : "同步成功");
+    // 若合并了远程数据，刷新当前页面显示
+    if(merged && currentPage) navigate(currentPage);
   }catch(e){
     state.settings.gistLastSync=Date.now();
     state.settings.gistLastSyncStatus="error:"+e.message;
-    try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }catch(e2){}
+    persistGistState();
     updateSyncStatus();
     toast("同步失败："+e.message);
   }
 }
-async function pullFromGist(){
+async function pullFromGist(gistId){
   const token=state.settings.gistToken;
-  const gistId=state.settings.gistId;
-  if(!token || !gistId) return null;
+  if(!token) return null;
   try{
+    if(!gistId){
+      const found = await findGist();
+      if(!found) return null;
+      gistId = found.id;
+      state.settings.gistId = gistId;
+      persistGistState();
+    }
     const res = await fetch("https://api.github.com/gists/"+gistId, {
       headers:{"Authorization":"Bearer "+token}
     });
@@ -2950,24 +3009,17 @@ async function pullFromGist(){
 }
 async function initSync(){
   const s=state.settings;
-  if(!s.gistToken || !s.gistId) return;
+  if(!s.gistToken) return;
   const remote = await pullFromGist();
-  if(!remote || !remote.meta) return;
-  // 如果远程数据更新，则合并
-  if(remote.meta.lastModified > state.meta.lastModified){
-    // 保留本地 settings（含 token），其他字段用远程覆盖
-    const localSettings = state.settings;
-    Object.assign(state, remote);
-    state.settings = localSettings;
-    state.meta.lastModified = remote.meta.lastModified;
+  const merged = remote ? mergeRemote(remote) : false;
+  if(merged){
     save(); // 写回 localStorage
     toast("已从云端同步最新数据");
-    // 如果当前页需要刷新，重新导航
     if(currentPage) navigate(currentPage);
   }
   s.gistLastSync=Date.now();
   s.gistLastSyncStatus="ok";
-  try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }catch(e){}
+  persistGistState();
   updateSyncStatus();
 }
 
