@@ -182,7 +182,7 @@
   .content > .grid{margin-bottom:14px;}
   .measure-form{display:flex;flex-direction:column;gap:8px;}
   .measure-form .field{flex-direction:row;align-items:center;gap:10px;margin-bottom:0;}
-  .measure-form .field label{flex:0 0 7em;text-align:right;font-size:13px;}
+  .measure-form .field label{min-width:6em;text-align:right;font-size:13px;}
   .row-stats{display:flex;gap:10px;flex-wrap:wrap;}
   .row-stats .stat{flex:1;min-width:0;min-width:90px;}
   @media(max-width:680px){.grid-2{grid-template-columns:1fr;}}
@@ -213,7 +213,7 @@
 
   /* ---------- forms ---------- */
   .field{margin-bottom:10px;display:flex;align-items:center;gap:10px;}
-  .field label{flex:0 0 7em;white-space:nowrap;margin:0;font-size:13px;color:var(--ink-light);font-weight:500;text-align:right;}
+  .field label{flex-shrink:0;white-space:nowrap;margin:0;font-size:13px;color:var(--ink-light);font-weight:500;min-width:6em;text-align:right;}
   .field input,.field select,.field textarea{
     flex:1;min-width:0;width:auto;padding:9px 12px;border:1px solid var(--glass-border);border-radius:var(--radius);
     background:rgba(255,255,255,.7);outline:none;transition:border-color .2s,background .2s,box-shadow .2s;font-size:13px;
@@ -1405,7 +1405,7 @@ function pageSalaryAdd(){
     <div class="card money">
       <form id="salaryForm">
         <div class="field"><label>日期</label><input type="text" name="s-date" placeholder="如 2025.08" value="${todayStr().slice(0,7).replace('-','.')}" required></div>
-        ${fields}
+        <div class="grid grid-2">${fields}</div>
         <div style="text-align:center;margin-top:14px"><button class="btn money" type="submit">保存</button></div>
       </form>
     </div>
@@ -1432,7 +1432,7 @@ function pageSalaryDetail(idx){
     <div class="card money">
       <form id="salaryEditForm">
         <div class="field"><label>日期</label><input type="text" name="sd-date" value="${r.date}"></div>
-        ${fields}
+        <div class="grid grid-2">${fields}</div>
         <div style="text-align:center;margin-top:14px">
           <button class="btn money" id="saveSalaryEdit" type="button">保存修改</button>
           <button class="btn danger" id="deleteSalaryEdit" type="button">删除此记录</button>
