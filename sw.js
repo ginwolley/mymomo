@@ -1,4 +1,4 @@
-const CACHE = "momo-v1";
+const CACHE = "momo-v2";
 const PRECACHE = [
   "工作台.html",
   "manifest.json",
@@ -21,6 +21,13 @@ self.addEventListener("activate", e => {
 });
 
 self.addEventListener("fetch", e => {
+  // 主页面走网络优先，确保始终加载最新版本
+  if (e.request.mode === "navigate" || e.request.url.endsWith("工作台.html")) {
+    e.respondWith(
+      fetch(e.request).catch(() => caches.match(e.request))
+    );
+    return;
+  }
   e.respondWith(
     caches.match(e.request).then(r => r || fetch(e.request).then(res => {
       if (res && res.ok && res.type === "basic") {

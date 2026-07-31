@@ -3265,7 +3265,7 @@ navigate("overview");
 initSync();
 // 注册 Service Worker（PWA离线/全屏支持）
 if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('sw.js').catch(()=>{});
+  navigator.serviceWorker.register('sw.js?v='+Date.now()).catch(()=>{});
 }
 </script>
 </body>
