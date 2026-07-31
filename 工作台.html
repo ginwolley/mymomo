@@ -373,7 +373,10 @@
 
     /* 表单在手机上单列铺满，便于单手输入 */
     .row{gap:8px;}
-    .row .field{flex:1 1 100%;min-width:0;}
+    .row .field{flex:1 1 100% !important;min-width:0 !important;}
+    .measure-form{display:flex;flex-direction:column;gap:8px;}
+    .measure-form .field{flex-direction:row !important;align-items:center !important;gap:10px !important;margin-bottom:0;}
+    .measure-form .field label{min-width:5em !important;text-align:right !important;font-size:13px !important;}
     .row .btn{flex:1 1 45%;}
     .field input,.field select,.field textarea{font-size:13px;padding:8px 10px;line-height:1.4;}
     .field select{background-color:rgba(255,255,255,.7);border-radius:var(--radius);}
@@ -903,7 +906,7 @@ function pageMeasure(){
       <h2>记录围度 <span class="sub">模式：${mode==="daily"?"每日记录":"累计记录"}</span></h2>
       <form id="measureForm">
         <div class="field"><label>日期</label><input type="date" name="date" value="${todayStr()}" required></div>
-        <div class="grid grid-2">${inputs}</div>
+        <div class="grid grid-2 measure-form">${inputs}</div>
         <div style="text-align:center"><button class="btn primary" type="submit">保存</button></div>
       </form>
     </div>
