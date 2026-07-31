@@ -2972,11 +2972,13 @@ async function resolveGist(){
   const found = await findGist();
   let foundCount = -1;
   if(found){
-    try{ foundCount = countRecords(JSON.parse(found.files["workbench-data.json"].content)); }catch(e){}
+    // 列表接口不含 content，需重新拉取详细数据计算记录数
+    const fd = await pullFromGist(found.id);
+    if(fd) foundCount = countRecords(fd);
   }
   const curId = state.settings.gistId;
   if(!curId){
-    if(found){ state.settings.gistId = found.id; persistGistState(); return found.id; }
+    if(found){ state.settings.gistId = found.id; persistGistState(); glog("resolveGist: 绑定 "+found.id.slice(0,8)); return found.id; }
     return null; // 需要新建
   }
   if(found && curId === found.id) return curId;
@@ -2984,9 +2986,11 @@ async function resolveGist(){
   let curCount = 0;
   const cur = await pullFromGist(curId);
   if(cur) curCount = countRecords(cur);
+  glog("resolveGist: 云端最全="+foundCount+"，当前="+curCount);
   if(foundCount > curCount){
     state.settings.gistId = found.id;
     persistGistState();
+    glog("resolveGist: 切换到 "+found.id.slice(0,8));
     return found.id;
   }
   return curId;
