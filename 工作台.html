@@ -362,12 +362,14 @@
     .topbar h1{font-size:17px;}
     .content{padding:10px 14px 50px;max-width:100%;}
     .card{padding:13px 14px;margin-bottom:10px;}
-    .card h2{font-size:14px;}
-    .card h2 .sub{font-size:11px;}
+    .card h2{flex-wrap:wrap;gap:4px 8px;font-size:14px;}
+    .card h2 .sub{margin-left:0;width:100%;text-align:left;font-size:10px;}
 
     .stat .value{font-size:16px;}
-    .row-stats .stat .value{font-size:14px;white-space:normal;word-break:keep-all;overflow-wrap:break-word;}
-    .row-stats .stat{min-width:80px;flex:1 1 0;}
+    .row-stats{gap:6px;}
+    .row-stats .stat{min-width:0;flex:1 1 0;padding:6px 8px;gap:3px;justify-content:space-between;}
+    .row-stats .stat .label{font-size:10px;white-space:nowrap;}
+    .row-stats .stat .value{font-size:12px;white-space:nowrap;}
 
     /* 表单在手机上单列铺满，便于单手输入 */
     .row{gap:8px;}
