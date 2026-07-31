@@ -366,10 +366,10 @@
     .card h2 .sub{margin-left:0;width:100%;text-align:left;font-size:10px;}
 
     .stat .value{font-size:16px;}
-    .row-stats{gap:6px;}
-    .row-stats .stat{min-width:0;flex:1 1 0;padding:6px 8px;gap:3px;justify-content:space-between;}
+    .row-stats{gap:5px;}
+    .row-stats .stat{min-width:0;flex:1 1 0;padding:5px 7px;gap:2px;justify-content:space-between;}
     .row-stats .stat .label{font-size:10px;white-space:nowrap;}
-    .row-stats .stat .value{font-size:12px;white-space:nowrap;}
+    .row-stats .stat .value{font-size:11px;white-space:nowrap;}
 
     /* 表单在手机上单列铺满，便于单手输入 */
     .row{gap:8px;}
@@ -788,9 +788,9 @@ function pageOverview(){
 
   const cards = `
     <div class="row-stats" style="margin-bottom:14px">
-      <div class="stat accent plain"><div class="label">今日净平衡</div><div class="value num">${round(net)}<small>kcal</small></div></div>
-      <div class="stat sage plain"><div class="label">今日摄入</div><div class="value num">${round(inK)}<small>kcal</small></div></div>
-      <div class="stat sky plain"><div class="label">今日消耗</div><div class="value num">${round(outK)}<small>kcal</small></div></div>
+      <div class="stat accent plain"><div class="label">净平衡</div><div class="value num">${round(net)}<small>kcal</small></div></div>
+      <div class="stat sage plain"><div class="label">摄入</div><div class="value num">${round(inK)}<small>kcal</small></div></div>
+      <div class="stat sky plain"><div class="label">消耗</div><div class="value num">${round(outK)}<small>kcal</small></div></div>
     </div>`;
 
   const periodCard = (()=>{
