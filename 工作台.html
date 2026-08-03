@@ -477,35 +477,26 @@
   .diet-empty-meal{padding:8px 0;font-size:12px;}
   .diet-meal-add{margin-top:6px;}
 
-  /* 食物选择弹窗 */
-  .fp-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.35);z-index:100;display:flex;align-items:center;justify-content:center;padding:20px;}
-  .fp-modal{background:var(--bg-cream);border-radius:16px;width:100%;max-width:500px;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 4px 24px rgba(0,0,0,.12);}
-  .fp-header{display:flex;justify-content:space-between;align-items:center;padding:14px 16px 8px;border-bottom:1px solid var(--line);}
-  .fp-title{font-size:16px;font-weight:500;}
-  .fp-search-wrap{padding:8px 16px;}
+  /* 食物选择页（独立页面） */
+  .diet-add-page{display:flex;flex-direction:column;gap:12px;}
   .fp-search-wrap input{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-size:13px;background:white;box-sizing:border-box;}
-  .fp-tabs{display:flex;gap:4px;padding:4px 12px;overflow-x:auto;flex-shrink:0;flex-wrap:nowrap;scrollbar-width:none;white-space:nowrap;}
+  .fp-tabs{display:flex;gap:4px;padding:4px 0;overflow-x:auto;flex-shrink:0;flex-wrap:nowrap;scrollbar-width:none;white-space:nowrap;}
   .fp-tabs::-webkit-scrollbar{display:none;}
   .fp-tab{padding:5px 10px;font-size:12px;border-radius:12px;border:none;background:transparent;color:var(--ink-muted);cursor:pointer;flex-shrink:0;}
   .fp-tab.active{background:var(--ink);color:white;font-weight:500;}
-  .fp-body{flex:1;overflow-y:auto;padding:8px 16px;min-height:120px;}
+  .fp-body{flex:1;overflow-y:auto;min-height:120px;}
   .fp-panel{display:none;}
   .fp-panel.active{display:block;}
   .fp-item{padding:8px 10px;font-size:13px;border-bottom:1px solid var(--line);cursor:pointer;border-radius:6px;transition:background .15s;}
   .fp-item:active,.fp-item:hover{background:var(--glass);}
   .fp-item .muted{font-size:11px;}
-  .fp-manual{padding:10px 16px;border-top:1px solid var(--line);flex-shrink:0;}
   .fp-manual-row{display:flex;gap:6px;align-items:center;}
   .fp-manual-row input{padding:6px 8px;border:1px solid var(--line);border-radius:6px;font-size:13px;background:white;}
-  .fp-ai{padding:10px 16px;flex-shrink:0;}
-  .fp-ai .field label{font-size:13px;}
 
   @media(max-width:600px){
     .diet-kcal{font-size:20px;}
     .diet-kcal .num{font-size:20px;}
     .diet-progress-bar{width:70px;}
-    .fp-overlay{padding:0;align-items:flex-end;}
-    .fp-modal{border-radius:16px 16px 0 0;max-height:90vh;}
   }
 </style>
 </head>
@@ -1199,14 +1190,15 @@ function pageDiet(){
     <button class="btn danger sm" id="resetDietToday">重置今日</button>
   </div>`;
 
-  // 食物选择弹窗（隐藏）
-  body += foodPickerHTML();
-
   return body;
 }
 
-/* 食物选择弹窗 HTML */
-function foodPickerHTML(){
+/* ============== 页面：添加食物（独立页面） ============== */
+function pageDietAdd(meal){
+  const mealObj = MEALS.find(m => m.id === meal) || MEALS[1];
+  const mealName = mealObj.name;
+  const mealIcon = mealObj.icon;
+
   let catTabs = '<button class="fp-tab active" data-cat="all">全部</button>';
   let catPanels = '<div class="fp-panel active" data-cat="all">';
   const allFoods = [];
@@ -1221,43 +1213,43 @@ function foodPickerHTML(){
   });
   catPanels += `</div>`;
 
-  // 全部面板也填充
   let allPanel = '';
   allFoods.forEach(f => {
     allPanel += `<div class="fp-item" data-name="${esc(f.name)}" data-kcal="${f.kcal}" data-unit="${esc(f.unit)}">${esc(f.name)} <span class="muted">${f.kcal} kcal/${f.unit}</span></div>`;
   });
 
-  return `<div id="foodPickerOverlay" class="fp-overlay" style="display:none">
-    <div class="fp-modal">
-      <div class="fp-header">
-        <span class="fp-title">选择食物</span>
-        <button class="del" id="fpClose">×</button>
-      </div>
+  return `<div class="diet-add-page" data-meal="${meal}">
+    <div class="card">
+      <h2>${mealIcon} ${mealName} — 添加食物</h2>
+    </div>
+    <div class="card">
       <div class="fp-search-wrap">
         <input type="text" id="fpSearch" placeholder="搜索食物..." autocomplete="off">
       </div>
       <div class="fp-tabs" id="fpTabs">${catTabs}</div>
+    </div>
+    <div class="card" style="flex:1;overflow-y:auto">
       <div class="fp-body" id="fpBody">
         <div class="fp-panel active" data-cat="all">${allPanel}</div>
         ${catPanels.replace('<div class="fp-panel active" data-cat="all">','')}
       </div>
-      <div class="fp-manual">
-        <div class="fp-manual-row">
-          <input type="text" id="fpManualName" placeholder="食物名称" style="flex:2">
-          <input type="number" id="fpManualKcal" placeholder="热量 kcal" style="flex:1">
-          <input type="number" id="fpManualQty" placeholder="份数" value="1" style="flex:0.5" min="0.5" step="0.5">
-        </div>
-        <div style="text-align:center;margin-top:8px">
-          <button class="btn primary sm" id="fpManualAdd">手动添加</button>
-        </div>
+    </div>
+    <div class="card">
+      <h2>手动输入</h2>
+      <div class="fp-manual-row">
+        <input type="text" id="fpManualName" placeholder="食物名称" style="flex:2">
+        <input type="number" id="fpManualKcal" placeholder="热量 kcal" style="flex:1">
+        <input type="number" id="fpManualQty" placeholder="份数" value="1" style="flex:0.6" min="0.5" step="0.5">
+        <button class="btn primary sm" id="fpManualAdd">添加</button>
       </div>
-      <div class="fp-ai" style="border-top:1px solid var(--line);padding-top:10px;margin-top:10px">
-        <div class="field" style="margin-bottom:6px"><label class="btn ghost sm" for="fpImgInput">拍照识别</label>
-          <input type="file" id="fpImgInput" accept="image/*" style="display:none">
-        </div>
-        <div id="fpPreview"></div>
-        <button class="btn ghost sm" id="fpAiRecognize" ${state.settings.api.enabled&&state.settings.api.key?"":"disabled"}>${state.settings.api.enabled&&state.settings.api.key?"用AI识别图中食物":"请先在设置中开启AI识别"}</button>
+    </div>
+    <div class="card">
+      <h2>拍照识别</h2>
+      <div class="field" style="margin-bottom:6px"><label class="btn ghost sm" for="fpImgInput">选择图片（拍照或相册）</label>
+        <input type="file" id="fpImgInput" accept="image/*" style="display:none">
       </div>
+      <div id="fpPreview"></div>
+      <button class="btn ghost sm" id="fpAiRecognize" ${state.settings.api.enabled&&state.settings.api.key?"":"disabled"}>${state.settings.api.enabled&&state.settings.api.key?"用AI识别图中食物":"请先在设置中开启AI识别"}</button>
     </div>
   </div>`;
 }
@@ -1842,6 +1834,7 @@ const PAGES = {
   get "stock-detail"(){ return window.pageStockDetail; },
   get "stock-spaces"(){ return window.pageStockSpaces; },
   passwords:pagePasswords, "password-detail":pagePasswordDetail,
+  "diet-add":pageDietAdd,
 };
 // ★ 新增页面时，请在此处同步添加标题映射
 const TITLES = {
@@ -1852,6 +1845,7 @@ const TITLES = {
   "housing-all":"全部房补记录", "housing-detail":"房补详情", "housing-add":"记录房补",
   "stock-overview":"囤货统计", "stock-add":"新增物品", "stock-all":"全部物品", "stock-detail":"物品详情", "stock-spaces":"空间管理",
   passwords:"密码管理", "password-detail":"密码详情",
+  "diet-add":"添加食物",
 };
 
 function navigate(id, params){
@@ -1865,6 +1859,7 @@ function navigate(id, params){
     "housing-add":"salary-housing","housing-all":"salary-housing","housing-detail":"salary-housing",
     "stock-add":"stock-overview","stock-all":"stock-overview","stock-detail":"stock-overview","stock-spaces":"stock-overview",
     "password-detail":"passwords",
+    "diet-add":"diet",
   };
   const backBtn = document.getElementById("topBackBtn");
   if(BACK_MAP[id]){ backBtn.style.display="inline-flex"; backBtn.dataset.back=BACK_MAP[id]; }
@@ -1954,6 +1949,7 @@ function bindPage(id){
   if(id==="stock-spaces") window.bindStockSpaces();
   if(id==="passwords") bindPasswords();
   if(id==="password-detail") bindPasswordDetail(params);
+  if(id==="diet-add") bindDietAdd();
 }
 
 function bindOverview(){
@@ -1999,7 +1995,7 @@ function bindMeasure(){
 }
 
 function bindDiet(){
-  // 删除旧版食物
+  // 删除食物
   document.querySelectorAll("[data-del-diet]").forEach(b=>b.addEventListener("click",()=>{
     const d=getDay(state.diet, todayStr());
     if(d){ d.items.splice(num(b.dataset.delDiet),1); save(); navigate("diet"); }
@@ -2011,22 +2007,19 @@ function bindDiet(){
     if(confirm("确定清空今日饮食记录？")){ const d=getDay(state.diet, todayStr()); if(d) d.items=[]; save(); navigate("diet"); }
   });
 
-  // 各餐时段的「添加食物」按钮
-  let currentMeal = "lunch";
+  // 各餐时段的「添加食物」按钮 → 导航到独立页面
   document.querySelectorAll(".diet-add-btn").forEach(btn => {
     btn.addEventListener("click", ()=>{
-      currentMeal = btn.dataset.meal || "lunch";
-      document.getElementById("foodPickerOverlay").style.display = "flex";
+      navigate("diet-add", btn.dataset.meal || "lunch");
     });
   });
+}
 
-  // 食物选择弹窗
-  const overlay = document.getElementById("foodPickerOverlay");
-  if(!overlay) return;
-
-  // 关闭弹窗
-  document.getElementById("fpClose").addEventListener("click", ()=>{ overlay.style.display = "none"; });
-  overlay.addEventListener("click", e=>{ if(e.target===overlay) overlay.style.display = "none"; });
+function bindDietAdd(){
+  const pageEl = document.getElementById("page");
+  const dietAddPage = pageEl.querySelector(".diet-add-page");
+  if(!dietAddPage) return;
+  const meal = dietAddPage.dataset.meal || "lunch";
 
   // 分类标签切换
   document.querySelectorAll(".fp-tab").forEach(tab => {
@@ -2047,7 +2040,6 @@ function bindDiet(){
       const name = item.dataset.name.toLowerCase();
       item.style.display = (!q || name.includes(q)) ? "" : "none";
     });
-    // 搜索时显示全部面板
     if(q){
       document.querySelectorAll(".fp-tab").forEach(t => t.classList.remove("active"));
       document.querySelectorAll(".fp-panel").forEach(p => p.classList.remove("active"));
@@ -2062,8 +2054,8 @@ function bindDiet(){
       const kcal = num(item.dataset.kcal);
       const unit = item.dataset.unit || "份";
       const d = ensureDay(state.diet, todayStr());
-      d.items.push({name, kcal, meal: currentMeal, unit, qty: 1, img: null});
-      save(); overlay.style.display = "none"; toast("已添加 "+name); navigate("diet");
+      d.items.push({name, kcal, meal, unit, qty: 1, img: null});
+      save(); toast("已添加 "+name); navigate("diet");
     });
   });
 
@@ -2075,13 +2067,13 @@ function bindDiet(){
     const qty = num(document.getElementById("fpManualQty").value) || 1;
     if(!name || !kcal){ toast("请填写食物名称和热量"); return; }
     const d = ensureDay(state.diet, todayStr());
-    d.items.push({name, kcal: Math.round(kcal * qty), meal: currentMeal, unit: "份", qty, img: null});
+    d.items.push({name, kcal: Math.round(kcal * qty), meal, unit: "份", qty, img: null});
     document.getElementById("fpManualName").value = "";
     document.getElementById("fpManualKcal").value = "";
-    save(); overlay.style.display = "none"; toast("已添加"); navigate("diet");
+    save(); toast("已添加"); navigate("diet");
   });
 
-  // AI拍照识别（弹窗内）
+  // AI拍照识别
   const fpImgInput = document.getElementById("fpImgInput");
   const fpPreview = document.getElementById("fpPreview");
   const fpAiBtn = document.getElementById("fpAiRecognize");
@@ -2102,9 +2094,9 @@ function bindDiet(){
       else{
         const d = ensureDay(state.diet, todayStr());
         foods.forEach(fx => {
-          if(fx && fx.name) d.items.push({name:String(fx.name), kcal:num(fx.kcal), meal: currentMeal, img: pendingImg});
+          if(fx && fx.name) d.items.push({name:String(fx.name), kcal:num(fx.kcal), meal, img: pendingImg});
         });
-        save(); overlay.style.display = "none"; toast("已识别并加入 "+foods.length+" 项"); navigate("diet");
+        save(); toast("已识别并加入 "+foods.length+" 项"); navigate("diet");
       }
     }catch(err){ toast("识别失败：" + err.message); }
     finally{ fpAiBtn.disabled = false; fpAiBtn.textContent = "用AI识别图中食物"; }
