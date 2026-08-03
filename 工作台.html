@@ -2240,7 +2240,7 @@ function bindTabPage(id){
 /* ---- Tab容器页：首页（概览/工资/密码分段） ---- */
 function pageTabHome(){
   const seg = segHome;
-  const segHtml = `<div class="tab-seg"><div class="seg">${[["overview","概览"],["salary-basic","工资"],["passwords","密码"]].map(o=>`<button class="${seg===o[0]?"active":""}" data-seg="${o[0]}">${o[1]}</button>`).join("")}</div></div>`;
+  const segHtml = `<div class="tab-seg"><div class="seg">${[["overview","概览"],["salary-basic","工资"],["passwords","密码"]].map(o=>`<button class="${seg===o[0]||(o[0]==="salary-basic"&&seg.startsWith("salary-"))?"active":""}" data-seg="${o[0]}">${o[1]}</button>`).join("")}</div></div>`;
   if(seg==="overview"){
     const ov = pageOverview();
     const heroStart = ov.indexOf('<div class="hero">');
@@ -2258,7 +2258,7 @@ function pageTabHome(){
     }
     return segHtml + ov;
   }
-  const inner = seg==="salary-basic" ? pageSalaryBasic() : pagePasswords();
+  const inner = seg==="salary-basic" ? pageSalaryBasic() : seg==="salary-housing" ? pageSalaryHousing() : seg==="salary-summary" ? pageSalarySummary() : pagePasswords();
   return segHtml + inner;
 }
 function bindTabHome(){
@@ -2266,6 +2266,8 @@ function bindTabHome(){
     segHome = b.dataset.seg; refTab();
   }));
   if(segHome==="salary-basic") bindSalaryBasic();
+  else if(segHome==="salary-housing") bindSalaryHousing();
+  else if(segHome==="salary-summary") bindSalarySummary();
   else if(segHome==="passwords") bindPasswords();
   else bindOverview();
 }
@@ -2316,10 +2318,8 @@ function navigate(id, params){
     const recSegs = {"diet":"diet","exercise":"exercise","weight":"weight","measure":"measure"};
     if(homeSegs[id]){ segHome = homeSegs[id]; id = "tab-home"; }
     else if(recSegs[id]){ segRecord = recSegs[id]; id = "tab-record"; }
-    else if(id==="stock-overview" || id==="stock-add" || id==="stock-all" || id==="stock-spaces"){ id = "stock-overview"; }
+    else if(id==="salary-housing" || id==="salary-summary"){ segHome = id; id = "tab-home"; }
     else if(id==="period"){ /* keep as-is */ }
-    else if(id==="salary-basic" || id==="salary-housing" || id==="salary-summary"){ segHome = "salary-basic"; id = "tab-home"; }
-    else if(id==="password-detail"){ segHome = "passwords"; id = "tab-home"; }
   }
   currentPage=id;
   // 顶部返回按钮
@@ -3289,6 +3289,9 @@ function bindSalaryHousing(){
   if(expandBtn) expandBtn.addEventListener("click",()=>{ navigate("housing-all"); });
   const goAdd = document.getElementById("goHousingAdd");
   if(goAdd) goAdd.addEventListener("click",()=>{ navigate("housing-add"); });
+}
+function bindSalarySummary(){
+  // 工资汇总页面无交互元素，仅展示
 }
 
 function bindHousingAdd(){
