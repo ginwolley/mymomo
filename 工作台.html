@@ -1079,7 +1079,7 @@ function stockSeg(active){
   return `<div class="seg">${items.map(i=>`<button class="${i.id===active?'active':''}" onclick="navigate('${i.id}')">${i.label}</button>`).join('')}</div>`;
 }
 function bindPeriod(){
-  document.querySelectorAll("[data-d]").forEach(b=>b.addEventListener("click",()=>{
+  document.querySelectorAll(".seg [data-d]").forEach(b=>b.addEventListener("click",()=>{
     state.settings.period=Number(b.dataset.d); save(); navigate(currentPage);
   }));
 }
@@ -1278,7 +1278,6 @@ function pageWeight(){
   const recent = filterPeriod(sorted, state.settings.period||90);
 
   let body = `
-    ${periodSeg()}
     <div class="card">
       <h2>记录体重</h2>
       <form id="weightForm">
@@ -1288,6 +1287,7 @@ function pageWeight(){
         <div class="center" style="margin-top:8px"><button class="btn primary" type="submit">保存</button></div>
       </form>
     </div>
+    ${periodSeg()}
     <div class="card">
       <h2>历史记录 <span class="sub">${recent.length} 条</span></h2>
       ${recent.length? `<table class="tbl"><thead><tr><th>日期</th><th class="num">体重</th><th></th></tr></thead><tbody>
@@ -1306,7 +1306,6 @@ function pageMeasure(){
   const inputs = MEAS_KEYS.map(m=>`<div class="field"><label>${m.name}</label><input type="number" step="0.1" name="${m.k}" placeholder="0"></div>`).join("");
 
   let body = `
-    ${periodSeg()}
     <div class="card">
       <h2>记录围度</h2>
       <form id="measureForm">
@@ -1315,6 +1314,7 @@ function pageMeasure(){
         <div class="center" style="margin-top:8px"><button class="btn primary" type="submit">保存</button></div>
       </form>
     </div>
+    ${periodSeg()}
     <div class="card">
       <h2>历史记录 <span class="sub">${recent.length} 条</span></h2>
       ${recent.length? `<div class="scroll"><table class="tbl"><thead><tr><th>日期</th>${MEAS_KEYS.map(m=>`<th class="num">${m.name}</th>`).join("")}<th></th></tr></thead><tbody>
@@ -2423,6 +2423,7 @@ function bindOverview(){
 }
 
 function bindWeight(){
+  bindPeriod();
   const f=document.getElementById("weightForm");
   if(!f) return;
   f.addEventListener("submit", e=>{
@@ -2441,6 +2442,7 @@ function bindWeight(){
 }
 
 function bindMeasure(){
+  bindPeriod();
   const f=document.getElementById("measureForm");
   if(!f) return;
   f.addEventListener("submit", e=>{
