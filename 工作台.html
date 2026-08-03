@@ -1264,14 +1264,17 @@ function pageDietAdd(meal){
         <button class="btn primary sm" id="fpManualAdd">添加</button>
       </div>
       <div class="fp-converter" style="margin-top:8px;padding-top:8px;border-top:1px solid var(--line)">
-        <span style="font-size:12px;color:var(--ink-muted)">千焦→大卡转换:</span>
-        <div style="display:flex;gap:6px;align-items:center;margin-top:4px">
-          <input type="number" id="kjInput" placeholder="输入千焦" style="flex:1;padding:5px 6px;border:1px solid var(--line);border-radius:6px;font-size:13px">
-          <span style="font-size:13px">kJ =</span>
-          <span class="num" id="kcalOutput" style="font-size:13px;font-weight:500">0</span>
-          <span style="font-size:13px">kcal</span>
-          <button class="btn ghost sm" id="kjUseBtn" style="font-size:12px">使用</button>
+        <span style="font-size:12px;color:var(--ink-muted);font-weight:500">包装食品计算器</span>
+        <div style="display:flex;gap:6px;align-items:center;margin-top:4px;flex-wrap:wrap">
+          <input type="number" id="pkgWeight" placeholder="包装重量(g)" style="flex:1;min-width:60px;padding:5px 6px;border:1px solid var(--line);border-radius:6px;font-size:13px">
+          <span style="font-size:12px;color:var(--ink-muted)">×</span>
+          <input type="number" id="pkgKj" placeholder="每100g千焦" style="flex:1;min-width:60px;padding:5px 6px;border:1px solid var(--line);border-radius:6px;font-size:13px">
+          <span style="font-size:13px;font-weight:500">=</span>
+          <span class="num" id="pkgKcal" style="font-size:14px;font-weight:600;min-width:40px">0</span>
+          <span style="font-size:12px">kcal</span>
+          <button class="btn ghost sm" id="pkgUseBtn" style="font-size:12px">填入</button>
         </div>
+        <div class="hint" style="margin-top:4px">输入包装上的净含量和每100g千焦，自动算出这包的热量</div>
       </div>
     </div>
     <div class="card">
@@ -2162,18 +2165,27 @@ function bindDietAdd(){
     save(); toast("已添加"); navigate("diet");
   });
 
-  // 千焦→大卡转换
-  const kjInput = document.getElementById("kjInput");
-  const kcalOutput = document.getElementById("kcalOutput");
-  if(kjInput) kjInput.addEventListener("input", ()=>{
-    const kj = num(kjInput.value);
-    kcalOutput.textContent = kj > 0 ? Math.round(kj / 4.184) : "0";
-  });
-  const kjUseBtn = document.getElementById("kjUseBtn");
-  if(kjUseBtn) kjUseBtn.addEventListener("click", ()=>{
-    const kj = num(kjInput.value);
-    if(kj <= 0){ toast("请输入千焦数值"); return; }
-    const kcal = Math.round(kj / 4.184);
+  // 包装食品计算器
+  function calcPkgKcal(){
+    const w = num(document.getElementById("pkgWeight").value);
+    const kj = num(document.getElementById("pkgKj").value);
+    if(w > 0 && kj > 0){
+      const kcal = Math.round((w / 100) * (kj / 4.184));
+      document.getElementById("pkgKcal").textContent = kcal;
+    } else {
+      document.getElementById("pkgKcal").textContent = "0";
+    }
+  }
+  const pkgWeight = document.getElementById("pkgWeight");
+  const pkgKj = document.getElementById("pkgKj");
+  if(pkgWeight) pkgWeight.addEventListener("input", calcPkgKcal);
+  if(pkgKj) pkgKj.addEventListener("input", calcPkgKcal);
+  const pkgUseBtn = document.getElementById("pkgUseBtn");
+  if(pkgUseBtn) pkgUseBtn.addEventListener("click", ()=>{
+    const w = num(document.getElementById("pkgWeight").value);
+    const kj = num(document.getElementById("pkgKj").value);
+    if(w <= 0 || kj <= 0){ toast("请先填写包装重量和每100g千焦"); return; }
+    const kcal = Math.round((w / 100) * (kj / 4.184));
     document.getElementById("fpManualKcal").value = kcal;
     toast("已填入 "+kcal+" kcal");
   });
