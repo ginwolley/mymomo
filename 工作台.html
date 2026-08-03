@@ -1551,6 +1551,19 @@ function pageBalance(){
     <div class="card">
       <h2>周期筛选 <span class="sub">${pLabel}</span></h2>
       ${periodSeg()}
+    </div>
+    <div class="card">
+      <h2>历史记录 <span class="sub">${arr.length} 天</span></h2>
+      ${arr.length ? `<table class="tbl">
+        <thead><tr><th>日期</th><th class="num">摄入</th><th class="num">消耗</th><th class="num">净平衡</th></tr></thead>
+        <tbody>${arr.map(dt=>{
+          const d=getDay(state.diet,dt); const e=getDay(state.exercise,dt);
+          const inn=d?d.items.reduce((s,x)=>s+num(x.kcal),0):0;
+          const out=e?e.items.reduce((s,x)=>s+num(x.kcal),0):0;
+          const net=inn-out;
+          return `<tr><td>${dt.slice(5)}</td><td class="num">${round(inn)}</td><td class="num">${round(out)}</td><td class="num" style="color:${net>=0?'var(--primary-dark)':'var(--rose)'}">${round(net)}</td></tr>`;
+        }).join("")}</tbody>
+      </table>` : '<div class="empty" style="padding:20px">暂无记录</div>'}
     </div>`;
   return body;
 }
