@@ -443,6 +443,69 @@
   ::-webkit-scrollbar{width:8px;height:8px;}
   ::-webkit-scrollbar-thumb{background:rgba(168,155,140,.25);border-radius:4px;}
   ::-webkit-scrollbar-track{background:transparent;}
+
+  /* ============== 饮食模块 ============== */
+  .diet-summary{display:flex;align-items:center;gap:16px;}
+  .diet-summary-left{flex:1;}
+  .diet-date{font-size:13px;color:var(--ink-muted);margin-bottom:2px;}
+  .diet-kcal{font-size:24px;font-weight:600;}
+  .diet-kcal .num{font-size:24px;}
+  .diet-kcal .muted{font-size:14px;font-weight:400;}
+  .diet-remain{font-size:13px;margin-top:2px;}
+  .diet-remain.over{color:var(--rose);font-weight:500;}
+  .diet-summary-right{flex-shrink:0;}
+  .diet-progress-wrap{display:flex;align-items:center;gap:8px;}
+  .diet-progress-bar{width:100px;height:8px;background:var(--line);border-radius:4px;overflow:hidden;}
+  .diet-progress-fill{height:100%;background:var(--sage);border-radius:4px;transition:width .3s;}
+  .diet-progress-fill.warn{background:var(--gold);}
+  .diet-progress-fill.over{background:var(--rose);}
+  .diet-progress-label{font-size:13px;color:var(--ink-muted);min-width:32px;text-align:right;}
+
+  .diet-meal{border-left:3px solid var(--line);}
+  .diet-meal[data-meal="breakfast"]{border-left-color:var(--gold);}
+  .diet-meal[data-meal="lunch"]{border-left-color:var(--sage);}
+  .diet-meal[data-meal="dinner"]{border-left-color:var(--sky);}
+  .diet-meal[data-meal="snack"]{border-left-color:var(--rose);}
+  .diet-meal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+  .diet-meal-name{font-size:14px;font-weight:500;}
+  .diet-meal-kcal{font-size:14px;font-weight:500;color:var(--ink-muted);}
+  .diet-meal-table{width:100%;border-collapse:collapse;}
+  .diet-meal-table td{padding:5px 4px;border:none;font-size:13px;}
+  .diet-food-name{text-align:left;}
+  .diet-food-kcal{text-align:right;white-space:nowrap;width:80px;}
+  .diet-food-del{text-align:right;width:24px;}
+  .diet-empty-meal{padding:8px 0;font-size:12px;}
+  .diet-meal-add{margin-top:6px;}
+
+  /* 食物选择弹窗 */
+  .fp-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.35);z-index:100;display:flex;align-items:flex-end;justify-content:center;}
+  .fp-modal{background:var(--bg-cream);border-radius:16px 16px 0 0;width:100%;max-width:500px;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 -4px 24px rgba(0,0,0,.12);}
+  .fp-header{display:flex;justify-content:space-between;align-items:center;padding:14px 16px 8px;border-bottom:1px solid var(--line);}
+  .fp-title{font-size:16px;font-weight:500;}
+  .fp-search-wrap{padding:8px 16px;}
+  .fp-search-wrap input{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-size:13px;background:white;box-sizing:border-box;}
+  .fp-tabs{display:flex;gap:4px;padding:4px 12px;overflow-x:auto;flex-shrink:0;flex-wrap:nowrap;scrollbar-width:none;white-space:nowrap;}
+  .fp-tabs::-webkit-scrollbar{display:none;}
+  .fp-tab{padding:5px 10px;font-size:12px;border-radius:12px;border:none;background:transparent;color:var(--ink-muted);cursor:pointer;flex-shrink:0;}
+  .fp-tab.active{background:var(--ink);color:white;font-weight:500;}
+  .fp-body{flex:1;overflow-y:auto;padding:8px 16px;min-height:120px;}
+  .fp-panel{display:none;}
+  .fp-panel.active{display:block;}
+  .fp-item{padding:8px 10px;font-size:13px;border-bottom:1px solid var(--line);cursor:pointer;border-radius:6px;transition:background .15s;}
+  .fp-item:active,.fp-item:hover{background:var(--glass);}
+  .fp-item .muted{font-size:11px;}
+  .fp-manual{padding:10px 16px;border-top:1px solid var(--line);flex-shrink:0;}
+  .fp-manual-row{display:flex;gap:6px;align-items:center;}
+  .fp-manual-row input{padding:6px 8px;border:1px solid var(--line);border-radius:6px;font-size:13px;background:white;}
+  .fp-ai{padding:10px 16px;flex-shrink:0;}
+  .fp-ai .field label{font-size:13px;}
+
+  @media(max-width:600px){
+    .diet-kcal{font-size:20px;}
+    .diet-kcal .num{font-size:20px;}
+    .diet-progress-bar{width:70px;}
+    .fp-modal{max-height:90vh;}
+  }
 </style>
 </head>
 <body>
@@ -475,7 +538,7 @@ if(typeof window.__SEED_DATA__==="undefined") window.__SEED_DATA__={periods:[],s
 "use strict";
 /* ============== 常量与默认数据 ============== */
 const STORE_KEY = "fit_workbench_v1";
-const DATA_VERSION = 2; // 数据版本号，每次新增迁移时递增（同步更新 migrateData 函数）
+const DATA_VERSION = 3; // 数据版本号，每次新增迁移时递增（同步更新 migrateData 函数）
 
 /* 多级导航树：分组(group)可折叠，叶子(leaf)为页面 */
 const NAV_TREE = [
@@ -546,6 +609,110 @@ const MEAS_KEYS = [
   {k:"hip",   name:"臀围", unit:"cm"},
 ];
 
+/* 餐时段 */
+const MEALS = [
+  {id:"breakfast", name:"早餐", icon:"🌅"},
+  {id:"lunch", name:"午餐", icon:"☀️"},
+  {id:"dinner", name:"晚餐", icon:"🌙"},
+  {id:"snack", name:"加餐", icon:"🍪"},
+];
+
+/* 食物库（每100g热量） */
+const FOOD_DB = {
+  "主食": [
+    {name:"米饭", kcal:116, unit:"100g"}, {name:"馒头", kcal:223, unit:"100g"},
+    {name:"面条(煮)", kcal:110, unit:"100g"}, {name:"包子", kcal:228, unit:"100g"},
+    {name:"饺子", kcal:240, unit:"100g"}, {name:"粥", kcal:46, unit:"100g"},
+    {name:"面包", kcal:266, unit:"100g"}, {name:"全麦面包", kcal:246, unit:"100g"},
+    {name:"红薯", kcal:86, unit:"100g"}, {name:"玉米", kcal:112, unit:"100g"},
+    {name:"燕麦", kcal:367, unit:"100g"}, {name:"糙米", kcal:111, unit:"100g"},
+    {name:"米粉", kcal:132, unit:"100g"}, {name:"煎饼", kcal:238, unit:"100g"},
+    {name:"油条", kcal:386, unit:"100g"}, {name:"粽子", kcal:195, unit:"100g"},
+  ],
+  "肉类": [
+    {name:"鸡胸肉", kcal:133, unit:"100g"}, {name:"鸡腿肉", kcal:181, unit:"100g"},
+    {name:"鸡翅", kcal:194, unit:"100g"}, {name:"鸡蛋(1个)", kcal:72, unit:"个"},
+    {name:"猪瘦肉", kcal:143, unit:"100g"}, {name:"五花肉", kcal:395, unit:"100g"},
+    {name:"猪排骨", kcal:264, unit:"100g"}, {name:"猪肝", kcal:129, unit:"100g"},
+    {name:"牛肉(瘦)", kcal:106, unit:"100g"}, {name:"牛腩", kcal:215, unit:"100g"},
+    {name:"羊肉", kcal:203, unit:"100g"}, {name:"鸭肉", kcal:240, unit:"100g"},
+    {name:"火腿", kcal:330, unit:"100g"}, {name:"培根", kcal:541, unit:"100g"},
+    {name:"香肠", kcal:334, unit:"100g"}, {name:"鸡爪", kcal:254, unit:"100g"},
+  ],
+  "水产": [
+    {name:"草鱼", kcal:113, unit:"100g"}, {name:"鲈鱼", kcal:105, unit:"100g"},
+    {name:"三文鱼", kcal:208, unit:"100g"}, {name:"虾仁", kcal:99, unit:"100g"},
+    {name:"基围虾", kcal:93, unit:"100g"}, {name:"带鱼", kcal:127, unit:"100g"},
+    {name:"螃蟹", kcal:95, unit:"100g"}, {name:"扇贝", kcal:77, unit:"100g"},
+    {name:"鱿鱼", kcal:92, unit:"100g"}, {name:"金枪鱼", kcal:130, unit:"100g"},
+  ],
+  "蔬菜": [
+    {name:"白菜", kcal:17, unit:"100g"}, {name:"菠菜", kcal:24, unit:"100g"},
+    {name:"西兰花", kcal:34, unit:"100g"}, {name:"生菜", kcal:15, unit:"100g"},
+    {name:"番茄", kcal:18, unit:"100g"}, {name:"黄瓜", kcal:15, unit:"100g"},
+    {name:"胡萝卜", kcal:37, unit:"100g"}, {name:"土豆", kcal:77, unit:"100g"},
+    {name:"茄子", kcal:25, unit:"100g"}, {name:"青椒", kcal:22, unit:"100g"},
+    {name:"洋葱", kcal:40, unit:"100g"}, {name:"芹菜", kcal:16, unit:"100g"},
+    {name:"豆芽", kcal:20, unit:"100g"}, {name:"玉米粒", kcal:112, unit:"100g"},
+    {name:"南瓜", kcal:26, unit:"100g"}, {name:"山药", kcal:57, unit:"100g"},
+    {name:"莲藕", kcal:73, unit:"100g"}, {name:"豆腐", kcal:81, unit:"100g"},
+  ],
+  "水果": [
+    {name:"苹果", kcal:53, unit:"100g"}, {name:"香蕉", kcal:93, unit:"100g"},
+    {name:"橙子", kcal:48, unit:"100g"}, {name:"西瓜", kcal:31, unit:"100g"},
+    {name:"葡萄", kcal:44, unit:"100g"}, {name:"草莓", kcal:32, unit:"100g"},
+    {name:"蓝莓", kcal:57, unit:"100g"}, {name:"猕猴桃", kcal:61, unit:"100g"},
+    {name:"桃子", kcal:39, unit:"100g"}, {name:"梨", kcal:51, unit:"100g"},
+    {name:"芒果", kcal:60, unit:"100g"}, {name:"柚子", kcal:42, unit:"100g"},
+    {name:"樱桃", kcal:63, unit:"100g"}, {name:"菠萝", kcal:41, unit:"100g"},
+  ],
+  "蛋奶": [
+    {name:"鸡蛋", kcal:144, unit:"100g"}, {name:"牛奶", kcal:65, unit:"100ml"},
+    {name:"酸奶", kcal:72, unit:"100g"}, {name:"奶酪", kcal:328, unit:"100g"},
+    {name:"豆浆", kcal:31, unit:"100ml"}, {name:"豆奶", kcal:43, unit:"100ml"},
+    {name:"纯牛奶", kcal:54, unit:"100ml"}, {name:"脱脂牛奶", kcal:33, unit:"100ml"},
+  ],
+  "豆制品": [
+    {name:"嫩豆腐", kcal:62, unit:"100g"}, {name:"老豆腐", kcal:81, unit:"100g"},
+    {name:"豆腐干", kcal:140, unit:"100g"}, {name:"腐竹", kcal:459, unit:"100g"},
+    {name:"毛豆", kcal:131, unit:"100g"}, {name:"黄豆", kcal:390, unit:"100g"},
+    {name:"豆浆", kcal:31, unit:"100ml"}, {name:"千张", kcal:260, unit:"100g"},
+  ],
+  "饮品": [
+    {name:"白开水", kcal:0, unit:"杯"}, {name:"美式咖啡", kcal:3, unit:"杯"},
+    {name:"拿铁", kcal:150, unit:"杯"}, {name:"奶茶", kcal:350, unit:"杯"},
+    {name:"可乐", kcal:43, unit:"100ml"}, {name:"果汁", kcal:45, unit:"100ml"},
+    {name:"绿茶", kcal:1, unit:"杯"}, {name:"啤酒", kcal:43, unit:"100ml"},
+    {name:"红酒", kcal:85, unit:"100ml"}, {name:"豆奶", kcal:43, unit:"100ml"},
+  ],
+  "零食": [
+    {name:"巧克力", kcal:544, unit:"100g"}, {name:"薯片", kcal:536, unit:"100g"},
+    {name:"饼干", kcal:433, unit:"100g"}, {name:"坚果(混合)", kcal:553, unit:"100g"},
+    {name:"核桃", kcal:627, unit:"100g"}, {name:"杏仁", kcal:578, unit:"100g"},
+    {name:"腰果", kcal:553, unit:"100g"}, {name:"花生", kcal:567, unit:"100g"},
+    {name:"蛋糕", kcal:347, unit:"100g"}, {name:"面包", kcal:266, unit:"100g"},
+    {name:"冰淇淋", kcal:207, unit:"100g"}, {name:"糖果", kcal:400, unit:"100g"},
+    {name:"辣条", kcal:420, unit:"100g"}, {name:"海苔", kcal:177, unit:"100g"},
+  ],
+  "调味": [
+    {name:"食用油", kcal:899, unit:"100g"}, {name:"食盐", kcal:0, unit:"g"},
+    {name:"酱油", kcal:53, unit:"100ml"}, {name:"醋", kcal:30, unit:"100ml"},
+    {name:"蜂蜜", kcal:321, unit:"100g"}, {name:"白糖", kcal:387, unit:"100g"},
+    {name:"番茄酱", kcal:83, unit:"100g"}, {name:"辣酱", kcal:75, unit:"100g"},
+  ],
+  "速食": [
+    {name:"方便面", kcal:462, unit:"100g"}, {name:"速冻水饺", kcal:240, unit:"100g"},
+    {name:"速冻馄饨", kcal:185, unit:"100g"}, {name:"自热米饭", kcal:350, unit:"份"},
+    {name:"速食汤", kcal:45, unit:"份"}, {name:"速食粥", kcal:120, unit:"份"},
+  ],
+  "其他": [
+    {name:"白米饭(碗)", kcal:232, unit:"碗"}, {name:"面条(碗)", kcal:330, unit:"碗"},
+    {name:"炒饭(份)", kcal:450, unit:"份"}, {name:"炒面(份)", kcal:400, unit:"份"},
+    {name:"凉皮(份)", kcal:300, unit:"份"}, {name:"麻辣烫(份)", kcal:350, unit:"份"},
+    {name:"火锅(份)", kcal:600, unit:"份"}, {name:"烧烤(份)", kcal:500, unit:"份"},
+  ],
+};
+
 /* 工资字段列表 */
 const SALARY_HEADERS = ["职务工资","级别工资","岗位工资","技术等级职务工资","见习期人员工资","生活性补贴","工作性津贴（职务）","工作性津贴（工作）","工作性津贴（领导）","工作性津贴（年度）","实际工作性津贴","绩效津贴","区县保留津贴","通讯工具补助","独生子女费","信访津贴","密码津贴","纪检补贴","物业补贴","采暖补贴","第十三月工资","平安建设奖","绩效考核奖励","年假未休补贴","优秀公务员奖励","公务交通补贴","上下班交通补贴","补发工资","应发合计","住房公积金","医疗保险","养老保险","职业年金","所得税","扣发合计","实发工资"];
 
@@ -555,7 +722,7 @@ const DEFAULTS = {
   periods: window.__SEED_DATA__.periods.map(p=>({...p})),
   settings:{
     api:{endpoint:"https://api.openai.com/v1/chat/completions", key:"", model:"gpt-4o-mini", enabled:false},
-    modules:{weight:"cumulative", measure:"cumulative", diet:"daily", exercise:"daily", balance:"cumulative"}, period:90,
+    modules:{weight:"cumulative", measure:"cumulative", diet:"daily", exercise:"daily", balance:"cumulative"}, period:90, dietGoal:1600,
     navOpen:{fitness:false, period:false, salary:false},
     gistToken:"", gistId:"", gistLastSync:null, gistLastSyncStatus:"", gistDebug:"",
     spaces: {
@@ -615,6 +782,19 @@ function migrateData(data){
       data.stock.forEach(item => { if(item.dismissedExpiry === undefined) item.dismissedExpiry = false; });
     }
     v = 2;
+  }
+  // v2→v3: 旧饮食数据添加 meal 字段（按时间分配meal）
+  if(v < 3){
+    if(Array.isArray(data.diet)){
+      data.diet.forEach(d => {
+        if(Array.isArray(d.items)){
+          d.items.forEach(item => {
+            if(!item.meal) item.meal = "lunch";
+          });
+        }
+      });
+    }
+    v = 3;
   }
   // 后续迁移在此追加，逐级递增版本号
   data.meta = data.meta || {};
@@ -948,51 +1128,137 @@ function pageMeasure(){
 
 /* ============== 页面：饮食 ============== */
 function pageDiet(){
-  const mode = state.settings.modules.diet;
-  const daily = mode==="daily";
-  const apiOn = state.settings.api.enabled && state.settings.api.key;
+  const today = todayStr();
+  const dw = getDay(state.diet, today);
+  const items = dw ? dw.items : [];
+  const goal = state.settings.dietGoal || 1600;
+  const totalKcal = items.reduce((s,x) => s + num(x.kcal), 0);
+  const pct = Math.min(100, Math.round(totalKcal / goal * 100));
+  const remain = Math.max(0, goal - totalKcal);
+  const overshoot = totalKcal > goal;
+
+  // 按餐时段分组
+  const grouped = {};
+  MEALS.forEach(m => { grouped[m.id] = []; });
+  items.forEach(x => {
+    const mealId = x.meal || "lunch";
+    if(!grouped[mealId]) grouped[mealId] = [];
+    grouped[mealId].push(x);
+  });
+
+  // 顶部摘要卡片
   let body = `
-    <div class="card sky">
-      <h2>记录饮食 <span class="sub">模式：${daily?"每日记录":"累计记录"}</span></h2>
-      <form id="dietForm">
-        <div class="row">
-          <div class="field" style="flex:2"><label>食物名称</label><input type="text" name="name" placeholder="如 鸡胸肉 150g" required></div>
-          <div class="field" style="flex:1"><label>热量 (kcal)</label><input type="number" step="1" name="kcal" placeholder="0" required></div>
+    <div class="card">
+      <div class="diet-summary">
+        <div class="diet-summary-left">
+          <div class="diet-date">${today}</div>
+          <div class="diet-kcal"><span class="num">${round(totalKcal)}</span> <span class="muted">/ ${goal} kcal</span></div>
+          <div class="diet-remain ${overshoot?'over':''}">${overshoot ? '超了 '+round(totalKcal-goal)+' kcal' : '剩余 '+remain+' kcal'}</div>
         </div>
-        <div style="text-align:center"><button class="btn primary" type="submit">添加</button></div>
-      </form>
-      <div style="margin-top:14px;border-top:1px solid var(--line);padding-top:14px">
-        <div class="field"><label>拍照 / 上传图片自动识别（可选）</label>
-          <label class="btn ghost sm" for="dietImg">选择图片（拍照或相册）</label>
-          <input type="file" id="dietImg" accept="image/*" style="display:none">
+        <div class="diet-summary-right">
+          <div class="diet-progress-wrap">
+            <div class="diet-progress-bar">
+              <div class="diet-progress-fill ${overshoot?'over':pct>80?'warn':''}" style="width:${Math.min(pct,100)}%"></div>
+            </div>
+            <div class="diet-progress-label">${pct}%</div>
+          </div>
         </div>
-        <div id="dietPreview"></div>
-        <button class="btn ghost sm" id="aiRecognize" ${apiOn?"":"disabled"}>${apiOn?"用AI识别图中食物":"请在设置中开启AI识别"}</button>
-        <div class="hint">开启后，照片会发送到你所配置的视觉接口以识别食物与热量。接口不通或关闭时，可手动输入。</div>
       </div>
     </div>`;
 
-  let listHtml="";
-  if(daily){
-    const dw=getDay(state.diet, todayStr());
-    const items = dw?dw.items:[];
-    const sum = items.reduce((s,x)=>s+num(x.kcal),0);
-    listHtml = `<div class="card"><h2>今日饮食 <span class="sub">小计 ${round(sum)} kcal</span></h2>
-      ${items.length? `<table><thead><tr><th>食物</th><th>热量</th><th></th></tr></thead><tbody>
-        ${items.map((x,i)=>`<tr><td>${esc(x.name)}${x.img?`<img src="${x.img}" style="width:28px;height:28px;border-radius:6px;object-fit:cover;margin-left:4px;vertical-align:middle;cursor:pointer" onclick="window.open(this.src)">`:""}</td><td class="num">${round(num(x.kcal))} kcal</td><td><button class="del" data-del-diet="${i}">×</button></td></tr>`).join("")}
-      </tbody></table>` : '<div class="empty"><div class="sym">🍽️</div>今天还没吃记录</div>'}
-      <div style="text-align:center;margin-top:14px"><button class="btn danger sm" id="resetDietToday">重置今日</button></div>
-    </div>`;
-  }else{
-    const all = filterPeriod(state.diet.slice().sort((a,b)=>b.date<a.date?-1:b.date>a.date?1:0), state.settings.period||90);
-    let total=0;
-    listHtml = `<div class="card"><h2>饮食记录 <span class="sub">${all.length} 天</span></h2>
-      ${periodSeg()}
-      ${all.length? all.map(d=>{ const s=d.items.reduce((a,x)=>a+num(x.kcal),0); total+=s; return `<div style="margin-bottom:10px"><div class="muted" style="font-size:12px;margin-bottom:4px">${d.date} · ${round(s)} kcal</div>
-        <table><tbody>${d.items.map(x=>`<tr><td>${esc(x.name)}</td><td class="muted num">${round(num(x.kcal))} kcal</td></tr>`).join("")}</tbody></table></div>`; }).join("") + `<div class="muted" style="margin-top:8px">合计摄入约 <span class="num">${round(total)}</span> kcal</div>` : '<div class="empty"><div class="sym">🍃</div>该周期内还没有记录</div>'}
-    </div>`;
-  }
-  return body + listHtml;
+  // 各餐时段
+  MEALS.forEach(m => {
+    const mealItems = grouped[m.id] || [];
+    const mealSum = mealItems.reduce((s,x) => s + num(x.kcal), 0);
+    body += `<div class="card diet-meal" data-meal="${m.id}">
+      <div class="diet-meal-head">
+        <span class="diet-meal-name">${m.icon} ${m.name}</span>
+        <span class="diet-meal-kcal">${round(mealSum)} kcal</span>
+      </div>`;
+    if(mealItems.length){
+      body += `<table class="diet-meal-table"><tbody>`;
+      mealItems.forEach((x, idx) => {
+        const globalIdx = items.indexOf(x);
+        body += `<tr>
+          <td class="diet-food-name">${esc(x.name)}${x.qty ? ' <span class="muted">×'+x.qty+'</span>' : ''}</td>
+          <td class="diet-food-kcal">${round(num(x.kcal))} <span class="muted">kcal</span></td>
+          <td class="diet-food-del"><button class="del" data-del-diet="${globalIdx}">×</button></td>
+        </tr>`;
+      });
+      body += `</tbody></table>`;
+    } else {
+      body += `<div class="diet-empty-meal muted">暂未记录</div>`;
+    }
+    body += `<div class="diet-meal-add"><button class="btn ghost sm diet-add-btn" data-meal="${m.id}">+ 添加食物</button></div>`;
+    body += `</div>`;
+  });
+
+  // 底部操作
+  body += `<div class="card" style="text-align:center">
+    <button class="btn danger sm" id="resetDietToday">重置今日</button>
+  </div>`;
+
+  // 食物选择弹窗（隐藏）
+  body += foodPickerHTML();
+
+  return body;
+}
+
+/* 食物选择弹窗 HTML */
+function foodPickerHTML(){
+  let catTabs = '<button class="fp-tab active" data-cat="all">全部</button>';
+  let catPanels = '<div class="fp-panel active" data-cat="all">';
+  const allFoods = [];
+  Object.keys(FOOD_DB).forEach(cat => {
+    catTabs += `<button class="fp-tab" data-cat="${esc(cat)}">${esc(cat)}</button>`;
+    catPanels += `<div class="fp-panel" data-cat="${esc(cat)}">`;
+    FOOD_DB[cat].forEach(f => {
+      allFoods.push(f);
+      catPanels += `<div class="fp-item" data-name="${esc(f.name)}" data-kcal="${f.kcal}" data-unit="${esc(f.unit)}">${esc(f.name)} <span class="muted">${f.kcal} kcal/${f.unit}</span></div>`;
+    });
+    catPanels += `</div>`;
+  });
+  catPanels += `</div>`;
+
+  // 全部面板也填充
+  let allPanel = '';
+  allFoods.forEach(f => {
+    allPanel += `<div class="fp-item" data-name="${esc(f.name)}" data-kcal="${f.kcal}" data-unit="${esc(f.unit)}">${esc(f.name)} <span class="muted">${f.kcal} kcal/${f.unit}</span></div>`;
+  });
+
+  return `<div id="foodPickerOverlay" class="fp-overlay" style="display:none">
+    <div class="fp-modal">
+      <div class="fp-header">
+        <span class="fp-title">选择食物</span>
+        <button class="del" id="fpClose">×</button>
+      </div>
+      <div class="fp-search-wrap">
+        <input type="text" id="fpSearch" placeholder="搜索食物..." autocomplete="off">
+      </div>
+      <div class="fp-tabs" id="fpTabs">${catTabs}</div>
+      <div class="fp-body" id="fpBody">
+        <div class="fp-panel active" data-cat="all">${allPanel}</div>
+        ${catPanels.replace('<div class="fp-panel active" data-cat="all">','')}
+      </div>
+      <div class="fp-manual">
+        <div class="fp-manual-row">
+          <input type="text" id="fpManualName" placeholder="食物名称" style="flex:2">
+          <input type="number" id="fpManualKcal" placeholder="热量 kcal" style="flex:1">
+          <input type="number" id="fpManualQty" placeholder="份数" value="1" style="flex:0.5" min="0.5" step="0.5">
+        </div>
+        <div style="text-align:center;margin-top:8px">
+          <button class="btn primary sm" id="fpManualAdd">手动添加</button>
+        </div>
+      </div>
+      <div class="fp-ai" style="border-top:1px solid var(--line);padding-top:10px;margin-top:10px">
+        <div class="field" style="margin-bottom:6px"><label class="btn ghost sm" for="fpImgInput">拍照识别</label>
+          <input type="file" id="fpImgInput" accept="image/*" style="display:none">
+        </div>
+        <div id="fpPreview"></div>
+        <button class="btn ghost sm" id="fpAiRecognize" ${state.settings.api.enabled&&state.settings.api.key?"":"disabled"}>${state.settings.api.enabled&&state.settings.api.key?"用AI识别图中食物":"请先在设置中开启AI识别"}</button>
+      </div>
+    </div>
+  </div>`;
 }
 
 /* ============== 页面：运动 ============== */
@@ -1333,6 +1599,12 @@ function pageSettings(){
       ${modeRow("exercise","运动")}
       ${modeRow("balance","热量平衡（仅影响概览口径）")}
       <div class="hint">「每日」：以今天为主视图，可一键重置今日；「累计」：持续追加并显示运行总量。</div>
+    </div>
+
+    <div class="card sage">
+      <h2>饮食热量目标</h2>
+      <div class="field"><label>每日热量目标 (kcal)</label><input type="number" id="dietGoal" value="${s.dietGoal||1600}" step="50" min="800" max="5000"></div>
+      <div style="text-align:center"><button class="btn primary sm" id="saveDietGoal">保存</button></div>
     </div>
 
     <div class="card sky">
@@ -1726,47 +1998,115 @@ function bindMeasure(){
 }
 
 function bindDiet(){
-  const f=document.getElementById("dietForm");
-  if(!f) return;
-  f.addEventListener("submit", e=>{
-    e.preventDefault();
-    const name=f.name.value.trim(), kcal=num(f.kcal.value);
-    if(!name||!kcal){ toast("请填写名称和热量"); return; }
-    const d=ensureDay(state.diet, todayStr());
-    d.items.push({name, kcal, img:null});
-    save(); toast("已添加"); navigate("diet");
-  });
+  // 删除旧版食物
   document.querySelectorAll("[data-del-diet]").forEach(b=>b.addEventListener("click",()=>{
-    const d=getDay(state.diet, todayStr()); if(d) d.items.splice(num(b.dataset.delDiet),1); save(); navigate("diet");
+    const d=getDay(state.diet, todayStr());
+    if(d){ d.items.splice(num(b.dataset.delDiet),1); save(); navigate("diet"); }
   }));
+
+  // 重置今日
   const rbtn=document.getElementById("resetDietToday");
   if(rbtn) rbtn.addEventListener("click",()=>{
     if(confirm("确定清空今日饮食记录？")){ const d=getDay(state.diet, todayStr()); if(d) d.items=[]; save(); navigate("diet"); }
   });
-  const fileInput=document.getElementById("dietImg");
-  const aiBtn=document.getElementById("aiRecognize");
-  const preview=document.getElementById("dietPreview");
-  let pendingImg=null;
-  if(fileInput) fileInput.addEventListener("change", ()=>{
-    const file=fileInput.files[0]; if(!file) return;
-    const reader=new FileReader();
-    reader.onload=()=>{ pendingImg=reader.result; preview.innerHTML=`<img class="preview-img" src="${pendingImg}">`; };
+
+  // 各餐时段的「添加食物」按钮
+  let currentMeal = "lunch";
+  document.querySelectorAll(".diet-add-btn").forEach(btn => {
+    btn.addEventListener("click", ()=>{
+      currentMeal = btn.dataset.meal || "lunch";
+      document.getElementById("foodPickerOverlay").style.display = "flex";
+    });
+  });
+
+  // 食物选择弹窗
+  const overlay = document.getElementById("foodPickerOverlay");
+  if(!overlay) return;
+
+  // 关闭弹窗
+  document.getElementById("fpClose").addEventListener("click", ()=>{ overlay.style.display = "none"; });
+  overlay.addEventListener("click", e=>{ if(e.target===overlay) overlay.style.display = "none"; });
+
+  // 分类标签切换
+  document.querySelectorAll(".fp-tab").forEach(tab => {
+    tab.addEventListener("click", ()=>{
+      document.querySelectorAll(".fp-tab").forEach(t => t.classList.remove("active"));
+      tab.classList.add("active");
+      const cat = tab.dataset.cat;
+      document.querySelectorAll(".fp-panel").forEach(p => p.classList.remove("active"));
+      document.querySelectorAll(`.fp-panel[data-cat="${cat}"]`).forEach(p => p.classList.add("active"));
+    });
+  });
+
+  // 搜索食物
+  const searchInput = document.getElementById("fpSearch");
+  if(searchInput) searchInput.addEventListener("input", ()=>{
+    const q = searchInput.value.trim().toLowerCase();
+    document.querySelectorAll(".fp-item").forEach(item => {
+      const name = item.dataset.name.toLowerCase();
+      item.style.display = (!q || name.includes(q)) ? "" : "none";
+    });
+    // 搜索时显示全部面板
+    if(q){
+      document.querySelectorAll(".fp-tab").forEach(t => t.classList.remove("active"));
+      document.querySelectorAll(".fp-panel").forEach(p => p.classList.remove("active"));
+      document.querySelectorAll('.fp-panel[data-cat="all"]').forEach(p => p.classList.add("active"));
+    }
+  });
+
+  // 从食物库选择
+  document.querySelectorAll(".fp-item").forEach(item => {
+    item.addEventListener("click", ()=>{
+      const name = item.dataset.name;
+      const kcal = num(item.dataset.kcal);
+      const unit = item.dataset.unit || "份";
+      const d = ensureDay(state.diet, todayStr());
+      d.items.push({name, kcal, meal: currentMeal, unit, qty: 1, img: null});
+      save(); overlay.style.display = "none"; toast("已添加 "+name); navigate("diet");
+    });
+  });
+
+  // 手动添加
+  const manualBtn = document.getElementById("fpManualAdd");
+  if(manualBtn) manualBtn.addEventListener("click", ()=>{
+    const name = document.getElementById("fpManualName").value.trim();
+    const kcal = num(document.getElementById("fpManualKcal").value);
+    const qty = num(document.getElementById("fpManualQty").value) || 1;
+    if(!name || !kcal){ toast("请填写食物名称和热量"); return; }
+    const d = ensureDay(state.diet, todayStr());
+    d.items.push({name, kcal: Math.round(kcal * qty), meal: currentMeal, unit: "份", qty, img: null});
+    document.getElementById("fpManualName").value = "";
+    document.getElementById("fpManualKcal").value = "";
+    save(); overlay.style.display = "none"; toast("已添加"); navigate("diet");
+  });
+
+  // AI拍照识别（弹窗内）
+  const fpImgInput = document.getElementById("fpImgInput");
+  const fpPreview = document.getElementById("fpPreview");
+  const fpAiBtn = document.getElementById("fpAiRecognize");
+  let pendingImg = null;
+  if(fpImgInput) fpImgInput.addEventListener("change", ()=>{
+    const file = fpImgInput.files[0]; if(!file) return;
+    const reader = new FileReader();
+    reader.onload = ()=>{ pendingImg = reader.result; fpPreview.innerHTML = `<img class="preview-img" src="${pendingImg}" style="max-width:120px;border-radius:8px;margin-top:6px">`; };
     reader.readAsDataURL(file);
   });
-  if(aiBtn) aiBtn.addEventListener("click", async ()=>{
+  if(fpAiBtn) fpAiBtn.addEventListener("click", async ()=>{
     if(!pendingImg){ toast("请先选择图片"); return; }
     if(!(state.settings.api.enabled && state.settings.api.key)){ toast("请先在设置中开启AI识别"); return; }
-    aiBtn.disabled=true; aiBtn.textContent="识别中…";
+    fpAiBtn.disabled = true; fpAiBtn.textContent = "识别中…";
     try{
-      const foods=await recognizeFood(pendingImg);
+      const foods = await recognizeFood(pendingImg);
       if(!foods || !foods.length){ toast("未识别到食物，请手动输入"); }
       else{
-        const d=ensureDay(state.diet, todayStr());
-        foods.forEach(fx=>{ if(fx && fx.name) d.items.push({name:String(fx.name), kcal:num(fx.kcal), img:pendingImg}); });
-        save(); toast("已识别并加入 "+foods.length+" 项"); navigate("diet");
+        const d = ensureDay(state.diet, todayStr());
+        foods.forEach(fx => {
+          if(fx && fx.name) d.items.push({name:String(fx.name), kcal:num(fx.kcal), meal: currentMeal, img: pendingImg});
+        });
+        save(); overlay.style.display = "none"; toast("已识别并加入 "+foods.length+" 项"); navigate("diet");
       }
     }catch(err){ toast("识别失败：" + err.message); }
-    finally{ aiBtn.disabled=false; aiBtn.textContent="用AI识别图中食物"; }
+    finally{ fpAiBtn.disabled = false; fpAiBtn.textContent = "用AI识别图中食物"; }
   });
 }
 
@@ -1948,6 +2288,11 @@ function bindSettings(){
     state.settings.api.key=document.getElementById("apiKey").value.trim();
     state.settings.api.enabled=document.getElementById("apiEnabled").checked;
     save(); toast("接口配置已保存");
+  });
+  const sdg=document.getElementById("saveDietGoal");
+  if(sdg) sdg.addEventListener("click",()=>{
+    const v=parseInt(document.getElementById("dietGoal").value);
+    if(v>0){ state.settings.dietGoal=v; save(); toast("热量目标已保存"); }
   });
   const cp=document.getElementById("clearPeriods");
   if(cp) cp.addEventListener("click",()=>{
