@@ -337,7 +337,9 @@
   .cal-head button:hover{background:#fff;border-color:var(--gold);}
   .cal-head .btn{width:auto;padding:5px 12px;font-size:12px;white-space:nowrap;height:auto;}
   .cal-head select{border:1px solid var(--glass-border);border-radius:var(--radius-sm);padding:6px 8px;background:rgba(255,255,255,.6);font-size:13px;color:var(--ink);}
-  .cal-head .custom-picker{width:auto;flex:initial;padding:6px 28px 6px 8px;font-size:13px;border-radius:var(--radius-sm);background:rgba(255,255,255,.6);border:1px solid var(--glass-border);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath fill='%23A89B8C' d='M2.5 3.5l2.5 2.5 2.5-2.5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;background-size:10px;}
+  .cal-head .custom-picker{position:relative;width:auto;flex:initial;padding:6px 14px;font-size:13px;border-radius:var(--radius-sm);background:rgba(255,255,255,.6);border:1px solid var(--glass-border);}
+  .cal-head .custom-picker::after{content:"";position:absolute;right:6px;top:50%;transform:translateY(-50%);width:10px;height:10px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath fill='%23A89B8C' d='M2.5 3.5l2.5 2.5 2.5-2.5'/%3E%3C/svg%3E");background-size:10px;background-repeat:no-repeat;pointer-events:none;}
+  .cal-head .custom-picker .cp-value{text-align:center;padding-right:10px;}
   .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;}
   .cal-dow{text-align:center;font-size:11px;color:var(--ink-muted);padding:5px 0;font-weight:600;}
   .cal-cell{
@@ -473,8 +475,9 @@
     .cal-dow{font-size:10px;}
     .cal-head{gap:4px;}
     .cal-head button{min-width:28px;height:28px;font-size:13px;}
-    .cal-head .custom-picker{min-width:72px;padding:5px 24px 5px 4px;font-size:12px;}
-    .cal-head .custom-picker .cp-value{overflow:visible;text-overflow:clip;}
+    .cal-head .custom-picker{min-width:72px;padding:5px 12px;font-size:12px;}
+    .cal-head .custom-picker::after{right:4px;}
+    .cal-head .custom-picker .cp-value{overflow:visible;text-overflow:clip;padding-right:8px;}
     .cal-head .btn{padding:4px 8px;font-size:11px;}
 
     /* 年视图在窄屏 */
