@@ -417,7 +417,7 @@
     /* 日历在窄屏适当缩小 */
     .cal-cell{font-size:12px;border-radius:8px;}
     .cal-dow{font-size:10px;}
-    .cal-head .custom-picker{min-width:56px;text-align:center;}
+    .cal-head .custom-picker{min-width:72px;text-align:center;}
 
     /* 年视图在窄屏 */
     .months{grid-template-columns:repeat(3,1fr);gap:6px;}
@@ -1629,8 +1629,8 @@ function pageYearView(){
     const isCur = y===new Date().getFullYear();
     blocks.push(`<div class="year-block${isCur?" cur":""}"><div class="year-title">${y}年</div><div class="months">${months.join("")}</div></div>`);
   }
-  return `<div class="card" style="padding:0;display:flex;flex-direction:column;max-height:calc(100vh - 70px)">
-    <div class="cal-head" style="position:sticky;top:0;z-index:5;padding:12px 16px;margin:0;background:var(--glass);border-bottom:1px solid var(--glass-border);border-radius:var(--radius-lg) var(--radius-lg) 0 0;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)">
+  return `<div class="card" style="padding:0;display:flex;flex-direction:column;max-height:calc(100vh - 100px)">
+    <div class="cal-head" style="flex-shrink:0;padding:12px 16px;margin:0;background:var(--glass);border-bottom:1px solid var(--glass-border);border-radius:var(--radius-lg) var(--radius-lg) 0 0;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)">
       <span class="cal-title">全部历史经期</span>
       <button class="btn ghost sm" id="backMonth" style="margin-left:auto">返回月历</button>
     </div>
@@ -1655,8 +1655,8 @@ function miniCalHtml(y, m){
 /* ---- 历史记录完整页面 ---- */
 function pageHistoryView(){
   const ps = sortedPeriods();
-  return `<div class="card" style="padding:0;display:flex;flex-direction:column;max-height:calc(100vh - 70px)">
-    <div class="cal-head" style="position:sticky;top:0;z-index:5;padding:12px 16px;margin:0;background:var(--glass);border-bottom:1px solid var(--glass-border);border-radius:var(--radius-lg) var(--radius-lg) 0 0;justify-content:flex-start;gap:10px;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)">
+  return `<div class="card" style="padding:0;display:flex;flex-direction:column;max-height:calc(100vh - 100px)">
+    <div class="cal-head" style="flex-shrink:0;padding:12px 16px;margin:0;background:var(--glass);border-bottom:1px solid var(--glass-border);border-radius:var(--radius-lg) var(--radius-lg) 0 0;justify-content:flex-start;gap:10px;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)">
       <button class="btn ghost sm" id="backPeriod">← 返回</button>
       <span class="cal-title" style="min-width:auto;font-size:15px">全部历史记录（共 ${ps.length} 次）</span>
     </div>
@@ -1685,6 +1685,9 @@ function refPeriod(){
     page.classList.remove("page-enter");
     void page.offsetWidth;
     page.classList.add("page-enter");
+    // 重置主内容区滚动位置，确保头部可见
+    const mainEl = document.querySelector(".main");
+    if(mainEl) mainEl.scrollTop = 0;
   }
 }
 
@@ -2011,10 +2014,9 @@ function navigate(id, params){
     document.querySelectorAll(".nav-leaf").forEach(b=>b.classList.toggle("active", b.dataset.id===id));
   }
   closeNav();
-  window.scrollTo(0,0);
-  // 重置内容区滚动位置
-  const contentEl = pageEl.querySelector(".content");
-  if(contentEl) contentEl.scrollTop = 0;
+  // 重置主内容区滚动位置（.main 是实际滚动容器）
+  const mainEl = document.querySelector(".main");
+  if(mainEl) mainEl.scrollTop = 0;
 }
 function findGroupOf(id){
   for(const g of NAV_TREE){
