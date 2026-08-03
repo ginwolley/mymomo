@@ -248,6 +248,9 @@
     background:var(--gold);color:#fff;box-shadow:0 3px 10px rgba(54,209,201,.32);
   }
   .btn.gold:hover, .btn.primary:hover{background:var(--gold-dark);}
+  /* demo 风格：柔和青绿按钮（添加食物等次主操作） */
+  .btn.soft{background:var(--gold-soft);color:var(--gold-dark);box-shadow:none;}
+  .btn.soft:hover{background:#C8F1EC;}
   .btn.gold.ghost{background:transparent;color:var(--gold-dark);box-shadow:none;}
   .btn.gold.ghost:hover{background:var(--gold-soft);}
   .btn.money{background:var(--money);color:#fff;box-shadow:0 3px 10px rgba(201,162,39,.3);}
@@ -1377,7 +1380,7 @@ function pageDiet(){
     } else {
       body += `<div style="font-size:11.5px;color:var(--ink-muted);padding:4px 0 8px">暂未记录</div>`;
     }
-    body += `<div style="display:flex;justify-content:center;padding-top:6px"><button class="btn primary sm diet-add-btn" data-meal="${m.id}">+ 添加食物</button></div>`;
+    body += `<div style="display:flex;justify-content:center;padding-top:6px"><button class="btn soft sm diet-add-btn" data-meal="${m.id}">+ 添加食物</button></div>`;
     body += `</div>`;
   });
 
