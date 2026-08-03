@@ -1280,7 +1280,7 @@ function pageDiet(){
       mealItems.forEach((x, idx) => {
         const globalIdx = items.indexOf(x);
         body += `<tr>
-          <td class="diet-food-name">${esc(x.name)}${x.qty ? ' <span class="muted">×'+x.qty+(x.unit||'g')+'</span>' : ''}</td>
+          <td class="diet-food-name">${esc(x.name)}${x.qty ? ' <span class="muted">×'+x.qty+(x.unit?x.unit.replace(/^\d+/,''):'g')+'</span>' : ''}</td>
           <td class="diet-food-kcal">${round(num(x.kcal))} <span class="muted">kcal</span></td>
           <td class="diet-food-del"><button class="del" data-del-diet="${globalIdx}">×</button></td>
         </tr>`;
@@ -2390,7 +2390,7 @@ function bindDietAdd(){
       const result = await recognizeDish(dish);
       if(result && result.name && result.kcal > 0){
         // 填入份量面板（每100g）
-        selectedFood = {name: result.name, kcal: result.kcal, unit: "100g"};
+        selectedFood = {name: result.name, kcal: result.kcal, unit: "g"};
         const panel = document.getElementById("foodDetailPanel");
         document.getElementById("fdName").textContent = result.name;
         document.getElementById("fdBase").textContent = `${result.kcal} kcal / 100g`;
@@ -2433,7 +2433,7 @@ function bindDietAdd(){
       }
       const matches = historyItems.filter(h => h.name.toLowerCase().includes(q));
       if(matches.length){
-        historyList.innerHTML = matches.map(h => `<div class="fh-item" data-name="${esc(h.name)}" data-kcal="${h.kcal}" data-qty="${h.qty}" data-unit="${esc(h.unit)}">${esc(h.name)} <span class="muted">${h.kcal} kcal / ${h.unit}</span></div>`).join("");
+        historyList.innerHTML = matches.map(h => `<div class="fh-item" data-name="${esc(h.name)}" data-kcal="${h.kcal}" data-qty="${h.qty}" data-unit="${esc(h.unit)}">${esc(h.name)} <span class="muted">${h.kcal} kcal${h.unit ? ' / '+h.unit.replace(/^\d+/,'') : ''}</span></div>`).join("");
         historyList.style.display = "block";
       } else {
         historyList.style.display = "none";
