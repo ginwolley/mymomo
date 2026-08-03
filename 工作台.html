@@ -1066,9 +1066,9 @@ function inPeriod(dateStr, days){
 }
 function filterPeriod(arr, days){ return arr.filter(d=> inPeriod(d.date, days)); }
 function periodSeg(){
-  const opts=[[7,"近一周"],[30,"近一月"],[90,"近三月"],[180,"近半年"],[0,"全部"]];
+  const opts=[[7,"近7天"],[30,"近30天"],[90,"近90天"],[0,"全部"]];
   const cur=state.settings.period||90;
-  return `<div class="seg period" style="margin-bottom:12px">`+opts.map(o=>`<button class="${cur===o[0]?"active":""}" data-d="${o[0]}">${o[1]}</button>`).join("")+`</div>`;
+  return `<div class="seg" style="margin-bottom:12px">`+opts.map(o=>`<button class="${cur===o[0]?"active":""}" data-d="${o[0]}">${o[1]}</button>`).join("")+`</div>`;
 }
 function salarySeg(active){
   const items = [{id:"salary-basic",label:"基本工资"},{id:"salary-housing",label:"房补"},{id:"salary-summary",label:"汇总"}];
@@ -1079,7 +1079,7 @@ function stockSeg(active){
   return `<div class="seg">${items.map(i=>`<button class="${i.id===active?'active':''}" onclick="navigate('${i.id}')">${i.label}</button>`).join('')}</div>`;
 }
 function bindPeriod(){
-  document.querySelectorAll(".period button").forEach(b=>b.addEventListener("click",()=>{
+  document.querySelectorAll("[data-d]").forEach(b=>b.addEventListener("click",()=>{
     state.settings.period=Number(b.dataset.d); save(); navigate(currentPage);
   }));
 }
@@ -1455,23 +1455,21 @@ function pageExercise(){
   const mode = state.settings.modules.exercise;
   const daily = mode==="daily";
   const w = weightForCalc();
-  const optGroups = EX_TYPES.map(g=>`<optgroup label="${g.g}">${g.items.map(it=>`<option value="${esc(it[0])}|${it[1]}">${it[0]}（${it[1]} MET）</option>`).join("")}</optgroup>`).join("")
-    + `<optgroup label="自定义"><option value="custom">自定义（选强度）</option></optgroup>`;
+  // 构建数据列表供输入提示
+  const allExNames = EX_TYPES.flatMap(g=>g.items.map(it=>it[0]));
+  const datalistOpts = allExNames.map(n=>`<option value="${esc(n)}">`).join("");
 
   let body = `
     <div class="card">
       <h2>记录运动</h2>
       <form id="exerciseForm" class="ex-form">
-        <div class="row">
-          <div class="field" style="flex:2"><label>运动方式</label><select name="type">${optGroups}</select></div>
-          <div class="field" id="intensityField" style="flex:1;display:none"><label>强度</label><select name="intensity"><option>低</option><option selected>中</option><option>高</option></select></div>
-          <div class="field" style="flex:1"><label>时长 (分钟)</label><input type="number" step="1" name="duration" placeholder="30" required></div>
-        </div>
-        <div class="field"><label>备注</label><input type="text" name="note" placeholder="如 跟练第2天"></div>
-        <div class="muted" id="exPreview" style="margin-bottom:10px"></div>
+        <div class="field"><label>运动</label><input type="text" name="type" list="exList" placeholder="如 慢跑" value="慢跑" style="flex:1"></div>
+        <datalist id="exList">${datalistOpts}</datalist>
+        <div class="field"><label>时长</label><input type="number" name="duration" step="1" placeholder="30" value="30" style="flex:1" required></div>
+        <div class="field"><label>备注</label><input type="text" name="note" placeholder="可选" style="flex:1"></div>
+        <div class="hint" id="exPreview" style="margin:4px 0 10px"></div>
         <div class="center"><button class="btn primary" type="submit">保存</button></div>
       </form>
-      <div class="hint">热量：MET × 体重(${round(w)}kg) × 时长。${state.weight.length?"":"（暂无体重，按60kg估算）"}</div>
     </div>`;
 
   let listHtml="";
@@ -1526,23 +1524,30 @@ function pageBalance(){
     const out=e?e.items.reduce((s,x)=>s+num(x.kcal),0):0;
     inSeries.push(round(inn)); outSeries.push(round(out)); netSeries.push(round(inn-out));
   });
-  const chart = lineChart([
-    {color:"var(--gold-dark)", label:"摄入", data:inSeries},
-    {color:"var(--sage)", label:"消耗", data:outSeries},
-  ], arr);
-  const legend=`<div class="legend"><span><i style="background:var(--gold-dark)"></i>摄入</span><span><i style="background:var(--sage)"></i>消耗</span></div>`;
-
   const totalIn=inSeries.reduce((a,b)=>a+b,0), totalOut=outSeries.reduce((a,b)=>a+b,0);
+  const chart = lineChart([
+    {color:"var(--primary)", label:"摄入", data:inSeries},
+    {color:"var(--sky)", label:"消耗", data:outSeries},
+  ], arr);
+  const legend=`<span style="display:inline-flex;align-items:center;gap:8px;margin-left:auto">
+    <span style="display:inline-flex;align-items:center;gap:3px"><i class="dot-badge" style="background:var(--primary)"></i>摄入</span>
+    <span style="display:inline-flex;align-items:center;gap:3px"><i class="dot-badge" style="background:var(--sky)"></i>消耗</span>
+  </span>`;
+
   let body=`
     <div class="row-stats" style="margin-bottom:14px">
       <div class="stat sky"><div class="label">摄入</div><div class="value">${round(totalIn)}<small>kcal</small></div></div>
       <div class="stat sage"><div class="label">消耗</div><div class="value">${round(totalOut)}<small>kcal</small></div></div>
-      <div class="stat accent"><div class="label">净平衡</div><div class="value">${round(totalIn-totalOut)}<small>kcal</small></div></div>
+      <div class="stat" style="--stat-color:var(--primary-dark)"><div class="label">净平衡</div><div class="value" style="color:var(--primary-dark)">${round(totalIn-totalOut)}<small>kcal</small></div></div>
     </div>
-    ${periodSeg()}
     <div class="card">
-      <h2>每日摄入 vs 消耗（${pLabel}）</h2>${chart}${legend}
-      <div class="hint">净平衡 = 摄入 − 消耗。正值表示当天热量盈余，负值为缺口。</div>
+      <h2>近7天趋势${legend}</h2>
+      ${chart}
+      <div class="hint">${pLabel} · 摄入 ${round(totalIn)} kcal · 消耗 ${round(totalOut)} kcal · 净平衡 ${round(totalIn-totalOut)} kcal</div>
+    </div>
+    <div class="card">
+      <h2>周期筛选 <span class="sub">${pLabel}</span></h2>
+      ${periodSeg()}
     </div>`;
   return body;
 }
@@ -2677,38 +2682,49 @@ async function recognizeDish(dishName){
 function bindExercise(){
   const form=document.getElementById("exerciseForm");
   if(!form) return;
-  const typeSel=form.type;
-  const intField=document.getElementById("intensityField");
+  const typeInput = form.type;
   const preview=document.getElementById("exPreview");
-  function updatePreview(){
-    const val=typeSel.value;
-    intField.style.display = val==="custom" ? "block" : "none";
-    let met;
-    if(val==="custom"){ met=INTENSITY_MET[form.intensity.value]; }
-    else { met=parseFloat(val.split("|")[1])||0; }
-    const dur=num(form.duration.value);
-    const w=weightForCalc();
-    if(met && dur){ preview.textContent = `预计消耗约 ${round(met*w*dur/60)} kcal（${round(met)} MET × ${round(w)}kg × ${dur}分）`; }
-    else preview.textContent="";
+  // 通过输入文字自动匹配MET
+  function lookupMET(name){
+    name = name.trim();
+    for(const g of EX_TYPES){
+      for(const item of g.items){
+        if(item[0] === name) return item[1];
+      }
+    }
+    return null;
   }
-  typeSel.addEventListener("change", updatePreview);
-  form.intensity.addEventListener("change", updatePreview);
+  function updatePreview(){
+    const met = lookupMET(typeInput.value) || 5.0;
+    const dur = num(form.duration.value);
+    const w = weightForCalc();
+    if(dur && dur>0){
+      preview.textContent = `预计消耗约 ${round(met*w*dur/60)} kcal（${round(met)} MET × ${round(w)}kg × ${dur}分）`;
+    } else {
+      preview.textContent = "";
+    }
+  }
+  typeInput.addEventListener("input", updatePreview);
   form.duration.addEventListener("input", updatePreview);
 
   form.addEventListener("submit", e=>{
     e.preventDefault();
-    const val=typeSel.value;
-    let type, met;
-    if(val==="custom"){ type="自定义("+form.intensity.value+")"; met=INTENSITY_MET[form.intensity.value]; }
-    else { const p=val.split("|"); type=p[0]; met=parseFloat(p[1])||0; }
-    const duration=num(form.duration.value);
-    const w=weightForCalc();
-    if(!duration){ toast("请填写时长"); return; }
-    const kcal=round(met*w*duration/60);
-    const d=ensureDay(state.exercise, todayStr());
+    const type = typeInput.value.trim();
+    if(!type){ toast("请输入运动方式"); return; }
+    let met = lookupMET(type);
+    if(!met){
+      // 未匹配到，用默认MET=5.0
+      met = 5.0;
+    }
+    const duration = num(form.duration.value);
+    const w = weightForCalc();
+    if(!duration || duration<=0){ toast("请填写有效时长"); return; }
+    const kcal = round(met * w * duration / 60);
+    const d = ensureDay(state.exercise, todayStr());
     d.items.push({type, duration, kcal, note:form.note.value.trim()});
     save(); toast("已保存，消耗约 "+kcal+" kcal"); navigate("exercise");
   });
+  updatePreview();
   document.querySelectorAll("[data-del-ex]").forEach(b=>b.addEventListener("click",()=>{
     const d=getDay(state.exercise, todayStr()); if(d) d.items.splice(num(b.dataset.delEx),1); save(); navigate("exercise");
   }));
