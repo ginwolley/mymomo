@@ -1642,6 +1642,47 @@ let calView = null; // {y, m}
 let calMode = "month"; // month | year
 let historyMode = false; // month | history
 let selDate = null;   // 日历选中的日期
+
+/* 获取当前选中日期的经期记录状态 */
+function getPeriodUIState(selDate){
+  const sorted = sortedPeriods();
+  const latest = sorted.length > 0 ? sorted[sorted.length - 1] : null;
+  let showCame = false, showGone = false;
+  let isCame = false, isGone = false;
+  let editingPeriod = null;
+
+  if(!latest){
+    // 没有任何记录 → 显示"月经来了"
+    showCame = true;
+  } else {
+    const latestEnd = latest.end;
+    // 最近一次记录只有开始日没有结束日（或end===start），视为进行中
+    const isOngoing = !latestEnd || latestEnd === latest.start;
+    if(isOngoing){
+      editingPeriod = latest;
+      if(selDate === latest.start){
+        showCame = true;
+        isCame = true;
+      } else if(selDate > latest.start){
+        showGone = true;
+      } else {
+        // selDate < latest.start → 什么都不显示
+      }
+    } else {
+      // 所有经期已结束 → 检查是否在历史记录范围内
+      const period = sorted.find(p => selDate >= p.start && selDate <= p.end);
+      if(period){
+        editingPeriod = period;
+        showCame = true;
+        isCame = (selDate === period.start);
+      } else {
+        showCame = true;
+      }
+    }
+  }
+  return { showCame, showGone, isCame, isGone, editingPeriod };
+}
+
 function pagePeriod(){
   if(calMode === "year") return pageYearView();
   if(historyMode) return pageHistoryView();
@@ -1726,21 +1767,27 @@ function pagePeriod(){
     statHtml = `<div class="card"><div class="empty"><div class="sym">🌸</div>记录至少两次经期后才能统计</div></div>`;
   }
 
-  // 月经来了/走了（合并到一个卡片，使用 seg 分段控件，依据当前 selDate 状态高亮）
-  const isCame = state.periods.some(p => p.start === selDate);
-  const isGone = state.periods.some(p => p.end === selDate);
-  const recHtml = `<div class="card">
-    <h2 data-title="came">月经来了 <span class="sub">${selDate}</span></h2>
-    <div class="seg period" data-rec="came" style="margin-bottom:10px">
-      <button data-v="yes" class="${isCame?'active':''}">是</button>
-      <button data-v="no" class="${!isCame?'active':''}">否</button>
-    </div>
-    <h2 data-title="gone" style="margin-top:6px">月经走了 <span class="sub">${selDate}</span></h2>
+  // 月经来了/走了（根据当前选中日期状态条件渲染）
+  const ui = getPeriodUIState(selDate);
+  let recHtml = `<div class="card">`;
+  if(ui.showCame){
+    recHtml += `<h2 data-title="came">月经来了 <span class="sub">${selDate}</span></h2>
+    <div class="seg period" data-rec="came" style="margin-bottom:${ui.showGone?'10px':'0'}">
+      <button data-v="yes" class="${ui.isCame?'active':''}">是</button>
+      <button data-v="no" class="${!ui.isCame?'active':''}">否</button>
+    </div>`;
+  }
+  if(ui.showGone){
+    recHtml += `<h2 data-title="gone" style="margin-top:${ui.showCame?'6px':'0'}">月经走了 <span class="sub">${selDate}</span></h2>
     <div class="seg period" data-rec="gone" style="margin-bottom:0">
-      <button data-v="yes" class="${isGone?'active':''}">是</button>
-      <button data-v="no" class="${!isGone?'active':''}">否</button>
-    </div>
-  </div>`;
+      <button data-v="yes" class="${ui.isGone?'active':''}">是</button>
+      <button data-v="no" class="${!ui.isGone?'active':''}">否</button>
+    </div>`;
+  }
+  if(!ui.showCame && !ui.showGone){
+    recHtml += `<div class="empty" style="font-size:12px;color:var(--ink-muted);padding:8px 0">该日期无可操作记录</div>`;
+  }
+  recHtml += `</div>`;
 
   // 历史记录（demo 风格：居中展开按钮）
   const histHtml = `
@@ -3000,65 +3047,62 @@ function bindHistoryView(){
 }
 
 function bindPeriodPage(){
-  // 日历天点击：选中日期并局部更新，避免整页重绘闪烁
+  // 日历天点击：选中日期并刷新
   document.querySelectorAll("[data-date]").forEach(c=>c.addEventListener("click",()=>{
     selDate = c.dataset.date;
-    // 更新选中样式
-    document.querySelectorAll(".cal-cell.selected").forEach(el => el.classList.remove("selected"));
-    c.classList.add("selected");
-    // 更新"月经来了 / 月经走了"标题中的日期显示
-    const cameTitle = document.querySelector("[data-title='came']");
-    if(cameTitle) cameTitle.innerHTML = `月经来了 <span class="sub">${selDate}</span>`;
-    const goneTitle = document.querySelector("[data-title='gone']");
-    if(goneTitle) goneTitle.innerHTML = `月经走了 <span class="sub">${selDate}</span>`;
-    // 同步"是/否"按钮高亮状态
-    const isCame = state.periods.some(p => p.start === selDate);
-    const isGone = state.periods.some(p => p.end === selDate);
-    document.querySelectorAll(".seg[data-rec='came'] button").forEach(b=>{
-      const v = b.dataset.v;
-      b.classList.toggle("active", (v==="yes")===isCame);
-    });
-    document.querySelectorAll(".seg[data-rec='gone'] button").forEach(b=>{
-      const v = b.dataset.v;
-      b.classList.toggle("active", (v==="yes")===isGone);
-    });
+    refPeriod();
   }));
-  // 月经来了：是/否（两个按钮始终可用）
+  // 月经来了：是/否
   document.querySelectorAll(".seg[data-rec='came'] button").forEach(b=>b.addEventListener("click",()=>{
     if(!selDate){ toast("请先在日历中点选日期"); return; }
+    const ui = getPeriodUIState(selDate);
     const v = b.dataset.v;
     if(v === "yes"){
-      if(state.periods.some(p => p.start === selDate)){ toast("该日期已标记为经期开始"); return; }
-      state.periods.push({start: selDate, end: selDate, note:""});
-      state.periods.sort((a,b)=>a.start<b.start?-1:a.start>b.start?1:0);
-      save(); toast("已记录经期开始 "+selDate); refPeriod();
+      if(ui.editingPeriod && ui.editingPeriod.start === selDate){
+        toast("该日期已标记为经期开始"); return;
+      }
+      if(ui.editingPeriod){
+        // 修改历史记录的经期开始日
+        ui.editingPeriod.start = selDate;
+        save(); toast("已更新经期开始日为 "+selDate); refPeriod();
+      } else {
+        // 新建经期
+        state.periods.push({start: selDate, end: selDate, note:""});
+        state.periods.sort((a,b)=>a.start<b.start?-1:a.start>b.start?1:0);
+        save(); toast("已记录经期开始 "+selDate); refPeriod();
+      }
     } else {
-      const idx = state.periods.findIndex(p => p.start === selDate);
-      if(idx === -1){ toast("该日期没有经期开始记录"); return; }
-      state.periods.splice(idx, 1);
-      save(); toast("已取消经期开始"); refPeriod();
+      if(ui.editingPeriod && ui.editingPeriod.start === selDate){
+        // 取消该条经期记录
+        state.periods = state.periods.filter(p => p !== ui.editingPeriod);
+        save(); toast("已取消经期开始"); refPeriod();
+      } else {
+        toast("该日期没有经期开始记录");
+      }
     }
   }));
-  // 月经走了：是/否（两个按钮始终可用）
+  // 月经走了：是/否
   document.querySelectorAll(".seg[data-rec='gone'] button").forEach(b=>b.addEventListener("click",()=>{
     if(!selDate){ toast("请先在日历中点选日期"); return; }
+    const ui = getPeriodUIState(selDate);
     const v = b.dataset.v;
     if(v === "yes"){
-      if(state.periods.some(p => p.end === selDate)){ toast("该日期已标记为经期结束"); return; }
-      const last = [...state.periods].sort((a,b)=>a.start<b.start?-1:a.start>b.start?1:0).reverse().find(p => p.start <= selDate);
-      if(!last){ toast("没有找到可结束的经期，请先标记开始日期"); return; }
-      last.end = selDate;
-      save(); toast("已记录经期结束 "+selDate); refPeriod();
-    } else {
-      const p = state.periods.find(p => p.end === selDate);
-      if(!p){ toast("该日期没有经期结束记录"); return; }
-      if(p.end === p.start){
-        // 经期只有1天，取消结束标记即删除整条记录
-        state.periods = state.periods.filter(pp => pp !== p);
-      } else {
-        p.end = p.start;
+      if(ui.editingPeriod && ui.editingPeriod.end === selDate){
+        toast("该日期已标记为经期结束"); return;
       }
-      save(); toast("已取消经期结束"); refPeriod();
+      if(ui.editingPeriod){
+        ui.editingPeriod.end = selDate;
+        save(); toast("已记录经期结束 "+selDate); refPeriod();
+      } else {
+        toast("没有找到可结束的经期");
+      }
+    } else {
+      if(ui.editingPeriod && ui.editingPeriod.end === selDate){
+        ui.editingPeriod.end = ui.editingPeriod.start;
+        save(); toast("已取消经期结束"); refPeriod();
+      } else {
+        toast("该日期没有经期结束记录");
+      }
     }
   }));
   // 历史展开至新页面
