@@ -474,9 +474,9 @@
     /* 年视图在窄屏 */
     .months{grid-template-columns:repeat(3,1fr);gap:6px;}
 
-    /* 添加食物页AI输入行在窄屏换行 */
-    .diet-ai-row{flex-wrap:wrap;}
-    .diet-ai-row input{flex:1 1 100% !important;}
+    /* 添加食物页AI输入行保持同行 */
+    .diet-ai-row{flex-wrap:nowrap;}
+    .diet-ai-row input{flex:1;min-width:0;}
   }
 
   .hero{padding:16px;margin-bottom:10px;}
@@ -780,10 +780,10 @@ const MEAS_KEYS = [
 
 /* 餐时段 */
 const MEALS = [
-  {id:"breakfast", name:"早餐", icon:"🌅"},
-  {id:"lunch", name:"午餐", icon:"☀️"},
-  {id:"dinner", name:"晚餐", icon:"🌙"},
-  {id:"snack", name:"加餐", icon:"🍪"},
+  {id:"breakfast", name:"早餐", icon:""},
+  {id:"lunch", name:"午餐", icon:""},
+  {id:"dinner", name:"晚餐", icon:""},
+  {id:"snack", name:"加餐", icon:""},
 ];
 
 /* 食物库（每100g热量） */
@@ -1386,11 +1386,10 @@ function pageDiet(){
 function pageDietAdd(meal){
   const mealObj = MEALS.find(m => m.id === meal) || MEALS[1];
   const mealName = mealObj.name;
-  const mealIcon = mealObj.icon;
 
   return `<div class="diet-add-page" data-meal="${meal}">
-    <div class="card">
-      <h2>${mealIcon} ${mealName} — 添加食物</h2>
+    <div class="card" style="text-align:center">
+      <h2 style="justify-content:center;margin:0">${mealName} — 添加食物</h2>
     </div>
     <div class="card diet-manual-card">
       <div class="diet-manual-header">
