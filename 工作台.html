@@ -570,10 +570,10 @@
   .card.sky{background:var(--sky-soft);border-color:rgba(124,196,232,.3);}
   .card.money{background:var(--money-soft);border-color:rgba(201,162,39,.25);}
 
-  /* 滚动条 */
-  ::-webkit-scrollbar{width:8px;height:8px;}
-  ::-webkit-scrollbar-thumb{background:rgba(124,196,232,.3);border-radius:4px;}
-  ::-webkit-scrollbar-track{background:transparent;}
+  /* 滚动条（隐藏但保留滚动功能） */
+  ::-webkit-scrollbar{display:none;}
+  *{scrollbar-width:none;}
+  .main{-ms-overflow-style:none;}
 
   /* ============== 饮食模块 ============== */
   .diet-summary{display:flex;align-items:center;gap:16px;}
