@@ -741,9 +741,9 @@
         <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
         <span>记录</span>
       </button>
-      <button class="tab" data-tab="period">
-        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.5"/><path d="M12 8.5c0-3 1-5 0-6-1 1 0 3 0 6M15.5 12c3 0 5 1 6 0 0-1-3 0-6 0M12 15.5c0 3-1 5 0 6 1-1 0-3 0-6M8.5 12c-3 0-5-1-6 0 0 1 3 0 6 0"/></svg>
-        <span>生理期</span>
+      <button class="tab" data-tab="stock-overview">
+        <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M4 10h16M10 4v16" stroke="currentColor" stroke-width="1.6"/></svg>
+        <span>囤货</span>
       </button>
       <button class="tab" data-tab="tab-more">
         <svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></svg>
@@ -1257,14 +1257,14 @@ function pageOverview(){
     if(todayPeriod){
       const day = daysBetween(todayPeriod.start, t) + 1;
       const len = daysBetween(todayPeriod.start, todayPeriod.end) + 1;
-      return `<div class="card">
+      return `<div class="card" style="cursor:pointer" data-nav="period">
         <h2>生理期 <span class="pill rose">第 ${day} 天</span></h2>
         <div style="font-size:13px;color:var(--ink-light)">${todayPeriod.start} ~ ${todayPeriod.end} · 共 ${len} 天</div>
       </div>`;
     }
     if(pred){
       const gap = Math.max(0, daysBetween(t, pred.start));
-      return `<div class="card">
+      return `<div class="card" style="cursor:pointer" data-nav="period">
         <h2>生理期 <span class="pill rose">预测中</span></h2>
         <div style="font-size:13px;color:var(--ink-light)">下次预计 <b style="font-family:var(--font-mono);color:var(--ink)">${pred.start.slice(5)}</b> 开始 · 距今天还有 ${gap} 天</div>
         <div class="hint">周期 ${pred.avgCycle} 天 · 经期 ${pred.avgLen} 天</div>
@@ -1286,7 +1286,7 @@ function pageOverview(){
     const daily = total / wd;
     const hourly = daily / 6;
     window._salaryData = { total, wd, daily, hourly };
-    salaryCard = `<div class="card" id="salaryLiveCard">
+    salaryCard = `<div class="card" id="salaryLiveCard" style="cursor:pointer" data-nav="salary-basic">
       <h2>今日工资入账 <span class="sub">实时</span></h2>
       <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:4px">
         <span style="font-size:26px;font-weight:700;font-family:var(--font-mono);color:var(--gold-dark)" id="todayEarned"><small style="font-size:18px;font-weight:700">¥</small>0.00</span>
@@ -2176,15 +2176,15 @@ const TITLES = {
 };
 
 /* 手机端底部Tab：显示Tab栏的页面（子页面隐藏） */
-const TAB_IDS = ["tab-home","tab-record","tab-more","overview","weight","measure","diet","exercise","balance","period","settings","salary-basic","salary-housing","salary-summary","stock-overview","stock-add","stock-all","stock-spaces","passwords"];
+const TAB_IDS = ["tab-home","tab-record","stock-overview","tab-more","overview","weight","measure","diet","exercise","settings","salary-basic","salary-housing","salary-summary","passwords","password-detail","stock-add","stock-all","stock-spaces"];
 const TAB_MATCH = {
-  "tab-home":["tab-home","overview","weight","measure"],
-  "tab-record":["tab-record","diet","exercise","balance"],
-  "period":["period"],
-  "tab-more":["tab-more","settings","salary-basic","salary-housing","salary-summary","stock-overview","stock-add","stock-all","stock-spaces","passwords"],
+  "tab-home":["tab-home","overview","salary-basic","salary-housing","salary-summary","passwords","password-detail"],
+  "tab-record":["tab-record","diet","exercise","weight","measure"],
+  "stock-overview":["stock-overview","stock-add","stock-all","stock-spaces"],
+  "tab-more":["tab-more","settings"],
 };
-let segHome = "overview";   // tab-home 分段：overview/weight/measure
-let segRecord = "diet";     // tab-record 分段：diet/exercise/balance
+let segHome = "overview";   // tab-home 分段：overview/salary-basic/passwords
+let segRecord = "diet";     // tab-record 分段：diet/exercise/weight/measure
 
 function updateTabbar(id){
   const bar = document.getElementById("tabbar");
@@ -2222,11 +2222,10 @@ function bindTabPage(id){
   else if(id==="tab-more") bindTabMore();
 }
 
-/* ---- Tab容器页：首页（聚合 + 概览/体重/围度分段） ---- */
+/* ---- Tab容器页：首页（概览/工资/密码分段） ---- */
 function pageTabHome(){
   const seg = segHome;
-  const segHtml = `<div class="tab-seg"><div class="seg">${[["overview","概览"],["weight","体重"],["measure","围度"]].map(o=>`<button class="${seg===o[0]?"active":""}" data-seg="${o[0]}">${o[1]}</button>`).join("")}</div></div>`;
-  // 概览：demo 中分段条在 hero 大卡之后，其余分段页分段条在顶部
+  const segHtml = `<div class="tab-seg"><div class="seg">${[["overview","概览"],["salary-basic","工资"],["passwords","密码"]].map(o=>`<button class="${seg===o[0]?"active":""}" data-seg="${o[0]}">${o[1]}</button>`).join("")}</div></div>`;
   if(seg==="overview"){
     const ov = pageOverview();
     const heroStart = ov.indexOf('<div class="hero">');
@@ -2244,38 +2243,37 @@ function pageTabHome(){
     }
     return segHtml + ov;
   }
-  const inner = seg==="weight" ? pageWeight() : pageMeasure();
+  const inner = seg==="salary-basic" ? pageSalaryBasic() : pagePasswords();
   return segHtml + inner;
 }
 function bindTabHome(){
   document.querySelectorAll(".tab-seg [data-seg]").forEach(b=>b.addEventListener("click",()=>{
     segHome = b.dataset.seg; refTab();
   }));
-  if(segHome==="weight") bindWeight();
-  else if(segHome==="measure") bindMeasure();
+  if(segHome==="salary-basic") bindSalaryBasic();
+  else if(segHome==="passwords") bindPasswords();
   else bindOverview();
 }
 
-/* ---- Tab容器页：记录（饮食/运动/平衡分段） ---- */
+/* ---- Tab容器页：记录（饮食/运动/体重/围度分段） ---- */
 function pageTabRecord(){
   const seg = segRecord;
-  const inner = seg==="exercise" ? pageExercise() : seg==="balance" ? pageBalance() : pageDiet();
-  return `<div class="tab-seg"><div class="seg">${[["diet","饮食"],["exercise","运动"],["balance","平衡"]].map(o=>`<button class="${seg===o[0]?"active":""}" data-seg="${o[0]}">${o[1]}</button>`).join("")}</div></div>` + inner;
+  const inner = seg==="exercise" ? pageExercise() : seg==="weight" ? pageWeight() : seg==="measure" ? pageMeasure() : pageDiet();
+  return `<div class="tab-seg"><div class="seg">${[["diet","饮食"],["exercise","运动"],["weight","体重"],["measure","围度"]].map(o=>`<button class="${seg===o[0]?"active":""}" data-seg="${o[0]}">${o[1]}</button>`).join("")}</div></div>` + inner;
 }
 function bindTabRecord(){
   document.querySelectorAll(".tab-seg [data-seg]").forEach(b=>b.addEventListener("click",()=>{
     segRecord = b.dataset.seg; refTab();
   }));
   if(segRecord==="exercise") bindExercise();
-  else if(segRecord==="balance") bindPeriod();
+  else if(segRecord==="weight") bindWeight();
+  else if(segRecord==="measure") bindMeasure();
   else bindDiet();
 }
 
 /* ---- Tab容器页：更多（功能入口列表） ---- */
 function pageTabMore(){
   const items = [
-    {id:"salary-basic",  ic:"salary", nm:"工资", ds:"基本工资 · 房补 · 汇总", cls:"t-soft"},
-    {id:"stock-overview",ic:"stock",  nm:"囤货", ds:"物品 · 空间 · 消耗",     cls:"t-sand"},
     {id:"passwords",     ic:"lock",   nm:"密码", ds:"网站 · 账号管理",        cls:"t-sky"},
     {id:"settings",      ic:"gear",   nm:"设置", ds:"AI · 数据 · 同步",        cls:"t-rose"},
   ];
@@ -2300,10 +2298,14 @@ function navigate(id, params){
   if(!PAGES[id]) id="overview";
   // 手机端：顶级功能页映射到对应Tab容器（保持分段条一致）
   if(window.innerWidth <= 768){
-    const homeSegs = {"overview":"overview","weight":"weight","measure":"measure"};
-    const recSegs = {"diet":"diet","exercise":"exercise","balance":"balance"};
+    const homeSegs = {"overview":"overview","salary-basic":"salary-basic","passwords":"passwords"};
+    const recSegs = {"diet":"diet","exercise":"exercise","weight":"weight","measure":"measure"};
     if(homeSegs[id]){ segHome = homeSegs[id]; id = "tab-home"; }
     else if(recSegs[id]){ segRecord = recSegs[id]; id = "tab-record"; }
+    else if(id==="stock-overview" || id==="stock-add" || id==="stock-all" || id==="stock-spaces"){ id = "stock-overview"; }
+    else if(id==="period"){ /* keep as-is */ }
+    else if(id==="salary-basic" || id==="salary-housing" || id==="salary-summary"){ segHome = "salary-basic"; id = "tab-home"; }
+    else if(id==="password-detail"){ segHome = "passwords"; id = "tab-home"; }
   }
   currentPage=id;
   // 顶部返回按钮
@@ -2315,6 +2317,7 @@ function navigate(id, params){
     "password-detail":"passwords",
     "exercise-all":"exercise",
     "diet-add":"diet",
+    "period":"tab-home",
   };
   const backBtn = document.getElementById("topBackBtn");
   if(BACK_MAP[id]){ backBtn.style.display="inline-flex"; backBtn.dataset.back=BACK_MAP[id]; }
@@ -2552,6 +2555,17 @@ function bindPage(id, params){
 
 function bindOverview(){
   startSalaryTimer();
+  // 生理期卡、工资卡可点击
+  document.querySelectorAll("[data-nav='period'],[data-nav='salary-basic']").forEach(el=>{
+    el.addEventListener("click", ()=>{
+      if(window.innerWidth > 768){
+        navigate(el.dataset.nav);
+      } else {
+        // 手机端直接导航
+        navigate(el.dataset.nav);
+      }
+    });
+  });
 }
 
 function bindWeight(){
