@@ -1374,7 +1374,10 @@ function pageDiet(){
         body += `<tr style="border-bottom:1px solid var(--line)">
           <td style="padding:6px 0;border:none;text-align:left;font-size:13px">${esc(x.name)}${unitStr}</td>
           <td style="padding:6px 0;border:none;text-align:center;font-family:var(--font-mono);font-size:13px">${round(num(x.kcal))} kcal</td>
-          <td style="padding:6px 0;border:none;text-align:right"><button class="del" data-del-diet="${idx}">×</button></td>
+          <td style="padding:6px 0;border:none;text-align:right;white-space:nowrap">
+            <button class="del" data-edit-diet="${idx}" title="编辑">✎</button>
+            <button class="del" data-del-diet="${idx}" title="删除">×</button>
+          </td>
         </tr>`;
       });
       body += `</tbody></table>`;
@@ -2479,6 +2482,28 @@ function bindMeasure(){
 }
 
 function bindDiet(){
+  // 编辑食物
+  document.querySelectorAll("[data-edit-diet]").forEach(b=>b.addEventListener("click",()=>{
+    const idx = num(b.dataset.editDiet);
+    const d=getDay(state.diet, todayStr());
+    if(!d || !d.items[idx]) return;
+    const item = d.items[idx];
+    const name = prompt("食物名称", item.name);
+    if(name===null) return;
+    const kcalStr = prompt("热量 (kcal)", item.kcal);
+    if(kcalStr===null) return;
+    const kcal = num(kcalStr);
+    if(!kcal || kcal<=0){ toast("请填写有效热量"); return; }
+    const qtyStr = prompt("份数 (如 1 / 50 / 80)", item.qty || 1);
+    if(qtyStr===null) return;
+    const qty = num(qtyStr) || 1;
+    item.name = name.trim();
+    item.kcal = kcal;
+    item.qty = qty;
+    if(item.unit===undefined || item.unit===null) item.unit = "份";
+    save(); toast("已更新"); navigate("diet");
+  }));
+
   // 删除食物
   document.querySelectorAll("[data-del-diet]").forEach(b=>b.addEventListener("click",()=>{
     const d=getDay(state.diet, todayStr());
