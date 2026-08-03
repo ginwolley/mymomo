@@ -1206,23 +1206,17 @@ function pageDietAdd(meal){
   const mealName = mealObj.name;
   const mealIcon = mealObj.icon;
 
-  let catTabs = '<button class="fp-tab active" data-cat="all">全部</button>';
-  let catPanels = '<div class="fp-panel active" data-cat="all">';
-  const allFoods = [];
-  Object.keys(FOOD_DB).forEach(cat => {
-    catTabs += `<button class="fp-tab" data-cat="${esc(cat)}">${esc(cat)}</button>`;
-    catPanels += `<div class="fp-panel" data-cat="${esc(cat)}">`;
+  const cats = Object.keys(FOOD_DB);
+  let catTabs = '';
+  let catPanels = '';
+  cats.forEach((cat, idx) => {
+    const active = idx === 0 ? ' active' : '';
+    catTabs += `<button class="fp-tab${active}" data-cat="${esc(cat)}">${esc(cat)}</button>`;
+    catPanels += `<div class="fp-panel${active}" data-cat="${esc(cat)}">`;
     FOOD_DB[cat].forEach(f => {
-      allFoods.push(f);
       catPanels += `<div class="fp-item" data-name="${esc(f.name)}" data-kcal="${f.kcal}" data-unit="${esc(f.unit)}">${esc(f.name)} <span class="muted">${f.kcal} kcal/${f.unit}</span></div>`;
     });
     catPanels += `</div>`;
-  });
-  catPanels += `</div>`;
-
-  let allPanel = '';
-  allFoods.forEach(f => {
-    allPanel += `<div class="fp-item" data-name="${esc(f.name)}" data-kcal="${f.kcal}" data-unit="${esc(f.unit)}">${esc(f.name)} <span class="muted">${f.kcal} kcal/${f.unit}</span></div>`;
   });
 
   return `<div class="diet-add-page" data-meal="${meal}">
@@ -1258,8 +1252,7 @@ function pageDietAdd(meal){
 
     <div class="card" style="flex:1;overflow-y:auto">
       <div class="fp-body" id="fpBody">
-        <div class="fp-panel active" data-cat="all">${allPanel}</div>
-        ${catPanels.replace('<div class="fp-panel active" data-cat="all">','')}
+        ${catPanels}
       </div>
     </div>
     <div class="card">
@@ -2080,8 +2073,14 @@ function bindDietAdd(){
     });
     if(q){
       document.querySelectorAll(".fp-tab").forEach(t => t.classList.remove("active"));
-      document.querySelectorAll(".fp-panel").forEach(p => p.classList.remove("active"));
-      document.querySelectorAll('.fp-panel[data-cat="all"]').forEach(p => p.classList.add("active"));
+      document.querySelectorAll(".fp-panel").forEach(p => p.classList.add("active"));
+    } else {
+      // 恢复分类显示：只显示第一个（当前激活的tab对应的面板）
+      const activeTab = document.querySelector(".fp-tab.active");
+      if(activeTab){
+        const cat = activeTab.dataset.cat;
+        document.querySelectorAll(".fp-panel").forEach(p => p.classList.toggle("active", p.dataset.cat === cat));
+      }
     }
   });
 
