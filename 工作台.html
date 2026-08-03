@@ -1452,15 +1452,22 @@ function pageExercise(){
   const daily = mode==="daily";
   const w = weightForCalc();
   // 构建数据列表供输入提示
-  const allExNames = EX_TYPES.flatMap(g=>g.items.map(it=>it[0]));
-  const datalistOpts = allExNames.map(n=>`<option value="${esc(n)}">`).join("");
+  // 构建 select + optgroup
+  const allOpts = EX_TYPES.map(g => {
+    const opts = g.items.map(it => `<option value="${esc(it[0])}" data-met="${it[1]}">${esc(it[0])} (${it[1]} MET)</option>`).join("");
+    return `<optgroup label="${esc(g.g)}">${opts}</optgroup>`;
+  }).join("");
 
   let body = `
     <div class="card">
       <h2>记录运动</h2>
       <form id="exerciseForm" class="ex-form">
-        <div class="field"><label>运动</label><input type="text" name="type" list="exList" placeholder="如 慢跑" value="慢跑" style="flex:1"></div>
-        <datalist id="exList">${datalistOpts}</datalist>
+        <div class="field">
+          <label>运动</label>
+          <select name="type" style="flex:1" data-title="选择运动方式">
+            ${allOpts}
+          </select>
+        </div>
         <div class="field"><label>时长</label><input type="number" name="duration" step="1" placeholder="30" value="30" style="flex:1" required></div>
         <div class="field"><label>备注</label><input type="text" name="note" placeholder="可选" style="flex:1"></div>
         <div class="hint" id="exPreview" style="margin:4px 0 10px"></div>
@@ -2617,9 +2624,9 @@ async function recognizeDish(dishName){
 function bindExercise(){
   const form=document.getElementById("exerciseForm");
   if(!form) return;
-  const typeInput = form.type;
+  const typeSelect = form.type;
   const preview=document.getElementById("exPreview");
-  // 通过输入文字自动匹配MET
+  // 通过 select option 的 data-met 读取 MET，或者回退匹配
   function lookupMET(name){
     name = name.trim();
     for(const g of EX_TYPES){
@@ -2629,8 +2636,14 @@ function bindExercise(){
     }
     return null;
   }
+  function currentMET(){
+    const sel = typeSelect.selectedOptions?.[0];
+    if(sel && sel.dataset.met) return parseFloat(sel.dataset.met);
+    const met = lookupMET(typeSelect.value);
+    return met ?? 5.0;
+  }
   function updatePreview(){
-    const met = lookupMET(typeInput.value) || 5.0;
+    const met = currentMET();
     const dur = num(form.duration.value);
     const w = weightForCalc();
     if(dur && dur>0){
@@ -2639,18 +2652,14 @@ function bindExercise(){
       preview.textContent = "";
     }
   }
-  typeInput.addEventListener("input", updatePreview);
+  typeSelect.addEventListener("change", updatePreview);
   form.duration.addEventListener("input", updatePreview);
 
   form.addEventListener("submit", e=>{
     e.preventDefault();
-    const type = typeInput.value.trim();
-    if(!type){ toast("请输入运动方式"); return; }
-    let met = lookupMET(type);
-    if(!met){
-      // 未匹配到，用默认MET=5.0
-      met = 5.0;
-    }
+    const type = typeSelect.value.trim();
+    if(!type){ toast("请选择运动方式"); return; }
+    const met = currentMET();
     const duration = num(form.duration.value);
     const w = weightForCalc();
     if(!duration || duration<=0){ toast("请填写有效时长"); return; }
