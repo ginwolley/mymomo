@@ -277,6 +277,15 @@
   th{font-size:11px;font-weight:500;color:var(--ink-muted);text-align:center;padding:6px 4px;border-bottom:1px solid var(--line);background:transparent;}
   /* demo 风格：表格第一列左对齐，其余居中 */
   table th:first-child,table td:first-child{text-align:left;}
+  /* demo 风格：.tbl 表格 */
+  .tbl{width:100%;border-collapse:collapse;font-size:13px;}
+  .tbl th{font-size:11px;color:var(--ink-muted);font-weight:500;text-align:center;padding:6px 4px;border-bottom:1px solid var(--line);}
+  .tbl td{padding:7px 4px;border-bottom:1px solid var(--line);text-align:center;}
+  .tbl td.num{font-family:var(--font-mono);font-weight:500;}
+  .tbl th:first-child,.tbl td:first-child{text-align:left;}
+  .tbl tr:last-child td{border-bottom:none;}
+  /* 居中按钮容器 */
+  .center{display:flex;justify-content:center;}
   tbody tr:last-child td{border-bottom:none;}
   tbody tr:hover td{background:rgba(255,255,255,.35);}
   td:first-child{border-radius:8px 0 0 8px;}
@@ -1266,28 +1275,22 @@ function pageWeight(){
   const mode = state.settings.modules.weight;
   const sorted = state.weight.slice().sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:0);
   const recent = filterPeriod(sorted, state.settings.period||90);
-  const chart = lineChart([{color:"var(--gold-dark)", data:recent.map(d=>num(d.value))}], recent.map(d=>d.date));
 
   let body = `
-    <div class="card sage">
-      <h2>记录体重 <span class="sub">模式：${mode==="daily"?"每日记录":"累计记录"}</span></h2>
-      <form id="weightForm">
-        <div class="row">
-          <div class="field"><label>日期</label><input type="date" name="date" value="${todayStr()}" required></div>
-          <div class="field"><label>体重 (kg)</label><input type="number" step="0.1" name="value" placeholder="如 58.5" required></div>
-        </div>
-        <div class="field"><label>备注（可选）</label><input type="text" name="note" placeholder="如 晨起空腹"></div>
-        <div style="text-align:center"><button class="btn primary" type="submit">保存</button></div>
-      </form>
-    </div>
     ${periodSeg()}
     <div class="card">
-      <h2>趋势</h2>${chart}
+      <h2>记录体重</h2>
+      <form id="weightForm">
+        <div class="field"><label>日期</label><input type="date" name="date" value="${todayStr()}" required></div>
+        <div class="field"><label>体重 (kg)</label><input type="number" step="0.1" name="value" placeholder="如 58.5" required></div>
+        <div class="field"><label>备注</label><input type="text" name="note" placeholder="如 晨起空腹"></div>
+        <div class="center" style="margin-top:8px"><button class="btn primary" type="submit">保存</button></div>
+      </form>
     </div>
     <div class="card">
       <h2>历史记录 <span class="sub">${recent.length} 条</span></h2>
-      ${recent.length? `<table><thead><tr><th>日期</th><th>体重(kg)</th><th>备注</th><th></th></tr></thead><tbody>
-        ${recent.slice().reverse().map(d=>`<tr><td>${d.date}</td><td class="num">${round(num(d.value))}</td><td class="muted">${esc(d.note||"")}</td><td><button class="del" data-del-weight="${d.date}">×</button></td></tr>`).join("")}
+      ${recent.length? `<table class="tbl"><thead><tr><th>日期</th><th class="num">体重</th><th></th></tr></thead><tbody>
+        ${recent.slice().reverse().map(d=>`<tr><td>${d.date}</td><td class="num">${round(num(d.value))}</td><td style="text-align:center"><button class="del" data-del-weight="${d.date}">×</button></td></tr>`).join("")}
       </tbody></table>` : '<div class="empty"><div class="sym">🍃</div>该周期内还没有记录</div>'}
     </div>`;
   return body;
@@ -1298,32 +1301,23 @@ function pageMeasure(){
   const mode = state.settings.modules.measure;
   const sorted = state.measure.slice().sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:0);
   const recent = filterPeriod(sorted, state.settings.period||90);
-  const dates = recent.map(d=>d.date);
-  const series = MEAS_KEYS.map((m,i)=>({color:["var(--gold-dark)","#36D1C9","var(--sky)","#FFC860","#FFAEC2"][i], label:m.name, data:recent.map(d=>d[m.k]!=null?num(d[m.k]):null)}));
-  const chart = lineChart(series, dates);
-  const legend = `<div class="legend">${series.map(s=>`<span><i style="background:${s.color}"></i>${s.label}</span>`).join("")}</div>`;
 
-  const inputs = MEAS_KEYS.map(m=>`<div class="field"><label>${m.name} (${m.unit})</label><input type="number" step="0.1" name="${m.k}" placeholder="0"></div>`).join("");
+  const inputs = MEAS_KEYS.map(m=>`<div class="field"><label>${m.name}</label><input type="number" step="0.1" name="${m.k}" placeholder="0"></div>`).join("");
 
   let body = `
-    <div class="card sage">
-      <h2>记录围度 <span class="sub">模式：${mode==="daily"?"每日记录":"累计记录"}</span></h2>
-      <form id="measureForm">
-        <div class="measure-form">
-          <div class="field"><label>日期</label><input type="date" name="date" value="${todayStr()}" required></div>
-          ${inputs}
-        </div>
-        <div style="text-align:center"><button class="btn primary" type="submit">保存</button></div>
-      </form>
-    </div>
     ${periodSeg()}
     <div class="card">
-      <h2>趋势</h2>${chart}${legend}
+      <h2>记录围度</h2>
+      <form id="measureForm">
+        <div class="field"><label>日期</label><input type="date" name="date" value="${todayStr()}" required></div>
+        ${inputs}
+        <div class="center" style="margin-top:8px"><button class="btn primary" type="submit">保存</button></div>
+      </form>
     </div>
     <div class="card">
       <h2>历史记录 <span class="sub">${recent.length} 条</span></h2>
-      ${recent.length? `<div class="scroll"><table><thead><tr><th>日期</th>${MEAS_KEYS.map(m=>`<th>${m.name}</th>`).join("")}<th>对比</th><th></th></tr></thead><tbody>
-        ${recent.slice().reverse().map((d,i)=>{const prevIdx=recent.length-2-i;const prev=prevIdx>=0?recent[prevIdx]:null;return `<tr><td>${d.date}</td>${MEAS_KEYS.map(m=>`<td class="num">${d[m.k]!=null?round(num(d[m.k])):"—"}</td>`).join("")}<td class="num muted" style="font-size:11px">${prev?MEAS_KEYS.map(m=>prev[m.k]!=null?round(num(prev[m.k])):"—").join(' / '):'—'}</td><td><button class="del" data-del-measure="${d.date}">×</button></td></tr>`;}).join('')}
+      ${recent.length? `<div class="scroll"><table class="tbl"><thead><tr><th>日期</th>${MEAS_KEYS.map(m=>`<th class="num">${m.name}</th>`).join("")}<th></th></tr></thead><tbody>
+        ${recent.slice().reverse().map(d=>`<tr><td>${d.date}</td>${MEAS_KEYS.map(m=>`<td class="num">${d[m.k]!=null?round(num(d[m.k])):"—"}</td>`).join("")}<td style="text-align:center"><button class="del" data-del-measure="${d.date}">×</button></td></tr>`).join("")}
       </tbody></table></div>` : '<div class="empty"><div class="sym">🍃</div>该周期内还没有记录</div>'}
     </div>`;
   return body;
