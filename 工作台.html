@@ -255,11 +255,11 @@
 
   .pwd-item{border-bottom:1px solid var(--line);padding:10px 0;}
   .pwd-item:last-child{border-bottom:none;}
-  .pwd-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
-  .pwd-site{font-weight:600;color:var(--ink);min-width:80px;font-size:13px;}
-  .pwd-user{color:var(--ink-light);font-size:12px;flex:1;min-width:60px;}
-  .pwd-pw{color:var(--ink-muted);font-family:var(--font-mono);font-size:13px;letter-spacing:1px;min-width:60px;}
-  .pwd-actions{display:flex;align-items:center;gap:6px;margin-left:auto;}
+  .pwd-row{display:flex;align-items:center;gap:8px;flex-wrap:nowrap;}
+  .pwd-site{font-weight:600;color:var(--ink);min-width:70px;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:0;}
+  .pwd-user{color:var(--ink-light);font-size:12px;flex:1 1 80px;min-width:50px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .pwd-pw{color:var(--ink-muted);font-family:var(--font-mono);font-size:11px;letter-spacing:0;min-width:40px;flex-shrink:0;white-space:nowrap;}
+  .pwd-actions{display:flex;align-items:center;gap:4px;flex-shrink:0;}
 
   /* ---------- tables / lists ---------- */
   .tbl{width:100%;border-collapse:collapse;font-size:12.5px;}
@@ -491,10 +491,23 @@
     /* 添加食物页AI输入行保持同行 */
     .diet-ai-row{flex-wrap:nowrap;}
     .diet-ai-row input{flex:1;min-width:0;}
+
+    /* 密码列表在手机上允许换行 */
+    .pwd-row{flex-wrap:wrap;gap:4px;}
+    .pwd-site{min-width:60px;font-size:12px;}
+    .pwd-user{flex:1 1 100%;min-width:0;order:10;margin-top:2px;}
+    .pwd-pw{font-size:10px;min-width:30px;}
+    .pwd-actions{gap:2px;}
   }
 
-  .hero{padding:16px;margin-bottom:10px;}
-  .hero .big{font-size:30px;}
+  @media(min-width:769px){
+    .hero{padding:18px;margin-bottom:14px;}
+    .hero .big{font-size:34px;}
+  }
+  @media(max-width:768px){
+    .hero{padding:16px;margin-bottom:10px;}
+    .hero .big{font-size:30px;}
+  }
 
   /* toast */
   #toast{
@@ -598,7 +611,18 @@
   .edit-dialog .field input:focus{border-color:var(--gold);background:#fff;}
   .edit-dialog .field .hint-row{display:flex;justify-content:space-between;font-size:11px;color:var(--ink-muted);margin-top:2px;}
   .edit-dialog .actions{display:flex;gap:10px;margin-top:8px;}
-  .edit-dialog .actions .btn{flex:1;}
+.edit-dialog .actions .btn{flex:1;}
+.pwd-cat-list{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;max-height:280px;overflow-y:auto;}
+.pwd-cat-row{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg-soft);border-radius:var(--radius-sm);}
+.pwd-cat-row .cat-name{flex:1;font-size:13px;color:var(--ink);}
+.pwd-cat-row .btn-icon{width:28px;height:28px;padding:0;display:flex;align-items:center;justify-content:center;background:none;border:none;color:var(--ink-muted);cursor:pointer;border-radius:8px;font-size:16px;line-height:1;}
+.pwd-cat-row .btn-icon:hover{color:var(--ink);background:var(--glass-border);}
+.pwd-cat-row .btn-icon.del{color:var(--danger);}
+.pwd-cat-row .btn-icon.del:hover{color:var(--danger);background:var(--rose-soft);}
+.pwd-cat-add{display:flex;gap:8px;margin-bottom:14px;}
+.pwd-cat-add input{flex:1;border:1.5px solid var(--line);border-radius:12px;padding:10px;font-size:13px;outline:none;background:var(--bg-soft);}
+.pwd-cat-add input:focus{border-color:var(--gold);background:#fff;}
+.pwd-cat-add .btn{padding:7px 16px;font-size:13px;}
 
   @media(min-width:769px){
     .picker-mask{align-items:flex-end;}
@@ -609,11 +633,11 @@
   .num{font-family:var(--font-mono);font-variant-numeric:tabular-nums;}
 
   /* 卡片主题色（扁平软色） */
-  .card.gold{background:var(--gold-soft);border-color:rgba(54,209,201,.3);}
-  .card.rose{background:var(--rose-soft);border-color:rgba(255,174,194,.3);}
-  .card.sage{background:var(--sage-soft);border-color:rgba(54,209,201,.3);}
-  .card.sky{background:var(--sky-soft);border-color:rgba(124,196,232,.3);}
-  .card.money{background:var(--money-soft);border-color:rgba(201,162,39,.25);}
+  .card.gold{background:var(--gold-soft);border:1px solid rgba(54,209,201,.3);}
+  .card.rose{background:var(--rose-soft);border:1px solid rgba(255,174,194,.3);}
+  .card.sage{background:var(--sage-soft);border:1px solid rgba(54,209,201,.3);}
+  .card.sky{background:var(--sky-soft);border:1px solid rgba(124,196,232,.3);}
+  .card.money{background:var(--money-soft);border:1px solid rgba(201,162,39,.25);}
 
   /* 滚动条（隐藏但保留滚动功能） */
   ::-webkit-scrollbar{display:none;}
@@ -818,6 +842,7 @@ const ICONS = {
   lock:'<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
   eye:'<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>',
   'eye-off':'<path d="M1 1l22 22"/><path d="M9.58 9.58A3 3 0 0 0 14.42 14.42"/><path d="M4.22 6.22A16.37 16.37 0 0 0 1 12s4 8 11 8c1.85 0 3.58-.4 5.16-1.1"/><path d="M19.78 17.78A16.37 16.37 0 0 0 23 12s-4-8-11-8c-1.85 0-3.58.4-5.16 1.1"/>',
+  edit:'<path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>',
 };
 
 // MET 值表（代谢当量）：kcal = MET × 体重(kg) × 时长(h)
@@ -955,6 +980,7 @@ const DEFAULTS = {
     modules:{weight:"cumulative", measure:"cumulative", diet:"daily", exercise:"daily", balance:"cumulative"}, period:90, dietGoal:1600,
     navOpen:{fitness:false, period:false, salary:false},
     gistToken:"", gistId:"", gistLastSync:null, gistLastSyncStatus:"", gistDebug:"",
+    passwordCategories:["工作","社交","银行","购物","娱乐","其他"],
     spaces: {
       id:"root", name:"全部空间", children:[
         {id:"space_1", name:"客厅", children:[
@@ -1578,7 +1604,7 @@ function pageExerciseAll(){
   const filtered = filterPeriod(all, state.settings.period||90);
   let total=0;
   let html=`
-    <div class="card"><h2>全部运动记录 <span class="sub">${filtered.length} 天</span></h2>
+    <div class="card"><h2 style="font-size:13px;font-weight:500;color:var(--ink-muted);margin-bottom:8px">${filtered.length} 天 · 周期筛选</h2>
     ${periodSeg()}
     ${filtered.length? filtered.map(d=>{ const s=d.items.reduce((a,x)=>a+num(x.kcal),0); total+=s; return `<div style="margin-bottom:10px"><div class="muted" style="font-size:12px;margin-bottom:4px">${d.date} · 消耗 ${round(s)} kcal</div>
       <table><tbody>${d.items.map(x=>`<tr><td>${esc(x.type)}</td><td class="muted num">${x.duration}分/${round(num(x.kcal))}kcal</td></tr>`).join("")}</tbody></table></div>`; }).join("") + `<div class="muted" style="margin-top:8px">累计消耗约 <span class="num">${round(total)}</span> kcal</div>` : '<div class="empty"><div class="sym">🍃</div>该周期内还没有记录</div>'}
@@ -1603,11 +1629,11 @@ function pageBalance(){
   });
   const totalIn=inSeries.reduce((a,b)=>a+b,0), totalOut=outSeries.reduce((a,b)=>a+b,0);
   const chart = lineChart([
-    {color:"var(--primary)", label:"摄入", data:inSeries},
+    {color:"var(--gold-dark)", label:"摄入", data:inSeries},
     {color:"var(--sky)", label:"消耗", data:outSeries},
   ], arr);
   const legend=`<span style="display:inline-flex;align-items:center;gap:8px;margin-left:auto">
-    <span style="display:inline-flex;align-items:center;gap:3px"><i class="dot-badge" style="background:var(--primary)"></i>摄入</span>
+    <span style="display:inline-flex;align-items:center;gap:3px"><i class="dot-badge" style="background:var(--gold-dark)"></i>摄入</span>
     <span style="display:inline-flex;align-items:center;gap:3px"><i class="dot-badge" style="background:var(--sky)"></i>消耗</span>
   </span>`;
 
@@ -1615,7 +1641,7 @@ function pageBalance(){
     <div class="row-stats" style="margin-bottom:14px">
       <div class="stat sky"><div class="label">摄入</div><div class="value">${round(totalIn)}<small>kcal</small></div></div>
       <div class="stat sage"><div class="label">消耗</div><div class="value">${round(totalOut)}<small>kcal</small></div></div>
-      <div class="stat" style="--stat-color:var(--primary-dark)"><div class="label">净平衡</div><div class="value" style="color:var(--primary-dark)">${round(totalIn-totalOut)}<small>kcal</small></div></div>
+      <div class="stat" style="--stat-color:var(--gold-dark)"><div class="label">净平衡</div><div class="value" style="color:var(--gold-dark)">${round(totalIn-totalOut)}<small>kcal</small></div></div>
     </div>
     <div class="card">
       <h2>近7天趋势${legend}</h2>
@@ -1635,7 +1661,7 @@ function pageBalance(){
           const inn=d?d.items.reduce((s,x)=>s+num(x.kcal),0):0;
           const out=e?e.items.reduce((s,x)=>s+num(x.kcal),0):0;
           const net=inn-out;
-          return `<tr><td>${dt.slice(5)}</td><td class="num">${round(inn)}</td><td class="num">${round(out)}</td><td class="num" style="color:${net>=0?'var(--primary-dark)':'var(--rose)'}">${round(net)}</td></tr>`;
+          return `<tr><td>${dt.slice(5)}</td><td class="num">${round(inn)}</td><td class="num">${round(out)}</td><td class="num" style="color:${net>=0?'var(--gold-dark)':'var(--rose)'}">${round(net)}</td></tr>`;
         }).join("")}</tbody>
       </table>` : '<div class="empty" style="padding:20px">暂无记录</div>'}
     </div>`;
@@ -2012,14 +2038,12 @@ function pageSalaryBasic(){
 /* ============== 页面：添加工资 ============== */
 function pageSalaryAdd(){
   const fields = SALARY_HEADERS.map(h=>`<div class="field"><label>${esc(h)}</label><input type="text" name="s-${h}" value="0" placeholder="0"></div>`).join("");
-  return `<div class="content" style="overflow-y:auto">
-    <div class="card">
+  return `<div class="card">
       <form id="salaryForm">
         <div class="field"><label>日期</label><input type="text" name="s-date" placeholder="如 2025.08" value="${todayStr().slice(0,7).replace('-','.')}" required></div>
         <div class="grid grid-2">${fields}</div>
         <div style="text-align:center;margin-top:14px"><button class="btn primary" type="submit">保存</button></div>
       </form>
-    </div>
     </div>`;
 }
 
@@ -2027,9 +2051,9 @@ function pageSalaryAdd(){
 function pageSalaryAll(){
   const sorted = state.salary.slice().sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:0);
   const rows = sorted.slice().reverse().map((r)=>{ const idx = state.salary.indexOf(r); return `<tr><td class="nowrap">${r.date}</td><td class="nowrap num">${round(r["应发合计"])}</td><td class="nowrap num">${round(r["扣发合计"])}</td><td class="nowrap num">${round(r["实发工资"])}</td><td class="nowrap"><button class="del" data-view-salary="${idx}"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="6.5" cy="6.5" r="4.5"/><line x1="9.8" y1="9.8" x2="14" y2="14"/></svg></button><button class="del" data-del-salary="${idx}">×</button></td></tr>`; }).join("");
-  return `<div class="content" style="overflow-y:auto"><div class="card">
+  return `<div class="card">
       ${sorted.length ? `<div class="scroll"><table><thead><tr><th>日期</th><th>应发合计</th><th>扣发合计</th><th>实发工资</th><th>操作</th></tr></thead><tbody>${rows}</tbody></table></div>` : '<div class="empty"><div class="sym">💰</div>暂无工资记录</div>'}
-    </div></div>`;
+    </div>`;
 }
 
 /* ============== 页面：工资详情/编辑 ============== */
@@ -2037,8 +2061,7 @@ function pageSalaryDetail(idx){
   const r = state.salary[idx];
   if(!r) return '<div class="empty"><div class="sym">💰</div>记录不存在</div>';
   const fields = SALARY_HEADERS.map(h=>`<div class="field"><label>${esc(h)}</label><input type="text" name="sd-${h}" value="${r[h]}"></div>`).join("");
-  return `<div class="content" style="overflow-y:auto">
-    <div class="card">
+  return `<div class="card">
       <form id="salaryEditForm">
         <div class="field"><label>日期</label><input type="text" name="sd-date" value="${r.date}"></div>
         <div class="grid grid-2">${fields}</div>
@@ -2047,7 +2070,6 @@ function pageSalaryDetail(idx){
           <button class="btn danger" id="deleteSalaryEdit" type="button">删除此记录</button>
         </div>
       </form>
-    </div>
     </div>`;
 }
 
@@ -2072,14 +2094,12 @@ function pageSalaryHousing(){
 
 /* ============== 页面：添加房补 ============== */
 function pageHousingAdd(){
-  return `<div class="content" style="overflow-y:auto">
-    <div class="card">
+  return `<div class="card">
       <form id="housingForm">
         <div class="field"><label>日期</label><input type="text" name="h-date" placeholder="如 2025.08" value="${todayStr().slice(0,7).replace('-','.')}" required></div>
         <div class="field"><label>金额</label><input type="text" name="h-amount" placeholder="0" required></div>
         <div style="text-align:center;margin-top:14px"><button class="btn primary" type="submit">保存</button></div>
       </form>
-    </div>
     </div>`;
 }
 
@@ -2088,18 +2108,17 @@ function pageHousingAll(){
   const sorted = state.housingAllowance.slice().sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:0);
   const total = sorted.reduce((s,x)=>s+num(x.amount),0);
   const rows = sorted.slice().reverse().map((r)=>{ const idx = state.housingAllowance.indexOf(r); return `<tr><td class="nowrap">${r.date}</td><td class="nowrap num">${round(r.amount)}</td><td class="nowrap"><button class="del" data-view-housing="${idx}"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="6.5" cy="6.5" r="4.5"/><line x1="9.8" y1="9.8" x2="14" y2="14"/></svg></button><button class="del" data-del-housing="${idx}">×</button></td></tr>`; }).join("");
-  return `<div class="content" style="overflow-y:auto"><div class="card">
+  return `<div class="card">
       <h2>房补记录 <span class="sub">共 ${sorted.length} 条 · 合计 <span class="num">${round(total)}</span></span></h2>
       ${sorted.length ? `<div class="scroll"><table><thead><tr><th>日期</th><th>金额</th><th>操作</th></tr></thead><tbody>${rows}</tbody></table></div>` : '<div class="empty"><div class="sym">🏠</div>暂无房补记录</div>'}
-    </div></div>`;
+    </div>`;
 }
 
 /* ============== 页面：房补详情/编辑 ============== */
 function pageHousingDetail(idx){
   const r = state.housingAllowance[idx];
   if(!r) return '<div class="empty"><div class="sym">🏠</div>记录不存在</div>';
-  return `<div class="content" style="overflow-y:auto">
-    <div class="card">
+  return `<div class="card">
       <form id="housingEditForm">
         <div class="field"><label>日期</label><input type="text" name="hd-date" value="${r.date}"></div>
         <div class="field"><label>金额</label><input type="text" name="hd-amount" value="${r.amount}"></div>
@@ -2108,7 +2127,6 @@ function pageHousingDetail(idx){
           <button class="btn danger" id="deleteHousingEdit" type="button">删除此记录</button>
         </div>
       </form>
-    </div>
     </div>`;
 }
 
@@ -2315,6 +2333,8 @@ function navigate(id, params){
     else if(id==="period"){ /* keep as-is */ }
   }
   currentPage=id;
+  // 进入生理期页面时重置视图模式为月历
+  if(id === "period"){ calMode="month"; historyMode=false; selDate=todayStr(); }
   // 顶部返回按钮
   // ★ 新增子页面时，请在此处同步添加返回映射
   const BACK_MAP = {
@@ -3126,6 +3146,11 @@ function bindPeriodPage(){
       }
     }
   }));
+  // 历史记录删除
+  document.querySelectorAll("[data-del-period]").forEach(b=>b.addEventListener("click",()=>{
+    const idx=num(b.dataset.delPeriod);
+    state.periods.splice(idx,1); save(); refPeriod();
+  }));
   // 历史展开至新页面
   const ho=document.getElementById("histOpen");
   if(ho) ho.addEventListener("click",()=>{ historyMode=true; selDate=null; refPeriod(); });
@@ -3304,13 +3329,7 @@ function bindHousingAdd(){
 }
 
 function bindHousingAll(){
-  document.querySelectorAll("[data-del-housing]").forEach(b=>b.addEventListener("click",()=>{
-    state.housingAllowance.splice(num(b.dataset.delHousing),1); save(); navigate("housing-all");
-  }));
-  document.querySelectorAll("[data-view-housing]").forEach(b=>b.addEventListener("click",()=>{
-    currentHousingIdx = num(b.dataset.viewHousing);
-    navigate("housing-detail", currentHousingIdx);
-  }));
+  bindHousingCommon("housing-all");
   document.querySelectorAll("[data-back]").forEach(b=>b.addEventListener("click",()=>{ navigate(b.dataset.back); }));
 }
 
@@ -3464,7 +3483,6 @@ function pageStockAdd(){
   const aiDisabled = !(state.settings.api.enabled && state.settings.api.key);
   return `${stockSeg("stock-add")}
     <div class="card">
-    <h2>新增物品</h2>
     <form id="stockForm">
       <div class="field"><label>名称</label><input type="text" name="s-name" placeholder="如 清扬洗发水" required></div>
       <div class="row">
@@ -3512,7 +3530,7 @@ function pageStockAll(){
   const tagOpts = allTags.map(t => `<option value="${t}">${t}</option>`).join('');
   return `${stockSeg("stock-all")}
     <div class="card">
-    <h2>全部物品 <span class="sub">共 ${items.length} 种</span></h2>
+    <h2 style="font-size:13px;font-weight:500;color:var(--ink-muted);margin-bottom:10px">共 ${items.length} 种</h2>
     <div class="row" style="margin-bottom:10px;flex-wrap:wrap">
       <div class="field" style="flex:2;min-width:120px"><label>搜索</label><input type="text" id="stockSearch" placeholder="搜索名称…" style="font-size:13px"></div>
       <div class="field" style="flex:1;min-width:80px"><label>分类</label><select id="stockFilterCat">${catOpts}</select></div>
@@ -4113,7 +4131,98 @@ window.bindStockSpaces = bindStockSpaces;
 })();
 
 /* ============== 密码管理 ============== */
-const PASSWORD_CATEGORIES = ["工作","社交","银行","购物","娱乐","其他"];
+function getPwdCats(){ return (state.settings.passwordCategories || ["工作","社交","银行","购物","娱乐","其他"]); }
+
+function showPwdCatManager(){
+  const mask = document.createElement("div");
+  mask.className = "edit-mask";
+  renderCatManager(mask);
+  document.body.appendChild(mask);
+  requestAnimationFrame(()=> mask.classList.add("show"));
+  mask.addEventListener("click", e=>{ if(e.target===mask) closeCatManager(mask); });
+}
+
+function closeCatManager(mask){
+  mask.classList.remove("show");
+  setTimeout(()=>mask.remove(), 250);
+}
+
+function renderCatManager(mask){
+  const cats = getPwdCats();
+  let listHtml = cats.map((c, i) => `
+    <div class="pwd-cat-row">
+      <span class="cat-name">${esc(c)}</span>
+      <button class="btn-icon" data-cat-edit="${i}" title="编辑">${svg("edit")}</button>
+      <button class="btn-icon del" data-cat-del="${i}" title="删除">×</button>
+    </div>
+  `).join("");
+  mask.innerHTML = `
+    <div class="edit-dialog" role="dialog" style="max-width:360px">
+      <h3 style="justify-content:center">管理密码分类</h3>
+      <div class="pwd-cat-add">
+        <input type="text" id="catNewInput" placeholder="输入新分类名称">
+        <button class="btn primary" id="catAddBtn">添加</button>
+      </div>
+      <div class="pwd-cat-list">${listHtml || '<div style="text-align:center;padding:20px;color:var(--ink-muted);font-size:13px">暂无分类</div>'}</div>
+      <div class="actions">
+        <button class="btn ghost" id="catCloseBtn">完成</button>
+      </div>
+    </div>`;
+  
+  const close = ()=> closeCatManager(mask);
+  
+  mask.querySelector("#catCloseBtn").addEventListener("click", close);
+  
+  // 添加新分类
+  const input = mask.querySelector("#catNewInput");
+  mask.querySelector("#catAddBtn").addEventListener("click", ()=>{
+    const name = input.value.trim();
+    if(!name){ toast("请输入分类名称"); return; }
+    const cats = getPwdCats();
+    if(cats.includes(name)){ toast("分类已存在"); return; }
+    state.settings.passwordCategories = [...cats, name];
+    save();
+    renderCatManager(mask);
+    input.value = "";
+    setTimeout(()=> input.focus(), 50);
+  });
+  input.addEventListener("keydown", e=>{
+    if(e.key === "Enter") mask.querySelector("#catAddBtn").click();
+  });
+  
+  // 编辑分类
+  mask.querySelectorAll("[data-cat-edit]").forEach(btn => {
+    btn.addEventListener("click", ()=>{
+      const idx = Number(btn.dataset.catEdit);
+      const cats = getPwdCats();
+      const old = cats[idx];
+      const newName = prompt("编辑分类名称：", old);
+      if(!newName || !newName.trim()) return;
+      const trimmed = newName.trim();
+      if(trimmed === old) return;
+      if(cats.includes(trimmed)){ toast("分类名称已存在"); return; }
+      const updated = [...cats];
+      updated[idx] = trimmed;
+      state.settings.passwordCategories = updated;
+      save();
+      renderCatManager(mask);
+    });
+  });
+  
+  // 删除分类
+  mask.querySelectorAll("[data-cat-del]").forEach(btn => {
+    btn.addEventListener("click", ()=>{
+      const idx = Number(btn.dataset.catDel);
+      const cats = getPwdCats();
+      const name = cats[idx];
+      if(!confirm(`确定删除分类「${name}」？\n已有密码记录的分类不会改变。`)) return;
+      const updated = cats.filter((_, i) => i !== idx);
+      state.settings.passwordCategories = updated;
+      save();
+      renderCatManager(mask);
+    });
+  });
+}
 
 function pagePasswords(keyword){
   const list = state.passwords || [];
@@ -4126,7 +4235,7 @@ function pagePasswords(keyword){
     <div class="card" style="margin-bottom:14px">
       <h2>密码管理 <span class="sub">${list.length} 条</span></h2>
       <div style="margin-bottom:10px"><input type="text" id="pwdSearch" placeholder="搜索网站名称..." value="${esc(keyword||"")}" style="width:100%;border:1.5px solid var(--line);border-radius:12px;padding:10px;font-size:13.5px;outline:none"></div>
-      <div style="text-align:center;margin-bottom:12px"><button class="btn primary" id="pwdAddBtn">+ 新增密码</button></div>
+      <div style="text-align:center;margin-bottom:12px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap"><button class="btn primary" id="pwdAddBtn">+ 新增密码</button><button class="btn" id="pwdCatBtn">管理分类</button></div>
     </div>`;
   if(!filtered.length){
     html += `<div class="card"><div class="empty"><div class="sym">🔐</div>${kw ? "未找到匹配的密码记录" : "还没有密码记录"}</div></div>`;
@@ -4138,7 +4247,7 @@ function pagePasswords(keyword){
     if(!grouped[cat]) grouped[cat] = [];
     grouped[cat].push(p);
   });
-  const catOrder = PASSWORD_CATEGORIES.filter(c => grouped[c]);
+  const catOrder = getPwdCats().filter(c => grouped[c]);
   catOrder.forEach(c => {
     if(!grouped[c]) return;
     html += `<div class="card"><h2>${esc(c)} <span class="sub">${grouped[c].length} 条</span></h2>`;
@@ -4170,7 +4279,7 @@ function pagePasswordDetail(id){
           <div class="field"><label>网址</label><input type="text" name="url"></div>
           <div class="field"><label>用户名</label><input type="text" name="username" required></div>
           <div class="field"><label>密码</label><input type="text" name="password" required></div>
-          <div class="field"><label>分类</label><select name="category">${PASSWORD_CATEGORIES.map(c => `<option value="${c}">${c}</option>`).join("")}</select></div>
+          <div class="field"><label>分类</label><select name="category">${getPwdCats().map(c => `<option value="${c}">${c}</option>`).join("")}</select></div>
           <div class="field"><label>备注</label><input type="text" name="note"></div>
           <div style="text-align:center;display:flex;gap:10px;justify-content:center">
             <button class="btn primary" type="submit">保存</button>
@@ -4187,7 +4296,7 @@ function pagePasswordDetail(id){
         <div class="field"><label>网址</label><input type="text" name="url" value="${esc(p.url||"")}"></div>
         <div class="field"><label>用户名</label><input type="text" name="username" value="${esc(p.username)}" required></div>
         <div class="field"><label>密码</label><input type="text" name="password" value="${esc(p.password)}" required></div>
-        <div class="field"><label>分类</label><select name="category">${PASSWORD_CATEGORIES.map(c => `<option value="${c}" ${c===p.category?"selected":""}>${c}</option>`).join("")}</select></div>
+        <div class="field"><label>分类</label><select name="category">${getPwdCats().map(c => `<option value="${c}" ${c===p.category?"selected":""}>${c}</option>`).join("")}</select></div>
         <div class="field"><label>备注</label><input type="text" name="note" value="${esc(p.note||"")}"></div>
         <div style="text-align:center;display:flex;gap:10px;justify-content:center">
           <button class="btn primary" type="submit">保存修改</button>
@@ -4200,19 +4309,24 @@ function pagePasswordDetail(id){
 function bindPasswords(){
   const searchInput = document.getElementById("pwdSearch");
   if(searchInput){
+    let pwdSearchTimer = null;
     searchInput.addEventListener("input", ()=>{
-      const kw = searchInput.value;
-      const pageEl = document.getElementById("page");
-      const mainEl = document.querySelector(".main");
-      const scrollTop = mainEl ? mainEl.scrollTop : 0;
-      pageEl.innerHTML = pagePasswords(kw);
-      bindPasswords();
-      if(mainEl) mainEl.scrollTop = scrollTop;
+      clearTimeout(pwdSearchTimer);
+      pwdSearchTimer = setTimeout(() => {
+        const kw = searchInput.value;
+        const pageEl = document.getElementById("page");
+        const mainEl = document.querySelector(".main");
+        const scrollTop = mainEl ? mainEl.scrollTop : 0;
+        pageEl.innerHTML = pagePasswords(kw);
+        bindPasswords();
+        if(mainEl) mainEl.scrollTop = scrollTop;
+      }, 200);
     });
   }
   document.getElementById("pwdAddBtn")?.addEventListener("click", ()=>{
     navigate("password-detail", "new");
   });
+  document.getElementById("pwdCatBtn")?.addEventListener("click", showPwdCatManager);
   document.querySelectorAll("[data-pwd-eye]").forEach(b => {
     b.addEventListener("click", ()=>{
       const id = b.dataset.pwdEye;
