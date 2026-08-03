@@ -487,11 +487,18 @@
   .fp-body{flex:1;overflow-y:auto;min-height:120px;}
   .fp-panel{display:none;}
   .fp-panel.active{display:block;}
-  .fp-item{padding:8px 10px;font-size:13px;border-bottom:1px solid var(--line);cursor:pointer;border-radius:6px;transition:background .15s;}
+  .fp-item{padding:6px 8px;font-size:12px;border-bottom:1px solid var(--line);cursor:pointer;border-radius:4px;transition:background .15s;}
   .fp-item:active,.fp-item:hover{background:var(--glass);}
   .fp-item .muted{font-size:11px;}
   .fp-manual-row{display:flex;gap:6px;align-items:center;}
   .fp-manual-row input{padding:6px 8px;border:1px solid var(--line);border-radius:6px;font-size:13px;background:white;}
+
+  /* 食物份量选择面板 */
+  .fd-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+  .fd-name{font-size:14px;font-weight:500;}
+  .fd-row{display:flex;align-items:center;gap:8px;font-size:13px;flex-wrap:wrap;}
+  .fd-arrow{color:var(--ink-muted);}
+  .fd-kcal{font-size:16px;font-weight:600;font-family:var(--font-mono);}
 
   @media(max-width:600px){
     .diet-kcal{font-size:20px;}
@@ -1228,6 +1235,27 @@ function pageDietAdd(meal){
       </div>
       <div class="fp-tabs" id="fpTabs">${catTabs}</div>
     </div>
+
+    <!-- 食物份量选择面板（点击食物后显示） -->
+    <div class="card" id="foodDetailPanel" style="display:none">
+      <div class="fd-header">
+        <span class="fd-name" id="fdName"></span>
+        <span class="muted" id="fdBase"></span>
+      </div>
+      <div class="fd-row">
+        <span>食用量:</span>
+        <input type="number" id="fdQty" value="100" min="1" step="5" style="width:70px;padding:5px 6px;border:1px solid var(--line);border-radius:6px;font-size:13px;text-align:center">
+        <span id="fdUnitLabel">g</span>
+        <span class="fd-arrow">→</span>
+        <span class="fd-kcal" id="fdKcal">0</span>
+        <span>kcal</span>
+      </div>
+      <div style="text-align:center;margin-top:8px;display:flex;gap:8px;justify-content:center">
+        <button class="btn primary sm" id="fdAdd">确认添加</button>
+        <button class="btn ghost sm" id="fdCancel">取消</button>
+      </div>
+    </div>
+
     <div class="card" style="flex:1;overflow-y:auto">
       <div class="fp-body" id="fpBody">
         <div class="fp-panel active" data-cat="all">${allPanel}</div>
@@ -1241,6 +1269,16 @@ function pageDietAdd(meal){
         <input type="number" id="fpManualKcal" placeholder="热量 kcal" style="flex:1">
         <input type="number" id="fpManualQty" placeholder="份数" value="1" style="flex:0.6" min="0.5" step="0.5">
         <button class="btn primary sm" id="fpManualAdd">添加</button>
+      </div>
+      <div class="fp-converter" style="margin-top:8px;padding-top:8px;border-top:1px solid var(--line)">
+        <span style="font-size:12px;color:var(--ink-muted)">千焦→大卡转换:</span>
+        <div style="display:flex;gap:6px;align-items:center;margin-top:4px">
+          <input type="number" id="kjInput" placeholder="输入千焦" style="flex:1;padding:5px 6px;border:1px solid var(--line);border-radius:6px;font-size:13px">
+          <span style="font-size:13px">kJ =</span>
+          <span class="num" id="kcalOutput" style="font-size:13px;font-weight:500">0</span>
+          <span style="font-size:13px">kcal</span>
+          <button class="btn ghost sm" id="kjUseBtn" style="font-size:12px">使用</button>
+        </div>
       </div>
     </div>
     <div class="card">
@@ -2047,16 +2085,68 @@ function bindDietAdd(){
     }
   });
 
-  // 从食物库选择
+  // 份量选择面板状态
+  let selectedFood = null;
+
+  // 从食物库选择 → 显示份量面板
   document.querySelectorAll(".fp-item").forEach(item => {
     item.addEventListener("click", ()=>{
       const name = item.dataset.name;
       const kcal = num(item.dataset.kcal);
-      const unit = item.dataset.unit || "份";
-      const d = ensureDay(state.diet, todayStr());
-      d.items.push({name, kcal, meal, unit, qty: 1, img: null});
-      save(); toast("已添加 "+name); navigate("diet");
+      const unit = item.dataset.unit || "100g";
+      selectedFood = {name, kcal, unit};
+      const panel = document.getElementById("foodDetailPanel");
+      document.getElementById("fdName").textContent = name;
+      document.getElementById("fdBase").textContent = `${kcal} kcal / ${unit}`;
+      const isGram = unit.includes("g") || unit.includes("ml");
+      document.getElementById("fdQty").value = isGram ? 100 : 1;
+      document.getElementById("fdUnitLabel").textContent = isGram ? "g" : "份";
+      updateFdKcal();
+      panel.style.display = "block";
+      panel.scrollIntoView({behavior:"smooth", block:"nearest"});
     });
+  });
+
+  // 计算份量热量
+  function updateFdKcal(){
+    if(!selectedFood) return;
+    const qty = num(document.getElementById("fdQty").value) || 0;
+    const unit = selectedFood.unit;
+    let ratio = 1;
+    if(unit.includes("g") || unit.includes("ml")){
+      const base = parseInt(unit) || 100;
+      ratio = qty / base;
+    } else {
+      ratio = qty;
+    }
+    document.getElementById("fdKcal").textContent = Math.round(selectedFood.kcal * ratio);
+  }
+  document.getElementById("fdQty").addEventListener("input", updateFdKcal);
+
+  // 确认添加
+  document.getElementById("fdAdd").addEventListener("click", ()=>{
+    if(!selectedFood) return;
+    const qty = num(document.getElementById("fdQty").value) || 0;
+    const unit = selectedFood.unit;
+    let ratio = 1;
+    if(unit.includes("g") || unit.includes("ml")){
+      const base = parseInt(unit) || 100;
+      ratio = qty / base;
+    } else {
+      ratio = qty;
+    }
+    const totalKcal = Math.round(selectedFood.kcal * ratio);
+    const foodName = selectedFood.name;
+    const d = ensureDay(state.diet, todayStr());
+    d.items.push({name: foodName, kcal: totalKcal, meal, unit, qty, img: null});
+    save(); document.getElementById("foodDetailPanel").style.display = "none"; selectedFood = null;
+    toast("已添加 "+foodName); navigate("diet");
+  });
+
+  // 取消
+  document.getElementById("fdCancel").addEventListener("click", ()=>{
+    document.getElementById("foodDetailPanel").style.display = "none";
+    selectedFood = null;
   });
 
   // 手动添加
@@ -2071,6 +2161,22 @@ function bindDietAdd(){
     document.getElementById("fpManualName").value = "";
     document.getElementById("fpManualKcal").value = "";
     save(); toast("已添加"); navigate("diet");
+  });
+
+  // 千焦→大卡转换
+  const kjInput = document.getElementById("kjInput");
+  const kcalOutput = document.getElementById("kcalOutput");
+  if(kjInput) kjInput.addEventListener("input", ()=>{
+    const kj = num(kjInput.value);
+    kcalOutput.textContent = kj > 0 ? Math.round(kj / 4.184) : "0";
+  });
+  const kjUseBtn = document.getElementById("kjUseBtn");
+  if(kjUseBtn) kjUseBtn.addEventListener("click", ()=>{
+    const kj = num(kjInput.value);
+    if(kj <= 0){ toast("请输入千焦数值"); return; }
+    const kcal = Math.round(kj / 4.184);
+    document.getElementById("fpManualKcal").value = kcal;
+    toast("已填入 "+kcal+" kcal");
   });
 
   // AI拍照识别
