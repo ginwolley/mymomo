@@ -255,11 +255,10 @@
 
   .pwd-item{border-bottom:1px solid var(--line);padding:10px 0;}
   .pwd-item:last-child{border-bottom:none;}
-  .pwd-row{display:flex;align-items:center;gap:8px;flex-wrap:nowrap;}
-  .pwd-site{font-weight:600;color:var(--ink);min-width:70px;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:0;}
-  .pwd-user{color:var(--ink-light);font-size:12px;flex:1 1 80px;min-width:50px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-  .pwd-pw{color:var(--ink-muted);font-family:var(--font-mono);font-size:11px;letter-spacing:0;min-width:40px;flex-shrink:0;white-space:nowrap;}
-  .pwd-actions{display:flex;align-items:center;gap:4px;flex-shrink:0;}
+  .pwd-row{display:flex;align-items:center;gap:8px;}
+  .pwd-site{font-weight:600;color:var(--ink);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:0;min-width:60px;max-width:140px;}
+  .pwd-url{color:var(--ink-light);font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0;}
+  .pwd-actions{display:flex;align-items:center;gap:2px;flex-shrink:0;}
 
   /* ---------- tables / lists ---------- */
   .tbl{width:100%;border-collapse:collapse;font-size:12.5px;}
@@ -492,12 +491,11 @@
     .diet-ai-row{flex-wrap:nowrap;}
     .diet-ai-row input{flex:1;min-width:0;}
 
-    /* 密码列表在手机上允许换行 */
-    .pwd-row{flex-wrap:wrap;gap:4px;}
-    .pwd-site{min-width:60px;font-size:12px;}
-    .pwd-user{flex:1 1 100%;min-width:0;order:10;margin-top:2px;}
-    .pwd-pw{font-size:10px;min-width:30px;}
-    .pwd-actions{gap:2px;}
+    /* 密码列表在手机上 */
+    .pwd-row{flex-wrap:nowrap;gap:4px;}
+    .pwd-site{min-width:50px;font-size:12px;max-width:100px;}
+    .pwd-url{font-size:10px;}
+    .pwd-actions{gap:1px;}
   }
 
   @media(min-width:769px){
@@ -843,6 +841,7 @@ const ICONS = {
   eye:'<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>',
   'eye-off':'<path d="M1 1l22 22"/><path d="M9.58 9.58A3 3 0 0 0 14.42 14.42"/><path d="M4.22 6.22A16.37 16.37 0 0 0 1 12s4 8 11 8c1.85 0 3.58-.4 5.16-1.1"/><path d="M19.78 17.78A16.37 16.37 0 0 0 23 12s-4-8-11-8c-1.85 0-3.58.4-5.16 1.1"/>',
   edit:'<path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>',
+  copy:'<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
 };
 
 // MET 值表（代谢当量）：kcal = MET × 体重(kg) × 时长(h)
@@ -4147,6 +4146,55 @@ function closeCatManager(mask){
   setTimeout(()=>mask.remove(), 250);
 }
 
+function showPwdCatEdit(idx, oldName){
+  const editMask = document.createElement("div");
+  editMask.className = "edit-mask";
+  editMask.innerHTML = `
+    <div class="edit-dialog" role="dialog" style="max-width:340px">
+      <h3 style="justify-content:center">编辑分类</h3>
+      <div class="field">
+        <label>分类名称</label>
+        <input type="text" id="catEditInput" value="${esc(oldName)}" style="text-align:center" />
+      </div>
+      <div class="actions">
+        <button class="btn ghost" id="catEditCancel">取消</button>
+        <button class="btn primary" id="catEditSave">保存</button>
+      </div>
+    </div>`;
+  document.body.appendChild(editMask);
+  requestAnimationFrame(()=> editMask.classList.add("show"));
+  
+  const input = editMask.querySelector("#catEditInput");
+  input.focus();
+  input.select();
+  
+  const close = ()=>{
+    editMask.classList.remove("show");
+    setTimeout(()=>editMask.remove(), 250);
+  };
+  editMask.querySelector("#catEditCancel").addEventListener("click", close);
+  editMask.addEventListener("click", e=>{ if(e.target===editMask) close(); });
+  editMask.querySelector("#catEditSave").addEventListener("click", ()=>{
+    const trimmed = input.value.trim();
+    if(!trimmed){ toast("请输入分类名称"); return; }
+    if(trimmed === oldName){ close(); return; }
+    const cats = getPwdCats();
+    if(cats.includes(trimmed)){ toast("分类名称已存在"); return; }
+    const updated = [...cats];
+    updated[idx] = trimmed;
+    state.settings.passwordCategories = updated;
+    save();
+    close();
+    // 刷新分类管理弹窗
+    const mgrMask = document.querySelector(".edit-mask.show");
+    if(mgrMask) renderCatManager(mgrMask);
+  });
+  input.addEventListener("keydown", e=>{
+    if(e.key === "Enter") editMask.querySelector("#catEditSave").click();
+    if(e.key === "Escape") close();
+  });
+}
+
 function renderCatManager(mask){
   const cats = getPwdCats();
   let listHtml = cats.map((c, i) => `
@@ -4196,16 +4244,7 @@ function renderCatManager(mask){
       const idx = Number(btn.dataset.catEdit);
       const cats = getPwdCats();
       const old = cats[idx];
-      const newName = prompt("编辑分类名称：", old);
-      if(!newName || !newName.trim()) return;
-      const trimmed = newName.trim();
-      if(trimmed === old) return;
-      if(cats.includes(trimmed)){ toast("分类名称已存在"); return; }
-      const updated = [...cats];
-      updated[idx] = trimmed;
-      state.settings.passwordCategories = updated;
-      save();
-      renderCatManager(mask);
+      showPwdCatEdit(idx, old);
     });
   });
   
@@ -4248,17 +4287,20 @@ function pagePasswords(keyword){
     grouped[cat].push(p);
   });
   const catOrder = getPwdCats().filter(c => grouped[c]);
-  catOrder.forEach(c => {
+  // 同时显示不在预设分类中的密码分组
+  const extraCats = Object.keys(grouped).filter(c => !getPwdCats().includes(c)).sort();
+  const allCats = [...catOrder, ...extraCats];
+  allCats.forEach(c => {
     if(!grouped[c]) return;
     html += `<div class="card"><h2>${esc(c)} <span class="sub">${grouped[c].length} 条</span></h2>`;
     grouped[c].forEach(p => {
+      const displayUrl = p.url ? p.url.replace(/^https?:\/\//, "").replace(/\/.*$/, "") : "";
       html += `<div class="pwd-item" data-pwid="${p.id}">
         <div class="pwd-row">
           <span class="pwd-site">${esc(p.site)}</span>
-          <span class="pwd-user">${esc(p.username)}</span>
-          <span class="pwd-pw" data-pwid="${p.id}">${"●".repeat(8)}</span>
+          <span class="pwd-url">${esc(displayUrl)}</span>
           <span class="pwd-actions">
-            <button class="btn-icon" data-pwd-eye="${p.id}" title="显示/隐藏密码">${svg("eye")}</button>
+            <button class="btn-icon" data-pwd-copy="${p.id}" title="复制密码">${svg("copy")}</button>
             <button class="btn-icon" data-pwd-view="${p.id}" title="查看详情">${svg("search")}</button>
             <button class="del" data-pwd-del="${p.id}" title="删除">×</button>
           </span>
@@ -4327,21 +4369,21 @@ function bindPasswords(){
     navigate("password-detail", "new");
   });
   document.getElementById("pwdCatBtn")?.addEventListener("click", showPwdCatManager);
-  document.querySelectorAll("[data-pwd-eye]").forEach(b => {
+  // 复制密码
+  document.querySelectorAll("[data-pwd-copy]").forEach(b => {
     b.addEventListener("click", ()=>{
-      const id = b.dataset.pwdEye;
+      const id = b.dataset.pwdCopy;
       const p = (state.passwords || []).find(x => x.id === id);
-      if(!p) return;
-      const span = document.querySelector(`.pwd-pw[data-pwid="${id}"]`);
-      if(!span) return;
-      if(span.dataset.reveal === "1"){
-        span.textContent = "●".repeat(8);
-        span.dataset.reveal = "0";
-        b.innerHTML = svg("eye");
+      if(!p || !p.password) return;
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(p.password).then(()=>toast("密码已复制")).catch(()=>{});
       } else {
-        span.textContent = p.password;
-        span.dataset.reveal = "1";
-        b.innerHTML = svg("eye-off");
+        // fallback
+        const ta = document.createElement("textarea");
+        ta.value = p.password; ta.style.position="fixed"; ta.style.opacity="0";
+        document.body.appendChild(ta); ta.select(); document.execCommand("copy");
+        document.body.removeChild(ta);
+        toast("密码已复制");
       }
     });
   });
