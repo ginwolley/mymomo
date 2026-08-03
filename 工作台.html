@@ -2748,7 +2748,7 @@ function bindDiet(){
 
 /* 构建食物历史索引（普通食物 + 包装食品分开） */
 function buildFoodHistory(){
-  const foodHistory = {}; // name -> {name, baseKcal, unit, lastUsed}
+  const foodHistory = {}; // name -> {name, baseKcal, lastQty, unit, lastUsed}
   const pkgHistory = {};  // name -> {name, kjPer100g, unit, lastUsed}
   state.diet.forEach(d => {
     (d.items || []).forEach(item => {
@@ -2766,13 +2766,36 @@ function buildFoodHistory(){
         }
       } else {
         if(!foodHistory[key]){
-          const baseKcal = item.baseKcal || Math.round(item.kcal / Math.max(item.qty || 100, 1) * 100);
+          // 优先使用已存储的 baseKcal，否则安全计算
+          let baseKcal = item.baseKcal;
+          if(!baseKcal || baseKcal <= 0){
+            const qty = item.qty || 100;
+            const unit = item.unit || 'g';
+            if(unit.includes('g') || unit.includes('ml')){
+              // qty 是克数，kcal 是总热量
+              baseKcal = Math.round(item.kcal / qty * 100);
+              // 防御：如果 qty 很小（如1），可能导致 baseKcal 暴涨
+              if(baseKcal > 3000 && item.kcal > 0 && item.kcal < 3000){
+                baseKcal = Math.round(item.kcal); // 直接用 kcal 作为每100g值
+              }
+            } else {
+              // 非克数单位，直接用 kcal 作为每100g值
+              baseKcal = Math.round(item.kcal);
+            }
+          }
           foodHistory[key] = {
             name: item.name,
             baseKcal,
+            lastQty: item.qty || 100,
             unit: item.unit || 'g',
             lastUsed: d.date
           };
+        } else {
+          // 更新最近使用的重量
+          if(item.qty){
+            foodHistory[key].lastQty = item.qty;
+            foodHistory[key].lastUsed = d.date;
+          }
         }
       }
     });
@@ -2807,19 +2830,22 @@ function bindDietAdd(){
     document.getElementById("fdKcal").textContent = Math.round(selectedFood.kcal * ratio);
   }
 
-  function showFoodDetailPanel(name, kcalPer100g, unit, showSuggestions){
+  function showFoodDetailPanel(name, kcalPer100g, unit, showSuggestions, lastQty){
     selectedFood = {name, kcal: kcalPer100g, unit: "g"};
     const panel = document.getElementById("foodDetailPanel");
     document.getElementById("fdName").textContent = name;
     document.getElementById("fdBase").textContent = `${kcalPer100g} kcal / 100g`;
-    document.getElementById("fdQty").value = 100;
+    document.getElementById("fdQty").value = lastQty || 100;
     document.getElementById("fdUnitLabel").textContent = "g";
 
     // 份量建议按钮
     const sug = document.getElementById("fdServingSuggestions");
     if(showSuggestions && sug){
-      sug.style.display = "block";
-      sug.innerHTML = '<span class="muted" style="font-size:11px;margin-right:4px">建议份量:</span>' +
+      sug.style.display = "flex";
+      sug.style.gap = "6px";
+      sug.style.alignItems = "center";
+      sug.style.flexWrap = "nowrap";
+      sug.innerHTML = '<span class="muted" style="font-size:11px;white-space:nowrap">建议份量:</span>' +
         '<button class="btn ghost sm" data-qty="80">一人份(80g)</button>' +
         '<button class="btn ghost sm" data-qty="150">小份(150g)</button>' +
         '<button class="btn ghost sm" data-qty="250">大份(250g)</button>';
@@ -2854,7 +2880,7 @@ function bindDietAdd(){
     const totalKcal = Math.round(selectedFood.kcal * ratio);
     const foodName = selectedFood.name;
     const d = ensureDay(state.diet, todayStr());
-    d.items.push({name: foodName, kcal: totalKcal, meal, unit, qty, img: null});
+    d.items.push({name: foodName, kcal: totalKcal, baseKcal: selectedFood.kcal, meal, unit, qty, img: null});
     save(); document.getElementById("foodDetailPanel").style.display = "none"; selectedFood = null;
     toast("已添加 "+foodName); navigate("diet");
   });
@@ -2881,7 +2907,7 @@ function bindDietAdd(){
       if(matches.length === 0){ searchHistory.style.display = "none"; if(searchHint) searchHint.textContent = "未找到历史记录，点击搜索使用AI估算"; return; }
       if(searchHint) searchHint.textContent = `找到 ${matches.length} 条历史记录，点击可直接填入`;
       searchHistory.innerHTML = matches.map(f =>
-        '<div class="fh-item" data-name="'+esc(f.name)+'" data-kcal="'+f.baseKcal+'" data-unit="'+esc(f.unit)+'">' +
+        '<div class="fh-item" data-name="'+esc(f.name)+'" data-kcal="'+f.baseKcal+'" data-unit="'+esc(f.unit)+'" data-qty="'+(f.lastQty||100)+'">' +
           '<span class="fh-name">'+esc(f.name)+'</span>' +
           '<span class="fh-info">'+f.baseKcal+' kcal/100g</span>' +
         '</div>'
@@ -2894,7 +2920,7 @@ function bindDietAdd(){
       searchHistory.style.display = "none";
       searchInput.value = "";
       if(searchHint) searchHint.textContent = "";
-      showFoodDetailPanel(item.dataset.name, parseFloat(item.dataset.kcal), item.dataset.unit || "g", false);
+      showFoodDetailPanel(item.dataset.name, parseFloat(item.dataset.kcal), item.dataset.unit || "g", false, parseFloat(item.dataset.qty) || 100);
     });
   }
 
@@ -2906,7 +2932,7 @@ function bindDietAdd(){
       const key = val.toLowerCase();
       if(foodHistory[key]){
         const f = foodHistory[key];
-        showFoodDetailPanel(f.name, f.baseKcal, f.unit, false);
+        showFoodDetailPanel(f.name, f.baseKcal, f.unit, false, f.lastQty || 100);
         if(searchHint) searchHint.textContent = "";
         searchInput.value = "";
         return;
