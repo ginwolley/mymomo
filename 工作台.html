@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover" />
 <meta name="theme-color" content="#FFF9F0" />
 <title>momo</title>
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -65,6 +65,7 @@
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
   html,body{margin:0;padding:0;}
+  html{-webkit-text-size-adjust:100%;}
   body{
     font-family:var(--font-body);
     color:var(--ink);
@@ -143,7 +144,7 @@
   .main{flex:1;min-width:0;display:flex;flex-direction:column;overflow-y:auto;}
   .topbar{
     display:flex;align-items:center;justify-content:space-between;
-    padding:12px 20px 10px;
+    padding:calc(12px + env(safe-area-inset-top)) 20px 10px;
     position:sticky;top:0;z-index:20;
     background:var(--glass);
     backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
@@ -382,7 +383,7 @@
     .nav-mask{display:block;opacity:0;pointer-events:none;transition:opacity .3s;}
     body.nav-open .nav-mask{opacity:1;pointer-events:auto;}
     .hamburger{display:inline-flex;align-items:center;justify-content:center;}
-    .topbar{padding:10px 16px 8px;}
+    .topbar{padding:calc(10px + env(safe-area-inset-top)) 16px 8px;}
     .topbar h1{font-size:17px;}
     .content{padding:10px 14px 50px;max-width:100%;}
     .card{padding:13px 14px;margin-bottom:10px;}
