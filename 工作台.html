@@ -318,6 +318,11 @@
   .seg button:hover{background:rgba(255,255,255,.6);color:var(--ink);}
   .seg button.active{background:#fff;color:var(--gold-dark);font-weight:700;box-shadow:0 1px 6px rgba(30,90,110,.10);}
   .seg.period button.active{background:#fff;color:#D96A8C;font-weight:700;box-shadow:0 1px 6px rgba(217,106,140,.14);}
+  /* 孙级选项卡（工资/房补/汇总）— 扁平淡青，与主seg区分 */
+  .seg-sub{display:flex;border-radius:10px;padding:3px;background:var(--bg-soft);overflow:hidden;gap:2px;margin-bottom:16px;}
+  .seg-sub button{border:none;background:transparent;padding:6px 0;font-size:12.5px;color:var(--ink-light);border-radius:8px;transition:background .2s,color .2s;font-weight:500;font-family:var(--font);flex:1;}
+  .seg-sub button:hover{background:rgba(255,255,255,.5);color:var(--ink);}
+  .seg-sub button.active{background:var(--glass);color:var(--gold-dark);font-weight:600;box-shadow:0 1px 4px rgba(30,90,110,.08);}
 
   .legend{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--ink-muted);margin-top:8px;}
   .legend span{display:inline-flex;align-items:center;gap:5px;}
@@ -1125,7 +1130,7 @@ function periodSeg(){
 }
 function salarySeg(active){
   const items = [{id:"salary-basic",label:"基本工资"},{id:"salary-housing",label:"房补"},{id:"salary-summary",label:"汇总"}];
-  return `<div class="seg">${items.map(i=>`<button class="${i.id===active?'active':''}" onclick="navigate('${i.id}')">${i.label}</button>`).join('')}</div>`;
+  return `<div class="seg-sub">${items.map(i=>`<button class="${i.id===active?'active':''}" onclick="navigate('${i.id}')">${i.label}</button>`).join('')}</div>`;
 }
 function stockSeg(active){
   const items = [{id:"stock-overview",label:"统计"},{id:"stock-add",label:"新增"},{id:"stock-all",label:"全部"},{id:"stock-spaces",label:"空间"}];
@@ -1227,7 +1232,7 @@ function pageOverview(){
   const wTrend = state.weight.slice(-7).map(d=>({date:d.date, value:num(d.value)}));
   const trendDiff = wTrend.length>=2 ? round(num(wTrend[wTrend.length-1].value)-num(wTrend[0].value)) : 0;
   const trendCard = wTrend.length>=2 ? `
-    <div class="card">
+    <div class="card" style="cursor:pointer" data-nav="weight">
       <h2>体重趋势 <span class="sub">近7天 · ${trendDiff>=0?"+":""}${trendDiff} kg</span></h2>
       ${lineChart([{color:"var(--gold-dark)", data:wTrend.map(d=>d.value)}], wTrend.map(d=>d.date))}
     </div>` : '';
@@ -1315,7 +1320,7 @@ function pageOverview(){
   // 今日运动（对齐demo模块）
   const exItems = ew ? ew.items : [];
   const exerciseCard = `
-    <div class="card">
+    <div class="card" style="cursor:pointer" data-nav="exercise">
       <h2>今日运动 <span class="sub">消耗 ${round(outK)} kcal</span></h2>
       ${exItems.length ? `<table><tbody>${exItems.map(x=>`<tr><td>${esc(x.type)}</td><td class="num">${x.duration} 分</td><td class="num">${round(x.kcal)} kcal</td></tr>`).join("")}</tbody></table>`
         : `<div class="hint" style="margin:0">暂无运动记录，去记录一条吧</div>`}
@@ -1789,13 +1794,23 @@ function pagePeriod(){
   }
   recHtml += `</div>`;
 
-  // 历史记录（demo 风格：居中展开按钮）
+  // 历史记录（默认仅显示最近6个月，其余展开显示）
+  const sixMonthsAgo = new Date();
+  sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+  const sixMonthsAgoStr = fmtDate(sixMonthsAgo);
+  const recentHist = psSorted.filter(p => p.start >= sixMonthsAgoStr);
+  const hasMore = psSorted.length > recentHist.length;
+  const histRows = recentHist.slice().reverse().map(p => {
+    const idx = psSorted.indexOf(p);
+    return `<tr><td>${p.start}</td><td>${p.end}</td><td class="num">${daysBetween(p.start,p.end)+1}</td><td class="muted">${esc(p.note||"")}</td><td><button class="del" data-del-period="${idx}">×</button></td></tr>`;
+  }).join("");
   const histHtml = `
     <div class="card" style="text-align:center">
-      <h2 style="justify-content:center">历史记录 <span class="sub">共 ${psSorted.length} 次</span></h2>
-      <button class="btn soft sm" id="histOpen" style="display:inline-flex;align-items:center;gap:5px">
+      <h2 style="justify-content:center">历史记录 <span class="sub">${hasMore ? `近6个月 ${recentHist.length} 次 · 共 ${psSorted.length} 次` : `共 ${psSorted.length} 次`}</span></h2>
+      ${recentHist.length ? `<div class="scroll"><table><thead><tr><th>开始</th><th>结束</th><th>天数</th><th>备注</th><th></th></tr></thead><tbody>${histRows}</tbody></table></div>` : '<div class="empty" style="font-size:12px;color:var(--ink-muted);padding:8px 0">暂无经期记录</div>'}
+      ${hasMore ? `<button class="btn soft sm" id="histOpen" style="display:inline-flex;align-items:center;gap:5px;margin-top:10px">
         展开全部记录 <svg viewBox="0 0 24 24" width="14" height="14" style="stroke:currentColor;fill:none;stroke-width:2"><path d="M6 9l6 6 6-6"/></svg>
-      </button>
+      </button>` : ''}
     </div>`;
 
   return calendarSection + statHtml + recHtml + histHtml;
@@ -2274,7 +2289,6 @@ function bindTabRecord(){
 /* ---- Tab容器页：更多（功能入口列表） ---- */
 function pageTabMore(){
   const items = [
-    {id:"passwords",     ic:"lock",   nm:"密码", ds:"网站 · 账号管理",        cls:"t-sky"},
     {id:"settings",      ic:"gear",   nm:"设置", ds:"AI · 数据 · 同步",        cls:"t-rose"},
   ];
   return `<div class="card" style="padding:6px 14px">
@@ -2556,7 +2570,7 @@ function bindPage(id, params){
 function bindOverview(){
   startSalaryTimer();
   // 生理期卡、工资卡可点击
-  document.querySelectorAll("[data-nav='period'],[data-nav='salary-basic']").forEach(el=>{
+  document.querySelectorAll("[data-nav='period'],[data-nav='salary-basic'],[data-nav='weight'],[data-nav='exercise']").forEach(el=>{
     el.addEventListener("click", ()=>{
       if(window.innerWidth > 768){
         navigate(el.dataset.nav);
@@ -4105,19 +4119,25 @@ window.bindStockSpaces = bindStockSpaces;
 /* ============== 密码管理 ============== */
 const PASSWORD_CATEGORIES = ["工作","社交","银行","购物","娱乐","其他"];
 
-function pagePasswords(){
+function pagePasswords(keyword){
   const list = state.passwords || [];
+  const kw = (keyword || "").trim().toLowerCase();
+  let filtered = list;
+  if(kw){
+    filtered = list.filter(p => (p.site || "").toLowerCase().includes(kw));
+  }
   let html = `
     <div class="card" style="margin-bottom:14px">
       <h2>密码管理 <span class="sub">${list.length} 条</span></h2>
+      <div style="margin-bottom:10px"><input type="text" id="pwdSearch" placeholder="搜索网站名称..." value="${esc(keyword||"")}" style="width:100%;border:1.5px solid var(--line);border-radius:12px;padding:10px;font-size:13.5px;outline:none"></div>
       <div style="text-align:center;margin-bottom:12px"><button class="btn primary" id="pwdAddBtn">+ 新增密码</button></div>
     </div>`;
-  if(!list.length){
-    html += '<div class="card"><div class="empty"><div class="sym">🔐</div>还没有密码记录</div></div>';
+  if(!filtered.length){
+    html += `<div class="card"><div class="empty"><div class="sym">🔐</div>${kw ? "未找到匹配的密码记录" : "还没有密码记录"}</div></div>`;
     return html;
   }
   const grouped = {};
-  list.forEach(p => {
+  filtered.forEach(p => {
     const cat = p.category || "其他";
     if(!grouped[cat]) grouped[cat] = [];
     grouped[cat].push(p);
@@ -4184,6 +4204,18 @@ function pagePasswordDetail(id){
 }
 
 function bindPasswords(){
+  const searchInput = document.getElementById("pwdSearch");
+  if(searchInput){
+    searchInput.addEventListener("input", ()=>{
+      const kw = searchInput.value;
+      const pageEl = document.getElementById("page");
+      const mainEl = document.querySelector(".main");
+      const scrollTop = mainEl ? mainEl.scrollTop : 0;
+      pageEl.innerHTML = pagePasswords(kw);
+      bindPasswords();
+      if(mainEl) mainEl.scrollTop = scrollTop;
+    });
+  }
   document.getElementById("pwdAddBtn")?.addEventListener("click", ()=>{
     navigate("password-detail", "new");
   });
