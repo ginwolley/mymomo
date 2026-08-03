@@ -139,7 +139,10 @@
     display:flex;align-items:center;justify-content:space-between;
     padding:calc(12px + env(safe-area-inset-top)) 20px 10px;
     position:sticky;top:0;z-index:20;
-    background:var(--bg);
+    background:
+      radial-gradient(circle at 12% 12%, rgba(124,196,232,.16) 0%, transparent 42%),
+      radial-gradient(circle at 88% 22%, rgba(54,209,201,.12) 0%, transparent 38%),
+      var(--bg);
     border-bottom:1px solid var(--glass-border);
   }
   .topbar h1{font-size:20px;margin:0;font-weight:700;letter-spacing:.3px;color:var(--ink);}
