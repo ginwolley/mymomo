@@ -2012,8 +2012,7 @@ function pageSalaryBasic(){
 /* ============== 页面：添加工资 ============== */
 function pageSalaryAdd(){
   const fields = SALARY_HEADERS.map(h=>`<div class="field"><label>${esc(h)}</label><input type="text" name="s-${h}" value="0" placeholder="0"></div>`).join("");
-  return `<div class="cal-head" style="position:sticky;top:0;z-index:20;background:var(--glass);padding:10px 0"><h2>记录基本工资</h2></div>
-    <div class="content" style="overflow-y:auto">
+  return `<div class="content" style="overflow-y:auto">
     <div class="card">
       <form id="salaryForm">
         <div class="field"><label>日期</label><input type="text" name="s-date" placeholder="如 2025.08" value="${todayStr().slice(0,7).replace('-','.')}" required></div>
@@ -2028,8 +2027,7 @@ function pageSalaryAdd(){
 function pageSalaryAll(){
   const sorted = state.salary.slice().sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:0);
   const rows = sorted.slice().reverse().map((r)=>{ const idx = state.salary.indexOf(r); return `<tr><td class="nowrap">${r.date}</td><td class="nowrap num">${round(r["应发合计"])}</td><td class="nowrap num">${round(r["扣发合计"])}</td><td class="nowrap num">${round(r["实发工资"])}</td><td class="nowrap"><button class="del" data-view-salary="${idx}"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="6.5" cy="6.5" r="4.5"/><line x1="9.8" y1="9.8" x2="14" y2="14"/></svg></button><button class="del" data-del-salary="${idx}">×</button></td></tr>`; }).join("");
-  return `<div class="cal-head" style="position:sticky;top:0;z-index:20;background:var(--glass);padding:10px 0"><h2>全部工资记录</h2></div>
-    <div class="content" style="overflow-y:auto"><div class="card">
+  return `<div class="content" style="overflow-y:auto"><div class="card">
       ${sorted.length ? `<div class="scroll"><table><thead><tr><th>日期</th><th>应发合计</th><th>扣发合计</th><th>实发工资</th><th>操作</th></tr></thead><tbody>${rows}</tbody></table></div>` : '<div class="empty"><div class="sym">💰</div>暂无工资记录</div>'}
     </div></div>`;
 }
@@ -2039,8 +2037,7 @@ function pageSalaryDetail(idx){
   const r = state.salary[idx];
   if(!r) return '<div class="empty"><div class="sym">💰</div>记录不存在</div>';
   const fields = SALARY_HEADERS.map(h=>`<div class="field"><label>${esc(h)}</label><input type="text" name="sd-${h}" value="${r[h]}"></div>`).join("");
-  return `<div class="cal-head" style="position:sticky;top:0;z-index:20;background:var(--glass);padding:10px 0"><h2>工资详情 · ${r.date}</h2></div>
-    <div class="content" style="overflow-y:auto">
+  return `<div class="content" style="overflow-y:auto">
     <div class="card">
       <form id="salaryEditForm">
         <div class="field"><label>日期</label><input type="text" name="sd-date" value="${r.date}"></div>
@@ -2075,8 +2072,7 @@ function pageSalaryHousing(){
 
 /* ============== 页面：添加房补 ============== */
 function pageHousingAdd(){
-  return `<div class="cal-head" style="position:sticky;top:0;z-index:20;background:var(--glass);padding:10px 0"><h2>记录房补</h2></div>
-    <div class="content" style="overflow-y:auto">
+  return `<div class="content" style="overflow-y:auto">
     <div class="card">
       <form id="housingForm">
         <div class="field"><label>日期</label><input type="text" name="h-date" placeholder="如 2025.08" value="${todayStr().slice(0,7).replace('-','.')}" required></div>
@@ -2092,8 +2088,7 @@ function pageHousingAll(){
   const sorted = state.housingAllowance.slice().sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:0);
   const total = sorted.reduce((s,x)=>s+num(x.amount),0);
   const rows = sorted.slice().reverse().map((r)=>{ const idx = state.housingAllowance.indexOf(r); return `<tr><td class="nowrap">${r.date}</td><td class="nowrap num">${round(r.amount)}</td><td class="nowrap"><button class="del" data-view-housing="${idx}"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="6.5" cy="6.5" r="4.5"/><line x1="9.8" y1="9.8" x2="14" y2="14"/></svg></button><button class="del" data-del-housing="${idx}">×</button></td></tr>`; }).join("");
-  return `<div class="cal-head" style="position:sticky;top:0;z-index:20;background:var(--glass);padding:10px 0"><h2>全部房补记录</h2></div>
-    <div class="content" style="overflow-y:auto"><div class="card">
+  return `<div class="content" style="overflow-y:auto"><div class="card">
       <h2>房补记录 <span class="sub">共 ${sorted.length} 条 · 合计 <span class="num">${round(total)}</span></span></h2>
       ${sorted.length ? `<div class="scroll"><table><thead><tr><th>日期</th><th>金额</th><th>操作</th></tr></thead><tbody>${rows}</tbody></table></div>` : '<div class="empty"><div class="sym">🏠</div>暂无房补记录</div>'}
     </div></div>`;
@@ -2103,8 +2098,7 @@ function pageHousingAll(){
 function pageHousingDetail(idx){
   const r = state.housingAllowance[idx];
   if(!r) return '<div class="empty"><div class="sym">🏠</div>记录不存在</div>';
-  return `<div class="cal-head" style="position:sticky;top:0;z-index:20;background:var(--glass);padding:10px 0"><h2>房补详情 · ${r.date}</h2></div>
-    <div class="content" style="overflow-y:auto">
+  return `<div class="content" style="overflow-y:auto">
     <div class="card">
       <form id="housingEditForm">
         <div class="field"><label>日期</label><input type="text" name="hd-date" value="${r.date}"></div>
@@ -2143,7 +2137,6 @@ function pageSalarySummary(){
   }).join("");
   return `${salarySeg("salary-summary")}
     <div class="card">
-      <h2>工资汇总</h2>
       <div class="row-stats" style="margin-bottom:10px">
         <div class="stat accent"><div class="label">总应发</div><div class="value">${round(grandTotal.salaryGross)}<small>元</small></div></div>
         <div class="stat accent"><div class="label">总实发</div><div class="value">${round(grandTotal.salaryNet)}<small>元</small></div></div>
@@ -4172,7 +4165,6 @@ function pagePasswordDetail(id){
   if(id === "new"){
     return `
       <div class="card" style="margin-bottom:14px">
-        <h2>新增密码</h2>
         <form id="pwdDetailForm">
           <div class="field"><label>网站名称</label><input type="text" name="site" required></div>
           <div class="field"><label>网址</label><input type="text" name="url"></div>
@@ -4190,7 +4182,6 @@ function pagePasswordDetail(id){
   if(!p) return '<div class="card"><div class="empty">记录不存在</div></div>';
   return `
     <div class="card" style="margin-bottom:14px">
-      <h2>密码详情</h2>
       <form id="pwdDetailForm">
         <div class="field"><label>网站名称</label><input type="text" name="site" value="${esc(p.site)}" required></div>
         <div class="field"><label>网址</label><input type="text" name="url" value="${esc(p.url||"")}"></div>
