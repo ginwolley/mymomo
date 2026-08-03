@@ -333,6 +333,7 @@
   .cal-head button:hover{background:#fff;border-color:var(--gold);}
   .cal-head .btn{width:auto;padding:5px 12px;font-size:12px;white-space:nowrap;height:auto;}
   .cal-head select{border:1px solid var(--glass-border);border-radius:var(--radius-sm);padding:6px 8px;background:rgba(255,255,255,.6);font-size:13px;color:var(--ink);}
+  .cal-head .custom-picker{width:auto;flex:initial;padding:6px 28px 6px 8px;font-size:13px;border-radius:var(--radius-sm);background:rgba(255,255,255,.6);border:1px solid var(--glass-border);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath fill='%23A89B8C' d='M2.5 3.5l2.5 2.5 2.5-2.5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;background-size:10px;}
   .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;}
   .cal-dow{text-align:center;font-size:11px;color:var(--ink-muted);padding:5px 0;font-weight:600;}
   .cal-cell{
@@ -366,9 +367,10 @@
   .mini-cal{overflow:hidden;}
   .mini-title{font-size:11px;color:var(--ink-muted);text-align:center;margin-bottom:4px;font-weight:500;}
   .mini-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
-  .mcell{aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;font-size:9px;border-radius:var(--radius-sm);background:rgba(255,255,255,.5);color:var(--ink);min-width:0;border:1px solid var(--glass-border);}
+  .mcell{aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;font-size:9px;border-radius:var(--radius-sm);background:rgba(255,255,255,.5);color:var(--ink);min-width:0;border:1px solid var(--glass-border);white-space:nowrap;}
   .mcell.other{background:transparent;border-color:transparent;}
   .mcell.period{background:var(--rose-soft);color:#B76B7D;font-weight:600;border-color:var(--rose);}
+  .mcell span{white-space:nowrap;}
 
   /* ---------- mobile ---------- */
   .bottom-nav{display:none;}
@@ -1675,7 +1677,7 @@ function miniCalHtml(y, m){
   for(let dd=1; dd<=daysInMonth; dd++){
     const ds = fmtDate(new Date(y, m, dd));
     const p = periodAt(ds);
-    cells.push(`<div class="mcell${p?" period":""}">${dd}</div>`);
+    cells.push(`<div class="mcell${p?" period":""}"><span>${dd}</span></div>`);
   }
   return `<div class="mini-cal"><div class="mini-title">${m+1}月</div><div class="mini-grid">${cells.join("")}</div></div>`;
 }
@@ -1709,6 +1711,7 @@ function refPeriod(){
       page.innerHTML = PAGES["period"](); 
       bindPeriodPage();
     }
+    initAllPickers(page);
     page.classList.remove("page-enter");
     void page.offsetWidth;
     page.classList.add("page-enter");
@@ -2084,16 +2087,17 @@ let _activePicker = null;
 
 function buildPickerOptions(selectEl){
   const groups = [];
-  let currentGroup = null;
   const directOptions = [];
-  selectEl.querySelectorAll(":scope > optgroup").forEach(og=>{
-    const opts = Array.from(og.options).map(o=>({value:o.value,label:o.textContent,selected:o.selected,empty:o.dataset.empty==="1"}));
-    groups.push({label:og.label,options:opts});
-  });
-  selectEl.querySelectorAll(":scope > option").forEach(o=>{
-    if(o.value==="" && !o.textContent.trim()) return;
-    directOptions.push({value:o.value,label:o.textContent,selected:o.selected,empty:o.dataset.empty==="1"});
-  });
+  for(let i=0; i<selectEl.children.length; i++){
+    const child = selectEl.children[i];
+    if(child.tagName === 'OPTGROUP'){
+      const opts = Array.from(child.querySelectorAll("option")).map(o=>({value:o.value,label:o.textContent,selected:o.selected,empty:o.dataset.empty==="1"}));
+      groups.push({label:child.label,options:opts});
+    } else if(child.tagName === 'OPTION'){
+      if(child.value==="" && !child.textContent.trim()) continue;
+      directOptions.push({value:child.value,label:child.textContent,selected:child.selected,empty:child.dataset.empty==="1"});
+    }
+  }
   if(directOptions.length) groups.unshift({label:null,options:directOptions});
   return groups;
 }
