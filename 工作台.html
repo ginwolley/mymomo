@@ -720,7 +720,7 @@ const DEFAULTS = {
   profile:{weight:null, height:null},
   periods: window.__SEED_DATA__.periods.map(p=>({...p})),
   settings:{
-    api:{endpoint:"https://api.openai.com/v1/chat/completions", key:"", model:"gpt-4o-mini", enabled:false},
+    api:{endpoint:"https://api.deepseek.com/chat/completions", key:"", model:"deepseek-chat", enabled:false},
     modules:{weight:"cumulative", measure:"cumulative", diet:"daily", exercise:"daily", balance:"cumulative"}, period:90, dietGoal:1600,
     navOpen:{fitness:false, period:false, salary:false},
     gistToken:"", gistId:"", gistLastSync:null, gistLastSyncStatus:"", gistDebug:"",
@@ -2194,7 +2194,7 @@ function bindDietAdd(){
     toast("已填入 "+kcal+" kcal");
   });
 
-  // AI菜名估算
+  // AI菜名估算 → 显示份量面板
   const aiDishBtn = document.getElementById("aiDishBtn");
   const dishNameInput = document.getElementById("dishNameInput");
   if(aiDishBtn) aiDishBtn.addEventListener("click", async ()=>{
@@ -2205,9 +2205,17 @@ function bindDietAdd(){
     try{
       const result = await recognizeDish(dish);
       if(result && result.name && result.kcal > 0){
-        document.getElementById("fpManualName").value = result.name;
-        document.getElementById("fpManualKcal").value = result.kcal;
-        toast("AI估算: "+result.name+" ≈ "+result.kcal+" kcal");
+        // 填入份量面板（每100g）
+        selectedFood = {name: result.name, kcal: result.kcal, unit: "100g"};
+        const panel = document.getElementById("foodDetailPanel");
+        document.getElementById("fdName").textContent = result.name;
+        document.getElementById("fdBase").textContent = `${result.kcal} kcal / 100g`;
+        document.getElementById("fdQty").value = 80; // 默认80g，食堂一勺的量
+        document.getElementById("fdUnitLabel").textContent = "g";
+        updateFdKcal();
+        panel.style.display = "block";
+        panel.scrollIntoView({behavior:"smooth", block:"nearest"});
+        dishNameInput.value = "";
       } else {
         toast("AI未能估算，请手动输入");
       }
@@ -2283,7 +2291,7 @@ async function recognizeDish(dishName){
   const body={
     model,
     messages:[
-      {role:"system", content:"你是中国饮食营养专家。请估算以下中式菜肴/食物的热量。只返回一个JSON对象，格式为 {\"name\":\"菜名\",\"kcal\":数值}，不要任何其他文字。按常规份量估算（一盘/一碗），确保kcal是整数。"},
+      {role:"system", content:"你是中国饮食营养专家。请估算以下中式菜肴每100克的热量。只返回一个JSON对象，格式为 {\"name\":\"菜名\",\"kcal\":数值}，不要任何其他文字。kcal代表每100克的热量值，确保是整数。"},
       {role:"user", content:dishName}
     ],
     temperature:0.2,
