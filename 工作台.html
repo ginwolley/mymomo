@@ -474,9 +474,16 @@
     /* 年视图在窄屏 */
     .months{grid-template-columns:repeat(3,1fr);gap:6px;}
 
-    .hero{padding:16px;margin-bottom:10px;}
-    .hero .big{font-size:30px;}
+    /* 添加食物页手动输入行在窄屏换行 */
+    .fp-manual-row{flex-wrap:wrap;}
+    .fp-manual-row > div:first-child{flex:1 1 100% !important;}
+    .fp-manual-row input{flex:1;min-width:0;}
+    .diet-ai-row{flex-wrap:wrap;}
+    .diet-ai-row input{flex:1 1 100% !important;}
   }
+
+  .hero{padding:16px;margin-bottom:10px;}
+  .hero .big{font-size:30px;}
 
   /* toast */
   #toast{
