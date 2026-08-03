@@ -1263,6 +1263,10 @@ function pageDietAdd(meal){
         <input type="number" id="fpManualQty" placeholder="份数" value="1" style="flex:0.6" min="0.5" step="0.5">
         <button class="btn primary sm" id="fpManualAdd">添加</button>
       </div>
+      <div style="margin-top:6px;display:flex;gap:6px;align-items:center">
+        <input type="text" id="dishNameInput" placeholder="输入菜名，如 土豆炖牛肉" style="flex:1;padding:6px 8px;border:1px solid var(--line);border-radius:6px;font-size:13px;background:white">
+        <button class="btn ghost sm" id="aiDishBtn" ${state.settings.api.enabled&&state.settings.api.key?"":"disabled"}>${state.settings.api.enabled&&state.settings.api.key?"AI估算":"需配置AI"}</button>
+      </div>
       <div class="fp-converter" style="margin-top:8px;padding-top:8px;border-top:1px solid var(--line)">
         <span style="font-size:12px;color:var(--ink-muted);font-weight:500">包装食品计算器</span>
         <div style="display:flex;gap:6px;align-items:center;margin-top:4px;flex-wrap:wrap">
@@ -2190,6 +2194,27 @@ function bindDietAdd(){
     toast("已填入 "+kcal+" kcal");
   });
 
+  // AI菜名估算
+  const aiDishBtn = document.getElementById("aiDishBtn");
+  const dishNameInput = document.getElementById("dishNameInput");
+  if(aiDishBtn) aiDishBtn.addEventListener("click", async ()=>{
+    const dish = dishNameInput.value.trim();
+    if(!dish){ toast("请输入菜名"); return; }
+    if(!(state.settings.api.enabled && state.settings.api.key)){ toast("请先在设置中开启AI识别"); return; }
+    aiDishBtn.disabled = true; aiDishBtn.textContent = "估算中…";
+    try{
+      const result = await recognizeDish(dish);
+      if(result && result.name && result.kcal > 0){
+        document.getElementById("fpManualName").value = result.name;
+        document.getElementById("fpManualKcal").value = result.kcal;
+        toast("AI估算: "+result.name+" ≈ "+result.kcal+" kcal");
+      } else {
+        toast("AI未能估算，请手动输入");
+      }
+    }catch(err){ toast("估算失败：" + err.message); }
+    finally{ aiDishBtn.disabled = false; aiDishBtn.textContent = "AI估算"; }
+  });
+
   // AI拍照识别
   const fpImgInput = document.getElementById("fpImgInput");
   const fpPreview = document.getElementById("fpPreview");
@@ -2250,6 +2275,33 @@ function parseFoods(text){
   const m=s.match(/\[[\s\S]*\]/);
   if(m){ try{ return JSON.parse(m[0]); }catch(e){} }
   throw new Error("无法解析识别结果");
+}
+
+/* AI菜名估算（文本输入） */
+async function recognizeDish(dishName){
+  const {endpoint, key, model} = state.settings.api;
+  const body={
+    model,
+    messages:[
+      {role:"system", content:"你是中国饮食营养专家。请估算以下中式菜肴/食物的热量。只返回一个JSON对象，格式为 {\"name\":\"菜名\",\"kcal\":数值}，不要任何其他文字。按常规份量估算（一盘/一碗），确保kcal是整数。"},
+      {role:"user", content:dishName}
+    ],
+    temperature:0.2,
+  };
+  const res=await fetch(endpoint, {
+    method:"POST",
+    headers:{"Content-Type":"application/json", "Authorization":"Bearer "+key},
+    body:JSON.stringify(body),
+  });
+  if(!res.ok){ const t=await res.text().catch(()=>""); throw new Error("接口返回 "+res.status+" "+t.slice(0,120)); }
+  const json=await res.json();
+  const content = json.choices && json.choices[0] && json.choices[0].message && json.choices[0].message.content;
+  if(!content) throw new Error("接口未返回内容");
+  let s=content.trim();
+  try{ return JSON.parse(s); }catch(e){}
+  const m=s.match(/\{[\s\S]*\}/);
+  if(m){ try{ return JSON.parse(m[0]); }catch(e){} }
+  throw new Error("无法解析AI返回结果");
 }
 
 function bindExercise(){
