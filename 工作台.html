@@ -259,6 +259,7 @@
   .pwd-site{font-weight:600;color:var(--ink);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:0;min-width:60px;max-width:140px;}
   .pwd-url{color:var(--ink-light);font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0;}
   .pwd-actions{display:flex;align-items:center;gap:2px;flex-shrink:0;}
+.pwd-detail-row{display:flex;align-items:center;gap:6px;flex:1;}
 
   /* ---------- tables / lists ---------- */
   .tbl{width:100%;border-collapse:collapse;font-size:12.5px;}
@@ -322,6 +323,11 @@
   .seg-sub button{border:none;background:transparent;padding:6px 0;font-size:12.5px;color:var(--ink-light);border-radius:8px;transition:background .2s,color .2s;font-weight:500;font-family:var(--font);flex:1;}
   .seg-sub button:hover{background:rgba(255,255,255,.5);color:var(--ink);}
   .seg-sub button.active{background:var(--glass);color:var(--gold-dark);font-weight:600;box-shadow:0 1px 4px rgba(30,90,110,.08);}
+  /* 周期筛选（体重/围度历史记录）— 与主seg区分 */
+  .period-filter{display:flex;border-radius:10px;padding:3px;background:var(--glass);border:1px solid var(--glass-border);overflow:hidden;gap:2px;margin-bottom:12px;}
+  .period-filter button{border:none;background:transparent;padding:5px 0;font-size:12px;color:var(--ink-muted);border-radius:7px;transition:background .2s,color .2s;font-weight:500;font-family:var(--font);flex:1;cursor:pointer;}
+  .period-filter button:hover{background:var(--bg-soft);color:var(--ink);}
+  .period-filter button.active{background:var(--gold-soft);color:var(--gold-dark);font-weight:600;}
 
   .legend{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--ink-muted);margin-top:8px;}
   .legend span{display:inline-flex;align-items:center;gap:5px;}
@@ -617,6 +623,9 @@
 .pwd-cat-row .btn-icon:hover{color:var(--ink);background:var(--glass-border);}
 .pwd-cat-row .btn-icon.del{color:var(--danger);}
 .pwd-cat-row .btn-icon.del:hover{color:var(--danger);background:var(--rose-soft);}
+.pwd-cat-row .drag-handle{color:var(--ink-muted);font-size:16px;cursor:grab;user-select:none;line-height:1;padding:0 2px;}
+.pwd-cat-row .drag-handle:active{cursor:grabbing;}
+.pwd-cat-row.drag-over{background:var(--gold-soft);outline:1px dashed var(--gold);}
 .pwd-cat-add{display:flex;gap:8px;margin-bottom:14px;}
 .pwd-cat-add input{flex:1;border:1.5px solid var(--line);border-radius:12px;padding:10px;font-size:13px;outline:none;background:var(--bg-soft);}
 .pwd-cat-add input:focus{border-color:var(--gold);background:#fff;}
@@ -766,7 +775,7 @@
       </button>
       <button class="tab" data-tab="tab-record">
         <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
-        <span>记录</span>
+        <span>健康</span>
       </button>
       <button class="tab" data-tab="stock-overview">
         <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M4 10h16M10 4v16" stroke="currentColor" stroke-width="1.6"/></svg>
@@ -1151,7 +1160,7 @@ function filterPeriod(arr, days){ return arr.filter(d=> inPeriod(d.date, days));
 function periodSeg(){
   const opts=[[7,"近7天"],[30,"近30天"],[90,"近90天"],[0,"全部"]];
   const cur=state.settings.period||90;
-  return `<div class="seg" style="margin-bottom:12px">`+opts.map(o=>`<button class="${cur===o[0]?"active":""}" data-d="${o[0]}">${o[1]}</button>`).join("")+`</div>`;
+  return `<div class="period-filter">`+opts.map(o=>`<button class="${cur===o[0]?"active":""}" data-d="${o[0]}">${o[1]}</button>`).join("")+`</div>`;
 }
 function salarySeg(active){
   const items = [{id:"salary-basic",label:"基本工资"},{id:"salary-housing",label:"房补"},{id:"salary-summary",label:"汇总"}];
@@ -1162,7 +1171,7 @@ function stockSeg(active){
   return `<div class="seg">${items.map(i=>`<button class="${i.id===active?'active':''}" onclick="navigate('${i.id}')">${i.label}</button>`).join('')}</div>`;
 }
 function bindPeriod(){
-  document.querySelectorAll(".seg [data-d]").forEach(b=>b.addEventListener("click",()=>{
+  document.querySelectorAll(".period-filter [data-d]").forEach(b=>b.addEventListener("click",()=>{
     state.settings.period=Number(b.dataset.d); save(); navigate(currentPage);
   }));
 }
@@ -1971,7 +1980,7 @@ function pageSettings(){
       <div style="text-align:center"><button class="btn primary sm" id="saveDietGoal">保存</button></div>
     </div>
 
-    <div class="card sky">
+    <div class="card">
       <h2>AI 拍照识别（饮食）</h2>
       <div class="field"><label><input type="checkbox" id="apiEnabled" ${api.enabled?"checked":""} style="width:auto;margin-right:6px">启用视觉接口</label></div>
       <div class="field"><label>接口地址（OpenAI 兼容）</label><input type="text" id="apiEndpoint" value="${esc(api.endpoint)}"></div>
@@ -1981,7 +1990,7 @@ function pageSettings(){
       <div class="hint">Key 仅保存在你本机，不会上传到我处。注意：从本地文件页直接调用部分接口可能受浏览器跨域(CORS)限制；若识别失败，可改用支持 CORS 的端点，或手动输入。</div>
     </div>
 
-    <div class="card rose">
+    <div class="card">
       <h2>生理期数据</h2>
       <div class="hint" style="margin-top:0;margin-bottom:10px">当前共 ${state.periods.length} 次经期记录（含预置历史）。可在「生理期」页用功能键或历史列表增删。下方可单独清空经期数据。</div>
       <button class="btn danger" id="clearPeriods">清空经期记录</button>
@@ -2194,10 +2203,10 @@ const TITLES = {
   "salary-basic":"基本工资", "salary-housing":"房补", "salary-summary":"工资汇总",
   "salary-all":"全部工资记录", "salary-detail":"工资详情", "salary-add":"记录工资",
   "housing-all":"全部房补记录", "housing-detail":"房补详情", "housing-add":"记录房补",
-  "stock-overview":"囤货统计", "stock-add":"新增物品", "stock-all":"全部物品", "stock-detail":"物品详情", "stock-spaces":"空间管理",
+  "stock-overview":"囤货", "stock-add":"新增物品", "stock-all":"全部物品", "stock-detail":"物品详情", "stock-spaces":"空间管理",
   passwords:"密码管理", "password-detail":"密码详情",
   "diet-add":"添加食物",
-  "tab-home":"首页", "tab-record":"记录", "tab-more":"更多",
+  "tab-home":"首页", "tab-record":"健康", "tab-more":"更多",
 };
 
 /* 手机端底部Tab：显示Tab栏的页面（子页面隐藏） */
@@ -2301,7 +2310,7 @@ function bindTabRecord(){
 /* ---- Tab容器页：更多（功能入口列表） ---- */
 function pageTabMore(){
   const items = [
-    {id:"settings",      ic:"gear",   nm:"设置", ds:"AI · 数据 · 同步",        cls:"t-rose"},
+    {id:"settings",      ic:"gear",   nm:"设置", ds:"AI · 数据 · 同步",        cls:"t-soft"},
   ];
   return `<div class="card" style="padding:6px 14px">
     ${items.map(it=>`
@@ -4198,7 +4207,8 @@ function showPwdCatEdit(idx, oldName){
 function renderCatManager(mask){
   const cats = getPwdCats();
   let listHtml = cats.map((c, i) => `
-    <div class="pwd-cat-row">
+    <div class="pwd-cat-row" draggable="true" data-cat-idx="${i}">
+      <span class="drag-handle" title="拖拽排序">⠿</span>
       <span class="cat-name">${esc(c)}</span>
       <button class="btn-icon" data-cat-edit="${i}" title="编辑">${svg("edit")}</button>
       <button class="btn-icon del" data-cat-del="${i}" title="删除">×</button>
@@ -4261,6 +4271,41 @@ function renderCatManager(mask){
       renderCatManager(mask);
     });
   });
+  
+  // 拖拽排序
+  let dragSrcIdx = null;
+  mask.querySelectorAll(".pwd-cat-row[draggable]").forEach(row => {
+    row.addEventListener("dragstart", e=>{
+      dragSrcIdx = Number(row.dataset.catIdx);
+      row.style.opacity = "0.4";
+      e.dataTransfer.effectAllowed = "move";
+    });
+    row.addEventListener("dragend", ()=>{
+      row.style.opacity = "1";
+      mask.querySelectorAll(".pwd-cat-row").forEach(r => r.classList.remove("drag-over"));
+    });
+    row.addEventListener("dragover", e=>{
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+      row.classList.add("drag-over");
+    });
+    row.addEventListener("dragleave", ()=>{
+      row.classList.remove("drag-over");
+    });
+    row.addEventListener("drop", e=>{
+      e.preventDefault();
+      row.classList.remove("drag-over");
+      const dropIdx = Number(row.dataset.catIdx);
+      if(dragSrcIdx === null || dragSrcIdx === dropIdx) return;
+      const cats = getPwdCats();
+      const updated = [...cats];
+      const [moved] = updated.splice(dragSrcIdx, 1);
+      updated.splice(dropIdx, 0, moved);
+      state.settings.passwordCategories = updated;
+      save();
+      renderCatManager(mask);
+    });
+  });
 }
 
 function pagePasswords(keyword){
@@ -4294,13 +4339,10 @@ function pagePasswords(keyword){
     if(!grouped[c]) return;
     html += `<div class="card"><h2>${esc(c)} <span class="sub">${grouped[c].length} 条</span></h2>`;
     grouped[c].forEach(p => {
-      const displayUrl = p.url ? p.url.replace(/^https?:\/\//, "").replace(/\/.*$/, "") : "";
       html += `<div class="pwd-item" data-pwid="${p.id}">
         <div class="pwd-row">
           <span class="pwd-site">${esc(p.site)}</span>
-          <span class="pwd-url">${esc(displayUrl)}</span>
           <span class="pwd-actions">
-            <button class="btn-icon" data-pwd-copy="${p.id}" title="复制密码">${svg("copy")}</button>
             <button class="btn-icon" data-pwd-view="${p.id}" title="查看详情">${svg("search")}</button>
             <button class="del" data-pwd-del="${p.id}" title="删除">×</button>
           </span>
@@ -4318,9 +4360,9 @@ function pagePasswordDetail(id){
       <div class="card" style="margin-bottom:14px">
         <form id="pwdDetailForm">
           <div class="field"><label>网站名称</label><input type="text" name="site" required></div>
-          <div class="field"><label>网址</label><input type="text" name="url"></div>
-          <div class="field"><label>用户名</label><input type="text" name="username" required></div>
-          <div class="field"><label>密码</label><input type="text" name="password" required></div>
+          <div class="field"><label>网址</label><div class="pwd-detail-row"><input type="text" name="url" style="flex:1"><button type="button" class="btn-icon" id="pwdCopyUrl" title="复制网址">${svg("copy")}</button></div></div>
+          <div class="field"><label>用户名</label><div class="pwd-detail-row"><input type="text" name="username" required style="flex:1"><button type="button" class="btn-icon" id="pwdCopyUser" title="复制用户名">${svg("copy")}</button></div></div>
+          <div class="field"><label>密码</label><div class="pwd-detail-row"><input type="password" name="password" id="pwdDetailPw" required style="flex:1"><button type="button" class="btn-icon" id="pwdTogglePw" title="显示密码">${svg("eye")}</button><button type="button" class="btn-icon" id="pwdCopyPw" title="复制密码">${svg("copy")}</button></div></div>
           <div class="field"><label>分类</label><select name="category">${getPwdCats().map(c => `<option value="${c}">${c}</option>`).join("")}</select></div>
           <div class="field"><label>备注</label><input type="text" name="note"></div>
           <div style="text-align:center;display:flex;gap:10px;justify-content:center">
@@ -4335,9 +4377,9 @@ function pagePasswordDetail(id){
     <div class="card" style="margin-bottom:14px">
       <form id="pwdDetailForm">
         <div class="field"><label>网站名称</label><input type="text" name="site" value="${esc(p.site)}" required></div>
-        <div class="field"><label>网址</label><input type="text" name="url" value="${esc(p.url||"")}"></div>
-        <div class="field"><label>用户名</label><input type="text" name="username" value="${esc(p.username)}" required></div>
-        <div class="field"><label>密码</label><input type="text" name="password" value="${esc(p.password)}" required></div>
+        <div class="field"><label>网址</label><div class="pwd-detail-row"><input type="text" name="url" value="${esc(p.url||"")}" style="flex:1"><button type="button" class="btn-icon" id="pwdCopyUrl" title="复制网址">${svg("copy")}</button></div></div>
+        <div class="field"><label>用户名</label><div class="pwd-detail-row"><input type="text" name="username" value="${esc(p.username)}" required style="flex:1"><button type="button" class="btn-icon" id="pwdCopyUser" title="复制用户名">${svg("copy")}</button></div></div>
+        <div class="field"><label>密码</label><div class="pwd-detail-row"><input type="password" name="password" id="pwdDetailPw" value="${esc(p.password)}" required style="flex:1"><button type="button" class="btn-icon" id="pwdTogglePw" title="显示密码">${svg("eye")}</button><button type="button" class="btn-icon" id="pwdCopyPw" title="复制密码">${svg("copy")}</button></div></div>
         <div class="field"><label>分类</label><select name="category">${getPwdCats().map(c => `<option value="${c}" ${c===p.category?"selected":""}>${c}</option>`).join("")}</select></div>
         <div class="field"><label>备注</label><input type="text" name="note" value="${esc(p.note||"")}"></div>
         <div style="text-align:center;display:flex;gap:10px;justify-content:center">
@@ -4369,24 +4411,6 @@ function bindPasswords(){
     navigate("password-detail", "new");
   });
   document.getElementById("pwdCatBtn")?.addEventListener("click", showPwdCatManager);
-  // 复制密码
-  document.querySelectorAll("[data-pwd-copy]").forEach(b => {
-    b.addEventListener("click", ()=>{
-      const id = b.dataset.pwdCopy;
-      const p = (state.passwords || []).find(x => x.id === id);
-      if(!p || !p.password) return;
-      if(navigator.clipboard && navigator.clipboard.writeText){
-        navigator.clipboard.writeText(p.password).then(()=>toast("密码已复制")).catch(()=>{});
-      } else {
-        // fallback
-        const ta = document.createElement("textarea");
-        ta.value = p.password; ta.style.position="fixed"; ta.style.opacity="0";
-        document.body.appendChild(ta); ta.select(); document.execCommand("copy");
-        document.body.removeChild(ta);
-        toast("密码已复制");
-      }
-    });
-  });
   document.querySelectorAll("[data-pwd-view]").forEach(b => {
     b.addEventListener("click", ()=> navigate("password-detail", b.dataset.pwdView));
   });
@@ -4435,6 +4459,44 @@ function bindPasswordDetail(id){
     save();
     toast("已删除");
     navigate("passwords");
+  });
+  // 密码显示/隐藏切换
+  const toggleBtn = document.getElementById("pwdTogglePw");
+  const pwInput = document.getElementById("pwdDetailPw");
+  if(toggleBtn && pwInput){
+    toggleBtn.addEventListener("click", ()=>{
+      if(pwInput.type === "password"){
+        pwInput.type = "text";
+        toggleBtn.innerHTML = svg("eye-off");
+        toggleBtn.title = "隐藏密码";
+      } else {
+        pwInput.type = "password";
+        toggleBtn.innerHTML = svg("eye");
+        toggleBtn.title = "显示密码";
+      }
+    });
+  }
+  // 复制工具函数
+  const copyText = (text, label)=>{
+    if(!text) return;
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(()=>toast(label+"已复制")).catch(()=>{});
+    } else {
+      const ta = document.createElement("textarea");
+      ta.value = text; ta.style.position="fixed"; ta.style.opacity="0";
+      document.body.appendChild(ta); ta.select(); document.execCommand("copy");
+      document.body.removeChild(ta);
+      toast(label+"已复制");
+    }
+  };
+  document.getElementById("pwdCopyUrl")?.addEventListener("click", ()=>{
+    copyText(f.url.value, "网址");
+  });
+  document.getElementById("pwdCopyUser")?.addEventListener("click", ()=>{
+    copyText(f.username.value, "用户名");
+  });
+  document.getElementById("pwdCopyPw")?.addEventListener("click", ()=>{
+    copyText(f.password.value, "密码");
   });
 }
 
