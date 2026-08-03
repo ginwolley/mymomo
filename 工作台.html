@@ -478,8 +478,8 @@
   .diet-meal-add{margin-top:6px;}
 
   /* 食物选择弹窗 */
-  .fp-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.35);z-index:100;display:flex;align-items:flex-end;justify-content:center;}
-  .fp-modal{background:var(--bg-cream);border-radius:16px 16px 0 0;width:100%;max-width:500px;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 -4px 24px rgba(0,0,0,.12);}
+  .fp-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.35);z-index:100;display:flex;align-items:center;justify-content:center;padding:20px;}
+  .fp-modal{background:var(--bg-cream);border-radius:16px;width:100%;max-width:500px;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 4px 24px rgba(0,0,0,.12);}
   .fp-header{display:flex;justify-content:space-between;align-items:center;padding:14px 16px 8px;border-bottom:1px solid var(--line);}
   .fp-title{font-size:16px;font-weight:500;}
   .fp-search-wrap{padding:8px 16px;}
@@ -504,7 +504,8 @@
     .diet-kcal{font-size:20px;}
     .diet-kcal .num{font-size:20px;}
     .diet-progress-bar{width:70px;}
-    .fp-modal{max-height:90vh;}
+    .fp-overlay{padding:0;align-items:flex-end;}
+    .fp-modal{border-radius:16px 16px 0 0;max-height:90vh;}
   }
 </style>
 </head>
