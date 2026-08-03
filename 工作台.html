@@ -226,8 +226,13 @@
     padding-right:30px;cursor:pointer;
   }
   .field select:hover{background-color:rgba(255,255,255,.85);}
-  .field select option{background:#fff;color:var(--ink);padding:8px 12px;}
+  .field select option{background:#fff;color:var(--ink);padding:6px 10px;font-size:12px;}
+  .field select optgroup{font-size:12px;font-weight:600;color:var(--ink-muted);padding:4px 8px;}
   .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--gold);background:#fff;box-shadow:0 0 0 3px rgba(212,184,150,.15),inset 0 1px 3px rgba(61,53,46,.04);}
+  /* 运动记录表单紧凑样式 */
+  .ex-form .field{margin-bottom:6px;gap:6px;}
+  .ex-form .field label{font-size:12px;min-width:4em;}
+  .ex-form .field input,.ex-form .field select{padding:6px 8px;font-size:12px;border-radius:8px;}
   /* 去掉number输入框的步进箭头 */
   input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0;}
   input[type=number]{-moz-appearance:textfield;}
@@ -1331,7 +1336,7 @@ function pageExercise(){
   let body = `
     <div class="card sage">
       <h2>记录运动 <span class="sub">模式：${daily?"每日记录":"累计记录"}</span></h2>
-      <form id="exerciseForm">
+      <form id="exerciseForm" class="ex-form">
         <div class="row">
           <div class="field" style="flex:2"><label>运动方式</label><select name="type">${optGroups}</select></div>
           <div class="field" id="intensityField" style="flex:1;display:none"><label>强度</label><select name="intensity"><option>低</option><option selected>中</option><option>高</option></select></div>
