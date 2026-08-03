@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes" />
-<meta name="theme-color" content="#F0E8E0" />
+<meta name="theme-color" content="#FFF9F0" />
 <title>momo</title>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -1361,15 +1361,29 @@ function pageExercise(){
       <div style="text-align:center;margin-top:14px"><button class="btn danger sm" id="resetExToday">重置今日</button></div>
     </div>`;
   }else{
-    const all=filterPeriod(state.exercise.slice().sort((a,b)=>b.date<a.date?-1:b.date>a.date?1:0), state.settings.period||90);
+    const recent=state.exercise.slice().filter(d=>inPeriod(d.date,7)).sort((a,b)=>b.date<a.date?-1:b.date>a.date?1:0);
     let total=0;
-    listHtml=`<div class="card"><h2>运动记录 <span class="sub">${all.length} 天</span></h2>
-      ${periodSeg()}
-      ${all.length? all.map(d=>{ const s=d.items.reduce((a,x)=>a+num(x.kcal),0); total+=s; return `<div style="margin-bottom:10px"><div class="muted" style="font-size:12px;margin-bottom:4px">${d.date} · 消耗 ${round(s)} kcal</div>
-        <table><tbody>${d.items.map(x=>`<tr><td>${esc(x.type)}</td><td class="muted num">${x.duration}分/${round(num(x.kcal))}kcal</td></tr>`).join("")}</tbody></table></div>`; }).join("") + `<div class="muted" style="margin-top:8px">累计消耗约 <span class="num">${round(total)}</span> kcal</div>` : '<div class="empty"><div class="sym">🍃</div>该周期内还没有记录</div>'}
+    listHtml=`<div class="card"><h2>运动记录 <span class="sub">最近7天 · ${recent.length} 天</span></h2>
+      ${recent.length? recent.map(d=>{ const s=d.items.reduce((a,x)=>a+num(x.kcal),0); total+=s; return `<div style="margin-bottom:10px"><div class="muted" style="font-size:12px;margin-bottom:4px">${d.date} · 消耗 ${round(s)} kcal</div>
+        <table><tbody>${d.items.map(x=>`<tr><td>${esc(x.type)}</td><td class="muted num">${x.duration}分/${round(num(x.kcal))}kcal</td></tr>`).join("")}</tbody></table></div>`; }).join("") + `<div class="muted" style="margin-top:8px">累计消耗约 <span class="num">${round(total)}</span> kcal</div>` : '<div class="empty"><div class="sym">🍃</div>最近7天还没有记录</div>'}
+      <div style="text-align:center;margin-top:12px"><button class="btn ghost" id="exViewAllBtn">查看全部记录</button></div>
     </div>`;
   }
   return body + listHtml;
+}
+
+/* ============== 页面：全部运动记录 ============== */
+function pageExerciseAll(){
+  const all = state.exercise.slice().sort((a,b)=>b.date<a.date?-1:b.date>a.date?1:0);
+  const filtered = filterPeriod(all, state.settings.period||90);
+  let total=0;
+  let html=`
+    <div class="card"><h2>全部运动记录 <span class="sub">${filtered.length} 天</span></h2>
+    ${periodSeg()}
+    ${filtered.length? filtered.map(d=>{ const s=d.items.reduce((a,x)=>a+num(x.kcal),0); total+=s; return `<div style="margin-bottom:10px"><div class="muted" style="font-size:12px;margin-bottom:4px">${d.date} · 消耗 ${round(s)} kcal</div>
+      <table><tbody>${d.items.map(x=>`<tr><td>${esc(x.type)}</td><td class="muted num">${x.duration}分/${round(num(x.kcal))}kcal</td></tr>`).join("")}</tbody></table></div>`; }).join("") + `<div class="muted" style="margin-top:8px">累计消耗约 <span class="num">${round(total)}</span> kcal</div>` : '<div class="empty"><div class="sym">🍃</div>该周期内还没有记录</div>'}
+    </div>`;
+  return html;
 }
 
 /* ============== 页面：热量平衡 ============== */
@@ -1894,7 +1908,7 @@ function pageSalarySummary(){
 /* ============== 路由与渲染 ============== */
 const PAGES = {
   overview:pageOverview, weight:pageWeight, measure:pageMeasure,
-  diet:pageDiet, exercise:pageExercise, balance:pageBalance,
+  diet:pageDiet, exercise:pageExercise, "exercise-all":pageExerciseAll, balance:pageBalance,
   period:pagePeriod, settings:pageSettings,
   "salary-basic":pageSalaryBasic, "salary-housing":pageSalaryHousing, "salary-summary":pageSalarySummary,
   "salary-all":pageSalaryAll, "salary-detail":pageSalaryDetail, "salary-add":pageSalaryAdd,
@@ -1909,7 +1923,7 @@ const PAGES = {
 };
 // ★ 新增页面时，请在此处同步添加标题映射
 const TITLES = {
-  overview:"概览", weight:"体重", measure:"围度", diet:"饮食", exercise:"运动",
+  overview:"概览", weight:"体重", measure:"围度", diet:"饮食", exercise:"运动", "exercise-all":"全部运动记录",
   balance:"热量平衡", period:"生理期", settings:"设置",
   "salary-basic":"基本工资", "salary-housing":"房补", "salary-summary":"工资汇总",
   "salary-all":"全部工资记录", "salary-detail":"工资详情", "salary-add":"记录工资",
@@ -1930,6 +1944,7 @@ function navigate(id, params){
     "housing-add":"salary-housing","housing-all":"salary-housing","housing-detail":"salary-housing",
     "stock-add":"stock-overview","stock-all":"stock-overview","stock-detail":"stock-overview","stock-spaces":"stock-overview",
     "password-detail":"passwords",
+    "exercise-all":"exercise",
     "diet-add":"diet",
   };
   const backBtn = document.getElementById("topBackBtn");
@@ -2003,6 +2018,7 @@ function bindPage(id){
   if(id==="measure") bindMeasure();
   if(id==="diet") bindDiet();
   if(id==="exercise") bindExercise();
+  if(id==="exercise-all") bindExerciseAll();
   if(id==="period") bindPeriodPage();
   if(id==="settings") bindSettings();
   if(id==="salary-basic") bindSalaryBasic();
@@ -2387,6 +2403,11 @@ function bindExercise(){
   if(rbtn) rbtn.addEventListener("click",()=>{
     if(confirm("确定清空今日运动记录？")){ const d=getDay(state.exercise, todayStr()); if(d) d.items=[]; save(); navigate("exercise"); }
   });
+  document.getElementById("exViewAllBtn")?.addEventListener("click",()=> navigate("exercise-all"));
+}
+
+function bindExerciseAll(){
+  bindPeriod();
 }
 
 function bindYearView(){
@@ -3466,6 +3487,23 @@ function pagePasswords(){
 }
 
 function pagePasswordDetail(id){
+  if(id === "new"){
+    return `
+      <div class="card" style="margin-bottom:14px">
+        <h2>新增密码</h2>
+        <form id="pwdDetailForm">
+          <div class="field"><label>网站名称</label><input type="text" name="site" required></div>
+          <div class="field"><label>网址</label><input type="text" name="url"></div>
+          <div class="field"><label>用户名</label><input type="text" name="username" required></div>
+          <div class="field"><label>密码</label><input type="text" name="password" required></div>
+          <div class="field"><label>分类</label><select name="category">${PASSWORD_CATEGORIES.map(c => `<option value="${c}">${c}</option>`).join("")}</select></div>
+          <div class="field"><label>备注</label><input type="text" name="note"></div>
+          <div style="text-align:center;display:flex;gap:10px;justify-content:center">
+            <button class="btn primary" type="submit">保存</button>
+          </div>
+        </form>
+      </div>`;
+  }
   const p = (state.passwords || []).find(x => x.id === id);
   if(!p) return '<div class="card"><div class="empty">记录不存在</div></div>';
   return `
@@ -3488,12 +3526,7 @@ function pagePasswordDetail(id){
 
 function bindPasswords(){
   document.getElementById("pwdAddBtn")?.addEventListener("click", ()=>{
-    const list = state.passwords || [];
-    const id = "pwd_" + Date.now() + "_" + Math.random().toString(36).slice(2,6);
-    list.push({ id, site:"", url:"", username:"", password:"", category:"其他", note:"", createdAt:Date.now(), updatedAt:Date.now() });
-    state.passwords = list;
-    save();
-    navigate("password-detail", id);
+    navigate("password-detail", "new");
   });
   document.querySelectorAll("[data-pwd-eye]").forEach(b => {
     b.addEventListener("click", ()=>{
@@ -3532,6 +3565,16 @@ function bindPasswordDetail(id){
   if(!f) return;
   f.addEventListener("submit", e => {
     e.preventDefault();
+    if(id === "new"){
+      const list = state.passwords || [];
+      const newId = "pwd_" + Date.now() + "_" + Math.random().toString(36).slice(2,6);
+      list.push({ id:newId, site:f.site.value, url:f.url.value, username:f.username.value, password:f.password.value, category:f.category.value, note:f.note.value, createdAt:Date.now(), updatedAt:Date.now() });
+      state.passwords = list;
+      save();
+      toast("已保存");
+      navigate("passwords");
+      return;
+    }
     const p = (state.passwords || []).find(x => x.id === id);
     if(!p) return;
     p.site = f.site.value;
