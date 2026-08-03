@@ -258,7 +258,7 @@
   .pwd-row{display:flex;align-items:center;gap:8px;}
   .pwd-site{font-weight:600;color:var(--ink);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:0;min-width:60px;max-width:140px;}
   .pwd-url{color:var(--ink-light);font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0;}
-  .pwd-actions{display:flex;align-items:center;gap:2px;flex-shrink:0;}
+  .pwd-actions{display:flex;align-items:center;gap:2px;flex-shrink:0;margin-left:auto;}
 .pwd-detail-row{display:flex;align-items:center;gap:6px;flex:1;}
 
   /* ---------- tables / lists ---------- */
@@ -1091,6 +1091,7 @@ function parseDate(s){ const [y,m,d]=s.split("-").map(Number); return new Date(y
 function addDays(s,n){ const d=parseDate(s); d.setDate(d.getDate()+n); return fmtDate(d); }
 function daysBetween(a,b){ return Math.round((parseDate(b)-parseDate(a))/86400000); }
 function todayLabel(){ const d=new Date(); const m=String(d.getMonth()+1).padStart(2,"0"); const day=String(d.getDate()).padStart(2,"0"); const w=["日","一","二","三","四","五","六"][d.getDay()]; return m+"-"+day+" 周"+w; }
+function greeting(){ const h=new Date().getHours(); if(h>=6&&h<12) return "早上好"; if(h>=12&&h<14) return "中午好"; if(h>=14&&h<18) return "下午好"; return "晚上好"; }
 function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
 function num(v){ const n=parseFloat(v); return isNaN(n)?0:n; }
 function round(n){ return Math.round(n*10)/10; }
@@ -1159,7 +1160,7 @@ function inPeriod(dateStr, days){
 function filterPeriod(arr, days){ return arr.filter(d=> inPeriod(d.date, days)); }
 function periodSeg(){
   const opts=[[7,"近7天"],[30,"近30天"],[90,"近90天"],[0,"全部"]];
-  const cur=state.settings.period||90;
+  const cur=state.settings.period!=null?state.settings.period:90;
   return `<div class="period-filter">`+opts.map(o=>`<button class="${cur===o[0]?"active":""}" data-d="${o[0]}">${o[1]}</button>`).join("")+`</div>`;
 }
 function salarySeg(active){
@@ -1168,7 +1169,7 @@ function salarySeg(active){
 }
 function stockSeg(active){
   const items = [{id:"stock-overview",label:"统计"},{id:"stock-add",label:"新增"},{id:"stock-all",label:"全部"},{id:"stock-spaces",label:"空间"}];
-  return `<div class="seg">${items.map(i=>`<button class="${i.id===active?'active':''}" onclick="navigate('${i.id}')">${i.label}</button>`).join('')}</div>`;
+  return `<div class="seg" style="margin-bottom:14px">${items.map(i=>`<button class="${i.id===active?'active':''}" onclick="navigate('${i.id}')">${i.label}</button>`).join('')}</div>`;
 }
 function bindPeriod(){
   document.querySelectorAll(".period-filter [data-d]").forEach(b=>b.addEventListener("click",()=>{
@@ -1278,7 +1279,7 @@ function pageOverview(){
 
   const cards = `
     <div class="hero">
-      <div class="hi">早上好，master</div>
+      <div class="hi">${greeting()}，master</div>
       <div class="big">${round(net)} <small>kcal</small></div>
       <div class="row">
         <div>摄入 <b>${round(inK)}</b> kcal</div>
@@ -1360,7 +1361,25 @@ function pageOverview(){
         : `<div class="hint" style="margin:0">暂无运动记录，去记录一条吧</div>`}
     </div>`;
 
-  return cards + salaryCard + trendCard + periodCard + exerciseCard + restockCard;
+  // 围度趋势（近7天）
+  const mSorted = state.measure.slice().sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:0);
+  const mRecent = mSorted.slice(-7);
+  const mTrendCard = mRecent.length>=2 ? (()=>{
+    const series = MEAS_KEYS.map((mk,i)=>{
+      const colors = ["var(--gold-dark)","#D96A8C","#4FA8D6","#A8906B","#25B8B0"];
+      return {color:colors[i%colors.length], data:mRecent.map(d=>d[mk.k]!=null?num(d[mk.k]):null)};
+    });
+    const dates = mRecent.map(d=>d.date);
+    const latest = mSorted[mSorted.length-1];
+    const detailHtml = MEAS_KEYS.map(mk => `${mk.name} ${latest[mk.k]!=null?round(num(latest[mk.k])):"—"}`).join(" · ");
+    return `<div class="card" style="cursor:pointer" data-nav="measure">
+      <h2>围度趋势 <span class="sub">近7天</span></h2>
+      ${lineChart(series, dates)}
+      <div style="font-size:12px;color:var(--ink-muted);margin-top:6px;text-align:center">${detailHtml}</div>
+    </div>`;
+  })() : '';
+
+  return cards + salaryCard + trendCard + periodCard + exerciseCard + mTrendCard + restockCard;
 }
 
 /* ============== 页面：体重 ============== */
@@ -1948,7 +1967,7 @@ function pageSettings(){
   const modeRow=(key,label)=>`
     <div class="field" style="display:flex;align-items:center;justify-content:space-between">
       <label style="margin:0">${label}</label>
-      <div class="seg" data-mode="${key}">
+      <div class="seg" data-mode="${key}" style="flex:1;max-width:260px">
         <button class="${s.modules[key]==="daily"?"active":""}" data-v="daily">每日</button>
         <button class="${s.modules[key]==="cumulative"?"active":""}" data-v="cumulative">累计</button>
       </div>
