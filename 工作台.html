@@ -568,6 +568,33 @@
     transform:rotate(-45deg);margin-top:-2px;
   }
   .picker-item.empty .check{display:none;}
+
+  /* 编辑弹窗 */
+  .edit-mask{
+    position:fixed;inset:0;background:rgba(20,45,60,.4);z-index:80;
+    opacity:0;pointer-events:none;transition:opacity .2s;
+    display:flex;align-items:center;justify-content:center;padding:20px;
+  }
+  .edit-mask.show{opacity:1;pointer-events:auto;}
+  .edit-dialog{
+    width:100%;max-width:340px;background:#fff;border-radius:24px;padding:20px;
+    box-shadow:0 12px 40px rgba(20,50,70,.18);
+    transform:scale(.9);transition:transform .2s cubic-bezier(.4,0,.2,1);
+  }
+  .edit-mask.show .edit-dialog{transform:scale(1);}
+  .edit-dialog h3{margin:0 0 16px;font-size:16px;font-weight:700;color:var(--ink);display:flex;align-items:center;gap:8px;}
+  .edit-dialog .field{display:flex;flex-direction:column;gap:4px;margin-bottom:14px;}
+  .edit-dialog .field label{font-size:12px;color:var(--ink-muted);font-weight:500;}
+  .edit-dialog .field input{
+    border:1.5px solid var(--line);background:var(--bg-soft);border-radius:var(--radius-sm);
+    padding:10px 12px;font-size:14px;font-family:var(--font);outline:none;color:var(--ink);
+    transition:border-color .2s,background .2s;
+  }
+  .edit-dialog .field input:focus{border-color:var(--gold);background:#fff;}
+  .edit-dialog .field .hint-row{display:flex;justify-content:space-between;font-size:11px;color:var(--ink-muted);margin-top:2px;}
+  .edit-dialog .actions{display:flex;gap:10px;margin-top:8px;}
+  .edit-dialog .actions .btn{flex:1;}
+
   @media(min-width:769px){
     .picker-mask{align-items:flex-end;}
     .picker-sheet{border-radius:22px;margin-bottom:20px;max-height:60vh;}
@@ -2482,26 +2509,68 @@ function bindMeasure(){
 }
 
 function bindDiet(){
-  // 编辑食物
+  // 编辑食物 — 使用自定义UI弹窗，编辑重量而非热量
   document.querySelectorAll("[data-edit-diet]").forEach(b=>b.addEventListener("click",()=>{
     const idx = num(b.dataset.editDiet);
     const d=getDay(state.diet, todayStr());
     if(!d || !d.items[idx]) return;
     const item = d.items[idx];
-    const name = prompt("食物名称", item.name);
-    if(name===null) return;
-    const kcalStr = prompt("热量 (kcal)", item.kcal);
-    if(kcalStr===null) return;
-    const kcal = num(kcalStr);
-    if(!kcal || kcal<=0){ toast("请填写有效热量"); return; }
-    const qtyStr = prompt("份数 (如 1 / 50 / 80)", item.qty || 1);
-    if(qtyStr===null) return;
-    const qty = num(qtyStr) || 1;
-    item.name = name.trim();
-    item.kcal = kcal;
-    item.qty = qty;
-    if(item.unit===undefined || item.unit===null) item.unit = "份";
-    save(); toast("已更新"); navigate("diet");
+    const unit = item.unit || "份";
+    const isWeight = (unit === "g" || unit === "kg");
+    const weightVal = isWeight ? (item.qty || 100) : (item.qty || 1);
+    const weightLabel = isWeight ? "重量 (g)" : "份数";
+    const weightPlaceholder = isWeight ? "如 80" : "如 1";
+
+    const mask = document.createElement("div");
+    mask.className = "edit-mask";
+    mask.innerHTML = `
+      <div class="edit-dialog" role="dialog">
+        <h3>✎ 编辑食物</h3>
+        <div class="field">
+          <label>食物名称</label>
+          <input type="text" id="edName" value="${esc(item.name)}" />
+        </div>
+        <div class="field">
+          <label>${weightLabel}</label>
+          <input type="number" id="edWeight" step="0.1" placeholder="${weightPlaceholder}" value="${weightVal}" />
+          <div class="hint-row"><span>热量 ≈ <span id="edKcalPreview">${round(num(item.kcal))}</span> kcal</span><span>原 ${round(num(item.kcal))} kcal</span></div>
+        </div>
+        <div class="actions">
+          <button class="btn ghost" id="edCancel">取消</button>
+          <button class="btn primary" id="edSave">保存</button>
+        </div>
+      </div>`;
+    document.body.appendChild(mask);
+    requestAnimationFrame(()=> mask.classList.add("show"));
+
+    // 实时预览：按比例缩放热量
+    const kcalPerUnit = num(item.kcal) / (weightVal || 1);
+    const weightInput = mask.querySelector("#edWeight");
+    const kcalPreview = mask.querySelector("#edKcalPreview");
+    weightInput.addEventListener("input", ()=>{
+      const w = num(weightInput.value);
+      if(w > 0){
+        const newKcal = round(kcalPerUnit * w);
+        kcalPreview.textContent = newKcal;
+      }
+    });
+
+    const close = ()=>{ mask.classList.remove("show"); setTimeout(()=>mask.remove(), 250); };
+    mask.querySelector("#edCancel").addEventListener("click", close);
+    mask.addEventListener("click", e=>{ if(e.target===mask) close(); });
+    mask.querySelector("#edSave").addEventListener("click", ()=>{
+      const name = mask.querySelector("#edName").value.trim();
+      const w = num(weightInput.value);
+      if(!name){ toast("请填写食物名称"); return; }
+      if(!w || w<=0){ toast("请填写有效"+weightLabel); return; }
+      const newKcal = round(kcalPerUnit * w);
+      item.name = name;
+      item.qty = w;
+      item.kcal = newKcal;
+      if(isWeight) item.unit = "g";
+      else item.unit = "份";
+      save(); toast("已更新"); close(); navigate("diet");
+    });
   }));
 
   // 删除食物
