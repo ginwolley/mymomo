@@ -321,6 +321,12 @@
   .legend span{display:inline-flex;align-items:center;gap:5px;}
   .legend i{width:10px;height:10px;border-radius:3px;display:inline-block;}
 
+  /* ---------- 生理期状态条 ---------- */
+  .pd-status{display:flex;gap:8px;margin-bottom:12px;}
+  .pd-chip{flex:1;background:var(--card);border-radius:var(--radius-lg);box-shadow:var(--shadow-soft);padding:12px;text-align:center;}
+  .pd-chip .t{font-size:11px;color:var(--ink-muted);}
+  .pd-chip .v{font-size:15px;font-weight:700;font-family:var(--font-mono);margin-top:3px;}
+
   /* ---------- 日历 ---------- */
   .cal-head{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:12px;}
   .cal-head h2{font-size:16px;font-weight:700;margin:0;color:var(--ink);}
@@ -1605,77 +1611,57 @@ function pagePeriod(){
       <span><i style="background:transparent;border:1.5px dashed var(--period)"></i>预测经期</span>
     </div>`;
 
-  // 统计与预测（紧凑合并到一个卡片）
+  // 日历卡片（demo 风格：左右箭头 + 年月下拉 + 全年按钮）
+  const calendarSection = `<div class="card" style="padding:12px 16px">
+    <div class="cal-head" style="margin-bottom:10px">
+      <button data-cal="prev" aria-label="上一月">&#8249;</button>
+      <select id="calYear" class="custom-picker">${yearOpts}</select>
+      <select id="calMonth" class="custom-picker">${monthOpts}</select>
+      <button data-cal="next" aria-label="下一月">&#8250;</button>
+      <button class="btn soft sm" id="toYear" style="margin-left:6px">全年</button>
+    </div>
+    ${calGrid}${legendHtml}
+  </div>`;
+
+  // 统计：demo 风格的 pd-status 三段 chip
   let statHtml = "";
   if(stats){
-    const reg = stats.cycleStd <= 3 ? "较规律" : (stats.cycleStd <= 7 ? "一般" : "不规律");
-    statHtml = `<div class="card rose" style="padding:12px 16px">
-      <div class="row-stats" style="margin-bottom:0">
-        <div class="stat p stat-v"><div class="label">平均周期</div><div class="value">${stats.avgCycle}<small>天</small></div></div>
-        <div class="stat p stat-v"><div class="label">平均经期</div><div class="value">${stats.avgLen}<small>天</small></div></div>`;
-    if(pred){
-      statHtml += `
-        <div class="stat p stat-v"><div class="label">预计开始</div><div class="value">${pred.start.slice(5)}</div></div>
-        <div class="stat p stat-v"><div class="label">预计结束</div><div class="value">${pred.end.slice(5)}</div></div>`;
-    }
-    statHtml += `</div>`;
-    let countdownNote = "";
-    if(pred){
-      const countdown = daysBetween(t, pred.start);
-      if(countdown > 0) countdownNote = `距预计开始还有 <b>${countdown}</b> 天`;
-      else if(t >= pred.start && t <= pred.end) countdownNote = `<b>预测经期进行中</b>`;
-      else countdownNote = `已超出预测开始日，请记录实际日期`;
-    }
-    statHtml += `
-      <div style="margin-top:8px;font-size:13px;color:var(--ink-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
-        规律程度：${reg} · ${stats.count} 次记录${countdownNote ? ` · ${countdownNote}` : ""}${pred ? ` · 基于周期 ${pred.avgCycle} 天推算` : ""}
-      </div>
+    const nextPred = pred ? pred.start.slice(5) : "—";
+    statHtml = `<div class="pd-status">
+      <div class="pd-chip"><div class="t">平均周期</div><div class="v">${stats.avgCycle} 天</div></div>
+      <div class="pd-chip"><div class="t">平均经期</div><div class="v">${stats.avgLen} 天</div></div>
+      <div class="pd-chip"><div class="t">下次预测</div><div class="v">${nextPred}</div></div>
     </div>`;
   } else {
     statHtml = `<div class="card"><div class="empty"><div class="sym">🌸</div>记录至少两次经期后才能统计</div></div>`;
   }
 
-  // 月经来了：是/否（标记开始或取消）
-  const cameHtml = `
-    <div class="card rose" style="padding:12px 16px;display:flex;align-items:center;gap:10px">
-      <h2 style="margin:0">月经来了 <span class="sub">${selDate}</span></h2>
-      <div class="seg period" data-rec="came" style="margin-left:auto">
-        <button data-v="yes">是</button>
-        <button data-v="no">否</button>
-      </div>
-    </div>`;
+  // 月经来了/走了（合并到一个卡片，使用 seg 分段控件，依据当前 selDate 状态高亮）
+  const isCame = state.periods.some(p => p.start === selDate);
+  const isGone = state.periods.some(p => p.end === selDate);
+  const recHtml = `<div class="card">
+    <h2 data-title="came">月经来了 <span class="sub">${selDate}</span></h2>
+    <div class="seg period" data-rec="came" style="margin-bottom:10px">
+      <button data-v="yes" class="${isCame?'active':''}">是</button>
+      <button data-v="no" class="${!isCame?'active':''}">否</button>
+    </div>
+    <h2 data-title="gone" style="margin-top:6px">月经走了 <span class="sub">${selDate}</span></h2>
+    <div class="seg period" data-rec="gone" style="margin-bottom:0">
+      <button data-v="yes" class="${isGone?'active':''}">是</button>
+      <button data-v="no" class="${!isGone?'active':''}">否</button>
+    </div>
+  </div>`;
 
-  // 月经走了：是/否（标记结束或取消）
-  const goneHtml = `
-    <div class="card rose" style="padding:12px 16px;display:flex;align-items:center;gap:10px">
-      <h2 style="margin:0">月经走了 <span class="sub">${selDate}</span></h2>
-      <div class="seg period" data-rec="gone" style="margin-left:auto">
-        <button data-v="yes">是</button>
-        <button data-v="no">否</button>
-      </div>
-    </div>`;
-
-  // 历史记录：默认不展开，仅显示条数，点击展开至新页面
+  // 历史记录（demo 风格：居中展开按钮）
   const histHtml = `
-    <div class="card">
-      <h2>历史记录 <span class="sub">共 ${psSorted.length} 次</span></h2>
-      <div style="text-align:center;padding:6px 0">
-        <button class="btn ghost sm" id="histOpen" style="display:inline-flex;align-items:center;gap:5px">
-          展开全部记录 <svg viewBox="0 0 24 24" width="14" height="14" style="stroke:currentColor;fill:none;stroke-width:2"><path d="M6 9l6 6 6-6"/></svg>
-        </button>
-      </div>
+    <div class="card" style="text-align:center">
+      <h2 style="justify-content:center">历史记录 <span class="sub">共 ${psSorted.length} 次</span></h2>
+      <button class="btn soft sm" id="histOpen" style="display:inline-flex;align-items:center;gap:5px">
+        展开全部记录 <svg viewBox="0 0 24 24" width="14" height="14" style="stroke:currentColor;fill:none;stroke-width:2"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
     </div>`;
 
-  // 日历
-  const calendarSection = `<div class="card" style="padding:12px 16px"><div class="cal-head" style="margin-bottom:10px">
-        <button data-cal="prev" aria-label="上一月">&#8249;</button>
-        <select id="calYear">${yearOpts}</select>
-        <select id="calMonth">${monthOpts}</select>
-        <button data-cal="next" aria-label="下一月">&#8250;</button>
-        <button class="btn ghost sm" id="toYear" style="margin-left:8px">全年视图</button>
-      </div>${calGrid}${legendHtml}</div>`;
-
-  return statHtml + calendarSection + cameHtml + goneHtml + histHtml;
+  return calendarSection + statHtml + recHtml + histHtml;
 }
 
 function calCell(ds, dayNum, other, predSet){
@@ -2761,23 +2747,22 @@ function bindPeriodPage(){
     // 更新选中样式
     document.querySelectorAll(".cal-cell.selected").forEach(el => el.classList.remove("selected"));
     c.classList.add("selected");
-    // 更新"月经来了"卡片中的日期显示
-    const cameSection = document.querySelector(".seg[data-rec='came']");
-    if(cameSection){
-      const card = cameSection.closest(".card");
-      if(card){
-        const h2 = card.querySelector("h2");
-        if(h2) h2.innerHTML = `月经来了 <span class="sub">${selDate}</span>`;
-      }
-    }
-    const goneSection = document.querySelector(".seg[data-rec='gone']");
-    if(goneSection){
-      const card = goneSection.closest(".card");
-      if(card){
-        const h2 = card.querySelector("h2");
-        if(h2) h2.innerHTML = `月经走了 <span class="sub">${selDate}</span>`;
-      }
-    }
+    // 更新"月经来了 / 月经走了"标题中的日期显示
+    const cameTitle = document.querySelector("[data-title='came']");
+    if(cameTitle) cameTitle.innerHTML = `月经来了 <span class="sub">${selDate}</span>`;
+    const goneTitle = document.querySelector("[data-title='gone']");
+    if(goneTitle) goneTitle.innerHTML = `月经走了 <span class="sub">${selDate}</span>`;
+    // 同步"是/否"按钮高亮状态
+    const isCame = state.periods.some(p => p.start === selDate);
+    const isGone = state.periods.some(p => p.end === selDate);
+    document.querySelectorAll(".seg[data-rec='came'] button").forEach(b=>{
+      const v = b.dataset.v;
+      b.classList.toggle("active", (v==="yes")===isCame);
+    });
+    document.querySelectorAll(".seg[data-rec='gone'] button").forEach(b=>{
+      const v = b.dataset.v;
+      b.classList.toggle("active", (v==="yes")===isGone);
+    });
   }));
   // 月经来了：是/否（两个按钮始终可用）
   document.querySelectorAll(".seg[data-rec='came'] button").forEach(b=>b.addEventListener("click",()=>{
