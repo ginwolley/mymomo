@@ -46,6 +46,8 @@
     --period:var(--rose);
     --period-text:#D96A8C;
 
+    --card:#FFFFFF;
+
     --line:#E7F3F8;
     --radius-sm:12px;
     --radius:16px;
@@ -469,7 +471,8 @@
     /* 日历在窄屏适当缩小 */
     .cal-cell{font-size:12px;border-radius:8px;}
     .cal-dow{font-size:10px;}
-    .cal-head .custom-picker{min-width:72px;text-align:center;}
+    .cal-head .custom-picker{min-width:96px;text-align:center;}
+    .cal-head .custom-picker .cp-value{overflow:visible;text-overflow:clip;}
 
     /* 年视图在窄屏 */
     .months{grid-template-columns:repeat(3,1fr);gap:6px;}
