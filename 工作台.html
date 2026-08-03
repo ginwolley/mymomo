@@ -474,10 +474,7 @@
     /* 年视图在窄屏 */
     .months{grid-template-columns:repeat(3,1fr);gap:6px;}
 
-    /* 添加食物页手动输入行在窄屏换行 */
-    .fp-manual-row{flex-wrap:wrap;}
-    .fp-manual-row > div:first-child{flex:1 1 100% !important;}
-    .fp-manual-row input{flex:1;min-width:0;}
+    /* 添加食物页AI输入行在窄屏换行 */
     .diet-ai-row{flex-wrap:wrap;}
     .diet-ai-row input{flex:1 1 100% !important;}
   }
@@ -627,13 +624,6 @@
   .fp-item{padding:6px 8px;font-size:12px;border-bottom:1px solid var(--line);cursor:pointer;border-radius:4px;transition:background .15s;}
   .fp-item:active,.fp-item:hover{background:var(--glass);}
   .fp-item .muted{font-size:11px;}
-  .fp-manual-row{display:flex;gap:6px;align-items:center;}
-  .fp-manual-row input{padding:6px 8px;border:1px solid var(--line);border-radius:6px;font-size:13px;background:white;}
-  .food-history-list{position:absolute;top:100%;left:0;right:0;z-index:10;background:var(--glass);border:1px solid var(--glass-border);border-radius:var(--radius-sm);max-height:180px;overflow-y:auto;display:none;box-shadow:var(--shadow-lift);}
-  .food-history-list .fh-item{padding:6px 10px;font-size:12px;cursor:pointer;border-bottom:1px solid var(--glass-border);}
-  .food-history-list .fh-item:last-child{border-bottom:none;}
-  .food-history-list .fh-item:hover{background:var(--gold-soft);}
-
   /* 手动输入卡片 */
   .diet-manual-card{padding:12px 14px !important;}
   .diet-manual-header{display:flex;align-items:baseline;gap:8px;margin-bottom:8px;}
@@ -1404,23 +1394,14 @@ function pageDietAdd(meal){
     </div>
     <div class="card diet-manual-card">
       <div class="diet-manual-header">
-        <span class="diet-manual-title">手动输入</span>
-        <span class="muted" style="font-size:11px">名称 + 热量，直接添加</span>
-      </div>
-      <div class="fp-manual-row">
-        <div style="position:relative;flex:2">
-          <input type="text" id="fpManualName" placeholder="食物名称" style="width:100%" autocomplete="off">
-          <div id="foodHistoryList" class="food-history-list"></div>
-        </div>
-        <input type="number" id="fpManualKcal" placeholder="热量 kcal" style="flex:1">
-        <input type="number" id="fpManualQty" placeholder="份数" value="1" style="flex:0.6" min="0.5" step="0.5">
-        <button class="btn primary sm" id="fpManualAdd">添加</button>
+        <span class="diet-manual-title">AI 菜名估算</span>
+        <span class="muted" style="font-size:11px">输入菜名自动估算热量</span>
       </div>
       <div class="diet-ai-row">
         <input type="text" id="dishNameInput" placeholder="输入菜名，如 土豆炖牛肉" style="flex:1">
-        <button class="btn ghost sm" id="aiDishBtn" ${state.settings.api.enabled&&state.settings.api.key?"":"disabled"}>${state.settings.api.enabled&&state.settings.api.key?"AI估算":"需配置AI"}</button>
+        <button class="btn primary sm" id="aiDishBtn" ${state.settings.api.enabled&&state.settings.api.key?"":"disabled"}>${state.settings.api.enabled&&state.settings.api.key?"AI估算":"需配置AI"}</button>
       </div>
-      <div class="diet-converter">
+      <div class="diet-converter" style="margin-top:10px">
         <span class="diet-converter-label">包装食品计算器</span>
         <div class="diet-converter-row">
           <input type="number" id="pkgWeight" placeholder="包装重量(g)">
@@ -2541,20 +2522,6 @@ function bindDietAdd(){
     selectedFood = null;
   });
 
-  // 手动添加
-  const manualBtn = document.getElementById("fpManualAdd");
-  if(manualBtn) manualBtn.addEventListener("click", ()=>{
-    const name = document.getElementById("fpManualName").value.trim();
-    const kcal = num(document.getElementById("fpManualKcal").value);
-    const qty = num(document.getElementById("fpManualQty").value) || 1;
-    if(!name || !kcal){ toast("请填写食物名称和热量"); return; }
-    const d = ensureDay(state.diet, todayStr());
-    d.items.push({name, kcal: Math.round(kcal * qty), meal, unit: "份", qty, img: null});
-    document.getElementById("fpManualName").value = "";
-    document.getElementById("fpManualKcal").value = "";
-    save(); toast("已添加"); navigate("diet");
-  });
-
   // 包装食品计算器
   function calcPkgKcal(){
     const w = num(document.getElementById("pkgWeight").value);
@@ -2576,8 +2543,9 @@ function bindDietAdd(){
     const kj = num(document.getElementById("pkgKj").value);
     if(w <= 0 || kj <= 0){ toast("请先填写包装重量和每100g千焦"); return; }
     const kcal = Math.round((w / 100) * (kj / 4.184));
-    document.getElementById("fpManualKcal").value = kcal;
-    toast("已填入 "+kcal+" kcal");
+    const d = ensureDay(state.diet, todayStr());
+    d.items.push({name: "包装食品", kcal, meal, unit: "g", qty: w, img: null});
+    save(); toast("已添加包装食品 "+kcal+" kcal"); navigate("diet");
   });
 
   // AI菜名估算 → 显示份量面板
@@ -2609,56 +2577,6 @@ function bindDietAdd(){
     finally{ aiDishBtn.disabled = false; aiDishBtn.textContent = "AI估算"; }
   });
 
-  // 食物历史联想
-  const nameInput = document.getElementById("fpManualName");
-  const historyList = document.getElementById("foodHistoryList");
-  if(nameInput && historyList){
-    // 建立食物历史索引
-    let foodHistory = {};
-    state.diet.forEach(d => {
-      (d.items || []).forEach(item => {
-        const key = item.name.toLowerCase().trim();
-        if(key) {
-          if(!foodHistory[key] || foodHistory[key].date < d.date) {
-            foodHistory[key] = {name: item.name, kcal: item.kcal, qty: item.qty||1, unit: item.unit||'g', date: d.date};
-          }
-        }
-      });
-    });
-    const historyItems = Object.values(foodHistory).sort((a,b)=>b.date.localeCompare(a.date));
-
-    nameInput.addEventListener("input", ()=>{
-      const q = nameInput.value.trim().toLowerCase();
-      if(!q){
-        historyList.style.display = "none";
-        return;
-      }
-      const matches = historyItems.filter(h => h.name.toLowerCase().includes(q));
-      if(matches.length){
-        historyList.innerHTML = matches.map(h => `<div class="fh-item" data-name="${esc(h.name)}" data-kcal="${h.kcal}" data-qty="${h.qty}" data-unit="${esc(h.unit)}">${esc(h.name)} <span class="muted">${h.kcal} kcal${h.unit ? ' / '+h.unit.replace(/^\d+/,'') : ''}</span></div>`).join("");
-        historyList.style.display = "block";
-      } else {
-        historyList.style.display = "none";
-      }
-    });
-
-    // 点击建议项填充
-    historyList.addEventListener("click", (e)=>{
-      const item = e.target.closest(".fh-item");
-      if(!item) return;
-      nameInput.value = item.dataset.name;
-      document.getElementById("fpManualKcal").value = item.dataset.kcal;
-      document.getElementById("fpManualQty").value = item.dataset.qty;
-      historyList.style.display = "none";
-    });
-
-    // 点击外部关闭建议列表
-    document.addEventListener("click", (e)=>{
-      if(!e.target.closest("#fpManualName") && !e.target.closest("#foodHistoryList")){
-        historyList.style.display = "none";
-      }
-    });
-  }
 }
 
 /* AI菜名估算（文本输入） */
