@@ -401,6 +401,8 @@
     .row .field{flex:1 1 100% !important;min-width:0 !important;}
     .row .btn{flex:1 1 45%;}
     .field input,.field select,.field textarea{font-size:13px;padding:8px 10px;line-height:1.4;}
+    .field .custom-picker{font-size:13px;padding:8px 30px 8px 10px;line-height:1.4;}
+    .field .custom-picker.sm{font-size:12px;padding:6px 26px 6px 8px;}
     .field select{background-color:rgba(255,255,255,.7);border-radius:var(--radius);}
     .btn{padding:10px 16px;}
     .btn.sm{padding:7px 12px;}
@@ -433,6 +435,72 @@
   @keyframes pageFadeIn{
     from{opacity:0;transform:translateY(8px);}
     to{opacity:1;transform:translateY(0);}
+  }
+
+  /* 自定义选择器 */
+  .custom-picker{
+    flex:1;min-width:0;padding:9px 34px 9px 12px;border:1px solid var(--glass-border);border-radius:var(--radius);
+    background:rgba(255,255,255,.7);cursor:pointer;font-size:13px;color:var(--ink);text-align:left;
+    box-shadow:inset 0 1px 3px rgba(61,53,46,.04);
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23A89B8C' d='M3 5l3 3 3-3'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 10px center;background-size:12px;
+    transition:border-color .2s,background .2s,box-shadow .2s;
+  }
+  .custom-picker:hover{background-color:rgba(255,255,255,.85);}
+  .custom-picker:focus{outline:none;border-color:var(--gold);background:#fff;box-shadow:0 0 0 3px rgba(212,184,150,.15),inset 0 1px 3px rgba(61,53,46,.04);}
+  .custom-picker .cp-value{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .custom-picker.sm{padding:6px 28px 6px 8px;font-size:12px;border-radius:8px;}
+  /* 底部弹窗 */
+  .picker-mask{
+    position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:70;
+    opacity:0;pointer-events:none;transition:opacity .25s;
+    display:flex;align-items:flex-end;justify-content:center;
+  }
+  .picker-mask.show{opacity:1;pointer-events:auto;}
+  .picker-sheet{
+    width:100%;max-width:480px;max-height:72vh;
+    background:#fff;border-radius:22px 22px 0 0;
+    box-shadow:0 -8px 40px rgba(0,0,0,.15);
+    display:flex;flex-direction:column;
+    transform:translateY(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);
+    overflow:hidden;
+  }
+  .picker-mask.show .picker-sheet{transform:translateY(0);}
+  .picker-header{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:16px 18px 12px;border-bottom:1px solid rgba(61,53,46,.08);
+    flex-shrink:0;
+  }
+  .picker-header h3{margin:0;font-size:15px;font-weight:600;color:var(--ink);}
+  .picker-close{background:none;border:none;font-size:20px;color:var(--ink-muted);cursor:pointer;padding:4px 8px;}
+  .picker-body{flex:1;overflow-y:auto;padding:8px 0;}
+  .picker-group-title{
+    padding:10px 18px 6px;font-size:12px;font-weight:600;color:var(--ink-muted);
+    text-transform:uppercase;letter-spacing:.5px;
+  }
+  .picker-item{
+    display:flex;align-items:center;gap:10px;padding:12px 18px;
+    cursor:pointer;transition:background .15s;font-size:14px;color:var(--ink);
+    position:relative;
+  }
+  .picker-item:hover{background:var(--gold-soft);}
+  .picker-item.selected{color:var(--gold-dark);font-weight:600;background:rgba(212,184,150,.12);}
+  .picker-item .check{
+    width:20px;height:20px;border-radius:50%;border:2px solid var(--ink-muted);
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;
+    transition:all .2s;
+  }
+  .picker-item.selected .check{
+    border-color:var(--gold);background:var(--gold);
+  }
+  .picker-item.selected .check::after{
+    content:"";width:8px;height:4px;border-left:2px solid #fff;border-bottom:2px solid #fff;
+    transform:rotate(-45deg);margin-top:-2px;
+  }
+  .picker-item.empty .check{display:none;}
+  @media(min-width:769px){
+    .picker-mask{align-items:flex-end;}
+    .picker-sheet{border-radius:22px;margin-bottom:20px;max-height:60vh;}
   }
 
   /* 数字等宽 */
@@ -1936,6 +2004,7 @@ const TITLES = {
 
 function navigate(id, params){
   stopSalaryTimer();
+  closePickerSheet();
   if(!PAGES[id]) id="overview";
   currentPage=id;
   // 顶部返回按钮
@@ -1959,6 +2028,7 @@ function navigate(id, params){
   pageEl.classList.add("page-enter");
   bindPage(id);
   bindPeriod();
+  initAllPickers(pageEl);
   // 高亮导航（叶子或分组）
   document.querySelectorAll(".nav-leaf").forEach(b=>b.classList.toggle("active", b.dataset.id===id));
   // 若是叶子，确保父分组展开
@@ -2007,6 +2077,145 @@ function buildNav(){
   }));
 }
 function svg(name){ return `<svg viewBox="0 0 24 24">${ICONS[name]||""}</svg>`; }
+
+/* ============== 自定义选择器组件 ============== */
+let _pickerSeq = 0;
+let _activePicker = null;
+
+function buildPickerOptions(selectEl){
+  const groups = [];
+  let currentGroup = null;
+  const directOptions = [];
+  selectEl.querySelectorAll(":scope > optgroup").forEach(og=>{
+    const opts = Array.from(og.options).map(o=>({value:o.value,label:o.textContent,selected:o.selected,empty:o.dataset.empty==="1"}));
+    groups.push({label:og.label,options:opts});
+  });
+  selectEl.querySelectorAll(":scope > option").forEach(o=>{
+    if(o.value==="" && !o.textContent.trim()) return;
+    directOptions.push({value:o.value,label:o.textContent,selected:o.selected,empty:o.dataset.empty==="1"});
+  });
+  if(directOptions.length) groups.unshift({label:null,options:directOptions});
+  return groups;
+}
+
+function initCustomPicker(selectEl, title){
+  if(selectEl.dataset.pickerInit==="1") return;
+  selectEl.dataset.pickerInit = "1";
+  selectEl.style.display = "none";
+  const pickerId = "cp_" + (++_pickerSeq);
+  const wrap = document.createElement("div");
+  const isSm = selectEl.classList.contains("sm") || selectEl.closest(".ex-form");
+  wrap.className = "custom-picker" + (isSm ? " sm" : "");
+  wrap.tabIndex = 0;
+  wrap.setAttribute("role","button");
+  wrap.setAttribute("data-picker", pickerId);
+  const valSpan = document.createElement("span");
+  valSpan.className = "cp-value";
+  const sel = selectEl.options[selectEl.selectedIndex];
+  valSpan.textContent = sel ? sel.textContent : "";
+  wrap.appendChild(valSpan);
+  selectEl.parentNode.insertBefore(wrap, selectEl);
+  wrap.appendChild(selectEl);
+
+  function updateDisplay(){
+    const s = selectEl.options[selectEl.selectedIndex];
+    valSpan.textContent = s ? s.textContent : "";
+  }
+  selectEl.addEventListener("change", updateDisplay);
+
+  wrap.addEventListener("click", e=>{
+    e.stopPropagation();
+    openPickerSheet(pickerId, selectEl, title || selectEl.dataset.title || "选择");
+  });
+  wrap.addEventListener("keydown", e=>{
+    if(e.key==="Enter" || e.key===" "){ e.preventDefault(); openPickerSheet(pickerId, selectEl, title || "选择"); }
+  });
+}
+
+function initAllPickers(container){
+  const scope = container || document;
+  scope.querySelectorAll("select").forEach(s=>{
+    if(s.closest(".picker-sheet") || s.closest(".picker-mask")) return;
+    initCustomPicker(s);
+  });
+}
+
+function openPickerSheet(pickerId, selectEl, title){
+  closePickerSheet();
+  _activePicker = pickerId;
+  const groups = buildPickerOptions(selectEl);
+  const curVal = selectEl.value;
+
+  let groupHtml = groups.map(g=>{
+    const optsHtml = g.options.map(o=>`
+      <div class="picker-item ${o.value===curVal?"selected":""} ${o.empty?"empty":""}" data-v="${esc(o.value)}">
+        <span class="check"></span>
+        <span>${esc(o.label)}</span>
+      </div>`).join("");
+    return (g.label ? `<div class="picker-group-title">${esc(g.label)}</div>` : "") + optsHtml;
+  }).join("");
+
+  const mask = document.createElement("div");
+  mask.className = "picker-mask";
+  mask.id = "pickerMask";
+  mask.innerHTML = `
+    <div class="picker-sheet" role="dialog">
+      <div class="picker-header">
+        <h3>${esc(title)}</h3>
+        <button class="picker-close" type="button">×</button>
+      </div>
+      <div class="picker-body">${groupHtml}</div>
+    </div>`;
+  document.body.appendChild(mask);
+  requestAnimationFrame(()=> mask.classList.add("show"));
+
+  mask.addEventListener("click", e=>{
+    if(e.target===mask) closePickerSheet();
+  });
+  mask.querySelector(".picker-close").addEventListener("click", closePickerSheet);
+
+  mask.querySelectorAll(".picker-item").forEach(item=>{
+    item.addEventListener("click", ()=>{
+      const v = item.dataset.v;
+      selectEl.value = v;
+      selectEl.dispatchEvent(new Event("change", {bubbles:true}));
+      closePickerSheet();
+    });
+  });
+
+  // 滚动到选中项
+  const selItem = mask.querySelector(".picker-item.selected");
+  if(selItem){
+    requestAnimationFrame(()=>{
+      const body = mask.querySelector(".picker-body");
+      const r = selItem.getBoundingClientRect();
+      const br = body.getBoundingClientRect();
+      body.scrollTop = Math.max(0, r.top - br.top - 60);
+    });
+  }
+  // ESC 关闭
+  const onKey = (e)=>{ if(e.key==="Escape"){ closePickerSheet(); document.removeEventListener("keydown", onKey); } };
+  document.addEventListener("keydown", onKey);
+}
+
+function refreshPickerDisplay(selectEl){
+  if(selectEl.dataset.pickerInit==="1"){
+    const wrap = selectEl.parentNode;
+    if(wrap && wrap.classList.contains("custom-picker")){
+      const s = selectEl.options[selectEl.selectedIndex];
+      const valSpan = wrap.querySelector(".cp-value");
+      if(valSpan) valSpan.textContent = s ? s.textContent : "";
+    }
+  }
+}
+
+function closePickerSheet(){
+  const mask = document.getElementById("pickerMask");
+  if(!mask) return;
+  mask.classList.remove("show");
+  setTimeout(()=>{ mask.remove(); }, 250);
+  _activePicker = null;
+}
 
 /* 手机端抽屉 */
 function openNav(){ document.body.classList.add("nav-open"); }
@@ -2999,6 +3208,7 @@ function bindStockOverview(){
       </div>
     </div>`;
     document.body.appendChild(overlay);
+    initAllPickers(overlay);
     overlay.querySelector('#consumeCancel').addEventListener('click', ()=>overlay.remove());
     overlay.querySelector('#consumeSave').addEventListener('click', ()=>{
       const idx = num(overlay.querySelector('#consumeItem').value);
@@ -3038,6 +3248,8 @@ function bindStockAdd(){
     subSel.innerHTML = subs.map(s=>`<option value="${s}">${s}</option>`).join("");
     const units = STOCK_UNITS[cat] || ["个"];
     unitSel.innerHTML = units.map(u=>`<option value="${u}">${u}</option>`).join("");
+    refreshPickerDisplay(subSel);
+    refreshPickerDisplay(unitSel);
     foodField.style.display = cat === "食品" ? "flex" : "none";
   }
   catSel.addEventListener("change", updateSubAndUnit);
@@ -3164,6 +3376,7 @@ function bindStockAll(){
     const found = topSpaces.find(s => s.id === topId);
     const subs = (found && found.children) || [];
     spaceSub.innerHTML = `<option value="">全部二级空间</option>${subs.map(s => `<option value="${s.id}">${s.name}</option>`).join('')}`;
+    refreshPickerDisplay(spaceSub);
     filterAndRender();
   }
   function filterAndRender(){
@@ -3225,6 +3438,8 @@ function bindStockDetail(idx){
     subSel.innerHTML = subs.map(s=>`<option value="${s}">${s}</option>`).join("");
     const units = STOCK_UNITS[cat] || ["个"];
     unitSel.innerHTML = units.map(u=>`<option value="${u}">${u}</option>`).join("");
+    refreshPickerDisplay(subSel);
+    refreshPickerDisplay(unitSel);
   }
   if(catSel) catSel.addEventListener("change", updateSubAndUnit);
 
