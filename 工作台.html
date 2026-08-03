@@ -1160,7 +1160,6 @@ function pageOverview(){
     </div>` : '';
 
   const pred = predictNext();
-  const pStats = pred ? periodStats() : null;
   const goal = state.settings.dietGoal || 1600;
   const pct = goal > 0 ? Math.min(100, Math.round(inK/goal*100)) : 0;
   const overshoot = inK > goal;
@@ -1184,20 +1183,18 @@ function pageOverview(){
     const todayPeriod = periodAt(t);
     if(todayPeriod){
       const day = daysBetween(todayPeriod.start, t) + 1;
-      return `<div class="card rose">
-        <h2>生理期 <span class="sub">${todayPeriod.start} ~ ${todayPeriod.end}</span></h2>
-        <div style="text-align:center;padding:8px 0 4px;font-size:32px;font-weight:700;font-family:var(--font-mono);color:var(--period-text)">第 ${day} 天</div>
+      const len = daysBetween(todayPeriod.start, todayPeriod.end) + 1;
+      return `<div class="card">
+        <h2>生理期 <span class="pill rose">第 ${day} 天</span></h2>
+        <div style="font-size:13px;color:var(--ink-light)">${todayPeriod.start} ~ ${todayPeriod.end} · 共 ${len} 天</div>
       </div>`;
     }
     if(pred){
-      return `<div class="card rose">
-        <h2>生理期预测 <span class="sub">基于 ${pStats.count} 次记录</span></h2>
-        <div class="row-stats">
-          <div class="stat p stat-v plain"><div class="label">预计开始</div><div class="value num">${pred.start.slice(5)}</div></div>
-          <div class="stat p stat-v plain"><div class="label">预计结束</div><div class="value num">${pred.end.slice(5)}</div></div>
-          <div class="stat plain"><div class="label">平均周期</div><div class="value num">${pred.avgCycle}<small>天</small></div></div>
-        </div>
-        <div class="hint">平均经期 ${pred.avgLen} 天。预测仅供参考，实际以身体为准。</div>
+      const gap = Math.max(0, daysBetween(t, pred.start));
+      return `<div class="card">
+        <h2>生理期 <span class="pill rose">预测中</span></h2>
+        <div style="font-size:13px;color:var(--ink-light)">下次预计 <b style="font-family:var(--font-mono);color:var(--ink)">${pred.start.slice(5)}</b> 开始 · 距今天还有 ${gap} 天</div>
+        <div class="hint">周期 ${pred.avgCycle} 天 · 经期 ${pred.avgLen} 天</div>
       </div>`;
     }
     return '';
@@ -1216,14 +1213,14 @@ function pageOverview(){
     const daily = total / wd;
     const hourly = daily / 6;
     window._salaryData = { total, wd, daily, hourly };
-    salaryCard = `<div class="card money" id="salaryLiveCard">
-      <h2>今日已入账 <span class="sub">${curY}年${curM}月 · ${wd}个工作日 · 时薪 ${round(hourly)} 元</span></h2>
-      <div style="display:flex;align-items:baseline;gap:8px;padding:4px 0 6px">
-        <span style="font-size:32px;font-weight:700;font-family:var(--font-mono);color:var(--money-dark)" id="todayEarned">0.00<small style="font-size:14px;font-weight:500;color:var(--ink-muted)"> 元</small></span>
-        <span class="muted" style="font-size:12px">/ 今日应入 <span style="font-family:var(--font-mono)">${round(daily)}</span> 元</span>
+    salaryCard = `<div class="card" id="salaryLiveCard">
+      <h2>今日工资入账 <span class="sub">实时 · 时薪 ${round(hourly)} 元</span></h2>
+      <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:4px">
+        <span style="font-size:26px;font-weight:700;font-family:var(--font-mono);color:var(--gold-dark)" id="todayEarned">0.00</span>
+        <span style="font-size:11px;color:var(--ink-muted)">/ 今日应入 <span style="font-family:var(--font-mono)">${round(daily)}</span> 元</span>
       </div>
-      <div class="prog" style="height:8px"><i id="salaryProgFill" style="width:0%;background:var(--money)"></i></div>
-      <div class="hint" id="salaryHours">已工作 0 / 6 小时（9:00-11:30 · 14:00-17:30）</div>
+      <div class="prog" style="height:8px"><i id="salaryProgFill" style="width:0%;background:var(--gold-dark)"></i></div>
+      <div class="hint" id="salaryHours" style="margin-top:6px">已工作 0 / 6 小时（9:00-11:30 · 14:00-17:30）</div>
       </div>`;
   }
 
@@ -2126,8 +2123,27 @@ function bindTabPage(id){
 /* ---- Tab容器页：首页（聚合 + 概览/体重/围度分段） ---- */
 function pageTabHome(){
   const seg = segHome;
-  const inner = seg==="weight" ? pageWeight() : seg==="measure" ? pageMeasure() : pageOverview();
-  return `<div class="tab-seg"><div class="seg">${[["overview","概览"],["weight","体重"],["measure","围度"]].map(o=>`<button class="${seg===o[0]?"active":""}" data-seg="${o[0]}">${o[1]}</button>`).join("")}</div></div>` + inner;
+  const segHtml = `<div class="tab-seg"><div class="seg">${[["overview","概览"],["weight","体重"],["measure","围度"]].map(o=>`<button class="${seg===o[0]?"active":""}" data-seg="${o[0]}">${o[1]}</button>`).join("")}</div></div>`;
+  // 概览：demo 中分段条在 hero 大卡之后，其余分段页分段条在顶部
+  if(seg==="overview"){
+    const ov = pageOverview();
+    const heroStart = ov.indexOf('<div class="hero">');
+    if(heroStart >= 0){
+      let depth = 0, m, re = /<div\b[^>]*>|<\/div>/g;
+      while((m = re.exec(ov))){
+        if(m.index < heroStart) continue;
+        if(m[0].startsWith('<div')) depth++;
+        else depth--;
+        if(depth === 0){
+          const end = m.index + m[0].length;
+          return ov.slice(0, end) + segHtml + ov.slice(end);
+        }
+      }
+    }
+    return segHtml + ov;
+  }
+  const inner = seg==="weight" ? pageWeight() : pageMeasure();
+  return segHtml + inner;
 }
 function bindTabHome(){
   document.querySelectorAll(".tab-seg [data-seg]").forEach(b=>b.addEventListener("click",()=>{
