@@ -152,15 +152,13 @@
   /* ---------- cards ---------- */
   .card{
     background:var(--glass);
-    border:1px solid var(--glass-border);
+    border:none;
     border-radius:var(--radius-lg);
     box-shadow:var(--shadow-soft);
-    padding:16px 18px;
-    margin-bottom:14px;
-    transition:box-shadow .25s ease,transform .2s ease;
+    padding:16px;
+    margin-bottom:12px;
     position:relative;
   }
-  .card:hover{box-shadow:var(--shadow-lift);}
   .card h2{font-size:15px;margin:0 0 10px;font-weight:700;color:var(--ink);display:flex;align-items:center;gap:7px;font-family:var(--font);flex-wrap:nowrap;}
   .card h2 .sub{font-weight:400;font-size:11px;color:var(--ink-muted);margin-left:auto;font-family:var(--font-mono);flex-shrink:0;white-space:nowrap;}
 
@@ -178,34 +176,32 @@
   @media(max-width:680px){.grid-2{grid-template-columns:1fr;}}
 
   .stat{
-    background:var(--glass);border:1px solid var(--glass-border);border-radius:var(--radius-lg);
-    padding:10px 12px;box-shadow:var(--shadow-soft);transition:box-shadow .2s;
-    display:flex;align-items:center;gap:8px;
+    background:var(--glass);border:none;border-radius:var(--radius-lg);
+    padding:14px 12px;box-shadow:var(--shadow-soft);
+    display:flex;flex-direction:column;align-items:center;gap:4px;
   }
-  .stat:hover{box-shadow:var(--shadow-lift);}
-  .stat .label{font-size:12px;color:var(--ink-muted);margin:0;font-weight:500;white-space:nowrap;}
-  .stat .value{font-family:var(--font-mono);font-size:18px;font-weight:600;color:var(--ink);margin-left:auto;white-space:nowrap;}
+  .stat .label{font-size:11px;color:var(--ink-muted);margin:0;font-weight:500;white-space:nowrap;}
+  .stat .value{font-family:var(--font-mono);font-size:20px;font-weight:700;color:var(--ink);white-space:nowrap;}
   .stat-v{flex-direction:column;align-items:flex-start;gap:2px;}
   .stat-v .label{white-space:normal;font-size:11px;}
-  .stat-v .value{margin-left:0;font-size:22px;}
-  .stat .value small{font-size:11px;font-weight:500;color:var(--ink-muted);margin-left:2px;}
-  .row-stats .stat .value{font-size:15px;white-space:normal;word-break:break-all;}
+  .stat-v .value{font-size:22px;}
+  .stat .value small{font-size:10px;font-weight:400;color:var(--ink-muted);margin-left:2px;font-family:var(--font-mono);}
+  .row-stats .stat .value{font-size:20px;white-space:nowrap;}
   .row-stats .stat .value small{font-size:10px;}
   .stat.accent .value{color:var(--gold-dark);}
   .stat.p .value{color:var(--period-text);}
   .stat.green .value{color:#25B8B0;}
   .stat.gold .value{color:var(--gold-dark);}
-  .stat.money .value{color:var(--money-dark);}
   .stat.rose .value{color:#D96A8C;}
   .stat.sage .value{color:#25B8B0;}
   .stat.sky .value{color:#4FA8D6;}
 
   /* ---------- forms ---------- */
   .field{margin-bottom:10px;display:flex;align-items:center;gap:10px;}
-  .field label{flex-shrink:0;white-space:nowrap;margin:0;font-size:13px;color:var(--ink-light);font-weight:500;min-width:6em;text-align:right;}
+  .field label{flex-shrink:0;white-space:nowrap;margin:0;font-size:13px;color:var(--ink-light);font-weight:500;min-width:4.5em;text-align:right;}
   .field input,.field select,.field textarea{
-    flex:1;min-width:0;width:auto;padding:9px 12px;border:1px solid var(--glass-border);border-radius:var(--radius);
-    background:var(--bg-soft);outline:none;transition:border-color .2s,background .2s,box-shadow .2s;font-size:13px;
+    flex:1;min-width:0;width:auto;padding:10px 12px;border:1.5px solid var(--line);border-radius:var(--radius-sm);
+    background:var(--bg-soft);outline:none;transition:border-color .2s,background .2s,box-shadow .2s;font-size:13.5px;
   }
   .field select{
     appearance:none;-webkit-appearance:none;-moz-appearance:none;
@@ -229,35 +225,27 @@
 
   .btn{
     display:inline-flex;align-items:center;justify-content:center;gap:6px;
-    padding:10px 18px;border-radius:var(--radius);border:none;
-    background:var(--bg-soft);color:var(--ink);font-size:13px;font-weight:600;
-    transition:transform .15s,box-shadow .2s,background .2s;
+    padding:11px 22px;border-radius:var(--radius);border:none;
+    background:var(--bg-soft);color:var(--ink);font-size:14px;font-weight:600;
+    transition:transform .12s,opacity .15s;
     user-select:none;-webkit-user-select:none;
   }
-  .btn:hover{transform:translateY(-1px);box-shadow:var(--shadow-soft);}
-  .btn:active{transform:translateY(0);}
-  .btn.ghost{background:transparent;box-shadow:none;color:var(--ink-muted);}
-  .btn.ghost:hover{background:var(--bg-soft);color:var(--ink);box-shadow:none;}
-  .btn.danger{background:var(--rose-soft);color:var(--danger);}
-  .btn.danger:hover{background:var(--rose-soft);filter:brightness(.97);}
+  .btn:active{transform:scale(.96);}
+  .btn.ghost{background:var(--bg-soft);color:var(--ink-light);}
+  .btn.danger{background:var(--rose-soft);color:#D96A8C;}
   .btn.p{background:var(--rose);color:#fff;}
   .btn.p:hover{background:#F49CB4;}
   .btn.p.ghost{background:transparent;color:var(--period-text);}
   .btn.p.ghost:hover{background:var(--rose-soft);}
   .btn.gold, .btn.primary{
-    background:var(--gold);color:#fff;box-shadow:0 3px 10px rgba(54,209,201,.32);
+    background:var(--gold);color:#fff;box-shadow:0 3px 10px rgba(54,209,201,.35);
   }
-  .btn.gold:hover, .btn.primary:hover{background:var(--gold-dark);}
-  /* demo 风格：柔和青绿按钮（添加食物等次主操作） */
-  .btn.soft{background:var(--gold-soft);color:var(--gold-dark);box-shadow:none;}
-  .btn.soft:hover{background:#C8F1EC;}
-  .btn.gold.ghost{background:transparent;color:var(--gold-dark);box-shadow:none;}
+  .btn.gold:active, .btn.primary:active{background:var(--gold-dark);}
+  /* demo 风格：柔和青绿按钮 */
+  .btn.soft{background:var(--gold-soft);color:var(--gold-dark);}
+  .btn.gold.ghost{background:transparent;color:var(--gold-dark);}
   .btn.gold.ghost:hover{background:var(--gold-soft);}
-  .btn.money{background:var(--money);color:#fff;box-shadow:0 3px 10px rgba(201,162,39,.3);}
-  .btn.money:hover{background:#B08D1C;}
-  .btn.money.ghost{background:transparent;color:var(--money-dark);box-shadow:none;}
-  .btn.money.ghost:hover{background:var(--money-soft);}
-  .btn.sm{padding:6px 13px;font-size:12px;border-radius:var(--radius-sm);}
+  .btn.sm{padding:7px 14px;font-size:12.5px;border-radius:12px;}
   .btn:disabled{opacity:.5;cursor:not-allowed;transform:none;box-shadow:none;}
   .btn-icon{border:none;background:transparent;color:var(--ink-muted);padding:2px 4px;cursor:pointer;border-radius:4px;transition:color .2s,background .2s;display:inline-flex;align-items:center;vertical-align:middle;}
   .btn-icon:hover{color:var(--ink);background:var(--bg-soft);}
@@ -272,35 +260,36 @@
   .pwd-actions{display:flex;align-items:center;gap:6px;margin-left:auto;}
 
   /* ---------- tables / lists ---------- */
-  table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;}
-  th,td{text-align:center;padding:9px 10px;border-bottom:1px solid var(--line);white-space:nowrap;vertical-align:middle;}
-  th{font-size:11px;font-weight:500;color:var(--ink-muted);text-align:center;padding:6px 4px;border-bottom:1px solid var(--line);background:transparent;}
-  /* demo 风格：表格第一列左对齐，其余居中 */
-  table th:first-child,table td:first-child{text-align:left;}
-  /* demo 风格：.tbl 表格 */
-  .tbl{width:100%;border-collapse:collapse;font-size:13px;}
-  .tbl th{font-size:11px;color:var(--ink-muted);font-weight:500;text-align:center;padding:6px 4px;border-bottom:1px solid var(--line);}
-  .tbl td{padding:7px 4px;border-bottom:1px solid var(--line);text-align:center;}
-  .tbl td.num{font-family:var(--font-mono);font-weight:500;}
-  .tbl th:first-child,.tbl td:first-child{text-align:left;}
+  .tbl{width:100%;border-collapse:collapse;font-size:12.5px;}
+  .tbl th{
+    font-size:11px;color:var(--ink-muted);font-weight:500;text-align:center;padding:6px 4px;
+    border-bottom:1px solid var(--line);
+  }
+  .tbl td{
+    font-size:12.5px;text-align:center;padding:9px 4px;border-bottom:1px solid var(--line);
+  }
+  .tbl td.num,.tbl th.num{font-family:var(--font-mono);}
   .tbl tr:last-child td{border-bottom:none;}
-  /* 居中按钮容器 */
-  .center{display:flex;justify-content:center;}
+  .tbl td:first-child,.tbl th:first-child{text-align:left;}
+  /* 通用 table 回退 */
+  table{width:100%;border-collapse:collapse;font-size:12.5px;}
+  th,td{text-align:center;padding:9px 4px;border-bottom:1px solid var(--line);vertical-align:middle;}
+  th{font-size:11px;font-weight:500;color:var(--ink-muted);background:transparent;}
+  table th:first-child,table td:first-child{text-align:left;}
   tbody tr:last-child td{border-bottom:none;}
   tbody tr:hover td{background:rgba(255,255,255,.35);}
-  td:first-child{border-radius:8px 0 0 8px;}
-  td:last-child{border-radius:0 8px 8px 0;}
-  td .del{color:var(--ink-muted);border:none;background:transparent;font-size:13px;padding:2px 6px;border-radius:4px;transition:color .2s,background .2s;cursor:pointer;}
-  td .del:hover{color:var(--danger);background:var(--rose-soft);}
-  .del{color:var(--ink-muted);border:none;background:transparent;font-size:13px;padding:2px 6px;border-radius:4px;transition:color .2s,background .2s;cursor:pointer;}
-  .del:hover{color:var(--danger);background:var(--rose-soft);}
+  /* 居中按钮容器 */
+  .center{display:flex;justify-content:center;}
+  td .del{color:var(--ink-muted);border:none;background:transparent;font-size:15px;line-height:1;padding:2px 5px;border-radius:4px;transition:color .2s,background .2s;cursor:pointer;}
+  td .del:active{color:#D96A8C;}
+  .del{color:var(--ink-muted);border:none;background:transparent;font-size:15px;line-height:1;padding:2px 5px;border-radius:4px;transition:color .2s,background .2s;cursor:pointer;}
+  .del:active{color:#D96A8C;}
   td .btn.sm{margin-right:5px;}
   td.nowrap,th.nowrap,.nowrap{white-space:nowrap;}
-  .pill{display:inline-block;padding:3px 10px;border-radius:20px;background:var(--bg-soft);color:var(--ink-light);font-size:11px;font-weight:600;border:1px solid var(--glass-border);}
-  .pill.rose{background:var(--rose-soft);color:#D96A8C;border-color:rgba(255,174,194,.45);}
-  .pill.sage{background:var(--sage-soft);color:var(--gold-dark);border-color:rgba(54,209,201,.35);}
-  .pill.sky{background:var(--sky-soft);color:#4FA8D6;border-color:rgba(124,196,232,.4);}
-  .pill.money{background:var(--money-soft);color:var(--money-dark);border-color:rgba(201,162,39,.25);}
+  .pill{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;background:var(--bg-soft);color:var(--ink-light);font-size:11px;font-weight:600;}
+  .pill.rose{background:var(--rose-soft);color:#D96A8C;}
+  .pill.sage{background:var(--gold-soft);color:var(--gold-dark);}
+  .pill.sky{background:var(--sky-soft);color:#4FA8D6;}
   .empty{color:var(--ink-muted);font-size:13px;text-align:center;padding:32px 20px;border:1px dashed var(--line);border-radius:var(--radius-lg);background:var(--card);}
   .empty .sym{font-size:28px;margin-bottom:8px;}
   .muted{color:var(--ink-muted);}
@@ -447,30 +436,28 @@
     .topbar{padding:calc(10px + env(safe-area-inset-top)) 16px 8px;}
     .topbar h1{font-size:18px;}
     .content{padding:10px 14px calc(96px + env(safe-area-inset-bottom));max-width:100%;}
-    .card{padding:13px 14px;margin-bottom:10px;}
+    .card{padding:14px;margin-bottom:10px;}
     .card h2{gap:4px 8px;font-size:14px;}
     .card h2 .sub{font-size:10px;}
 
-    .stat .value{font-size:16px;}
+    .stat .value{font-size:18px;}
     .row-stats{gap:5px;}
-    .row-stats .stat{min-width:0;flex:1 1 0;padding:5px 7px;gap:2px;justify-content:space-between;}
-    .row-stats .stat .label{font-size:10px;white-space:nowrap;}
-    .row-stats .stat .value{font-size:11px;white-space:nowrap;}
+    .row-stats .stat{min-width:0;flex:1 1 0;padding:10px 8px;}
 
     /* 表单在手机上单列铺满，便于单手输入 */
     .row{gap:8px;}
     .row .field{flex:1 1 100% !important;min-width:0 !important;}
     .row .btn{flex:1 1 45%;}
-    .field input,.field select,.field textarea{font-size:13px;padding:8px 10px;line-height:1.4;}
-    .field .custom-picker{font-size:13px;padding:8px 30px 8px 10px;line-height:1.4;}
-    .field .custom-picker.sm{font-size:12px;padding:6px 26px 6px 8px;}
-    .field select{background-color:var(--bg-soft);border-radius:var(--radius);}
-    .btn{padding:10px 16px;}
-    .btn.sm{padding:7px 12px;}
+    .field input,.field select,.field textarea{font-size:13px;padding:9px 10px;line-height:1.4;}
+    .field .custom-picker{font-size:13px;padding:9px 30px 9px 10px;line-height:1.4;}
+    .field .custom-picker.sm{font-size:12px;padding:7px 26px 7px 8px;}
+    .field select{background-color:var(--bg-soft);border-radius:var(--radius-sm);}
+    .btn{padding:10px 18px;font-size:13px;}
+    .btn.sm{padding:7px 14px;font-size:12px;}
 
     /* 表格：取消强制不换行，让内容自然换行，并保留横向滚动兜底 */
-    th,td{padding:6px 5px;font-size:12px;white-space:normal;word-break:keep-all;overflow-wrap:break-word;}
-    td.nowrap,th.nowrap,.nowrap{white-space:nowrap;}
+    th,td{padding:6px 4px;font-size:11.5px;}
+    .tbl td{font-size:11.5px;padding:7px 3px;}
     .scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;}
 
     /* 日历在窄屏适当缩小 */
@@ -1077,6 +1064,14 @@ function periodSeg(){
   const cur=state.settings.period||90;
   return `<div class="seg period" style="margin-bottom:12px">`+opts.map(o=>`<button class="${cur===o[0]?"active":""}" data-d="${o[0]}">${o[1]}</button>`).join("")+`</div>`;
 }
+function salarySeg(active){
+  const items = [{id:"salary-basic",label:"基本工资"},{id:"salary-housing",label:"房补"},{id:"salary-summary",label:"汇总"}];
+  return `<div class="seg">${items.map(i=>`<button class="${i.id===active?'active':''}" onclick="navigate('${i.id}')">${i.label}</button>`).join('')}</div>`;
+}
+function stockSeg(active){
+  const items = [{id:"stock-overview",label:"统计"},{id:"stock-add",label:"新增"},{id:"stock-all",label:"全部"},{id:"stock-spaces",label:"空间"}];
+  return `<div class="seg">${items.map(i=>`<button class="${i.id===active?'active':''}" onclick="navigate('${i.id}')">${i.label}</button>`).join('')}</div>`;
+}
 function bindPeriod(){
   document.querySelectorAll(".period button").forEach(b=>b.addEventListener("click",()=>{
     state.settings.period=Number(b.dataset.d); save(); navigate(currentPage);
@@ -1250,9 +1245,9 @@ function pageOverview(){
   });
   let restockCard = '';
   if(lowStockItems.length){
-    restockCard = `<div class="card" style="border-left:3px solid var(--danger)">
-      <h2>补货提醒 <span class="sub">${lowStockItems.length} 件物品库存不足</span></h2>
-      <div class="scroll"><table><thead><tr><th>名称</th><th>剩余</th><th>最低库存</th><th>空间</th></tr></thead><tbody>
+    restockCard = `<div class="card">
+      <h2>补货提醒 <span class="sub">${lowStockItems.length} 件</span></h2>
+      <div class="scroll"><table class="tbl"><thead><tr><th>名称</th><th class="num">剩余</th><th class="num">最低</th><th>空间</th></tr></thead><tbody>
         ${lowStockItems.map(i => `<tr><td>${esc(i.name)}</td><td class="num" style="color:var(--danger)">${i.quantity} ${i.unit}</td><td class="num">${i.minStock||1}</td><td class="muted">${esc(getSpacePath(i.storageLocation))}</td></tr>`).join('')}
       </tbody></table></div>
     </div>`;
@@ -1458,19 +1453,19 @@ function pageExercise(){
     + `<optgroup label="自定义"><option value="custom">自定义（选强度）</option></optgroup>`;
 
   let body = `
-    <div class="card sage">
-      <h2>记录运动 <span class="sub">模式：${daily?"每日记录":"累计记录"}</span></h2>
+    <div class="card">
+      <h2>记录运动</h2>
       <form id="exerciseForm" class="ex-form">
         <div class="row">
           <div class="field" style="flex:2"><label>运动方式</label><select name="type">${optGroups}</select></div>
           <div class="field" id="intensityField" style="flex:1;display:none"><label>强度</label><select name="intensity"><option>低</option><option selected>中</option><option>高</option></select></div>
           <div class="field" style="flex:1"><label>时长 (分钟)</label><input type="number" step="1" name="duration" placeholder="30" required></div>
         </div>
-        <div class="field"><label>备注（可选）</label><input type="text" name="note" placeholder="如 跟练第2天"></div>
+        <div class="field"><label>备注</label><input type="text" name="note" placeholder="如 跟练第2天"></div>
         <div class="muted" id="exPreview" style="margin-bottom:10px"></div>
-        <div style="text-align:center"><button class="btn primary" type="submit">保存</button></div>
+        <div class="center"><button class="btn primary" type="submit">保存</button></div>
       </form>
-      <div class="hint">热量估算：MET × 体重(${round(w)}kg) × 时长。${state.weight.length?"":"（暂无体重记录，暂按60kg估算，建议先记体重）"}</div>
+      <div class="hint">热量：MET × 体重(${round(w)}kg) × 时长。${state.weight.length?"":"（暂无体重，按60kg估算）"}</div>
     </div>`;
 
   let listHtml="";
@@ -1479,18 +1474,18 @@ function pageExercise(){
     const items=ew?ew.items:[];
     const sum=items.reduce((s,x)=>s+num(x.kcal),0);
     listHtml=`<div class="card"><h2>今日运动 <span class="sub">消耗 ${round(sum)} kcal</span></h2>
-      ${items.length? `<table><thead><tr><th>方式</th><th>时长</th><th>消耗</th><th></th></tr></thead><tbody>
-        ${items.map((x,i)=>`<tr><td>${esc(x.type)}</td><td class="num">${x.duration} 分</td><td class="num">${round(num(x.kcal))} kcal</td><td><button class="del" data-del-ex="${i}">×</button></td></tr>`).join("")}
+      ${items.length? `<table class="tbl"><thead><tr><th>方式</th><th class="num">时长</th><th class="num">消耗</th><th></th></tr></thead><tbody>
+        ${items.map((x,i)=>`<tr><td>${esc(x.type)}</td><td class="num">${x.duration} 分</td><td class="num">${round(num(x.kcal))} kcal</td><td style="text-align:center"><button class="del" data-del-ex="${i}">×</button></td></tr>`).join("")}
       </tbody></table>` : '<div class="empty"><div class="sym">🏃</div>今天还没运动记录</div>'}
-      <div style="text-align:center;margin-top:14px"><button class="btn danger sm" id="resetExToday">重置今日</button></div>
+      <div class="center" style="margin-top:10px"><button class="btn danger sm" id="resetExToday">重置今日</button></div>
     </div>`;
   }else{
     const recent=state.exercise.slice().filter(d=>inPeriod(d.date,7)).sort((a,b)=>b.date<a.date?-1:b.date>a.date?1:0);
     let total=0;
     listHtml=`<div class="card"><h2>运动记录 <span class="sub">最近7天 · ${recent.length} 天</span></h2>
       ${recent.length? recent.map(d=>{ const s=d.items.reduce((a,x)=>a+num(x.kcal),0); total+=s; return `<div style="margin-bottom:10px"><div class="muted" style="font-size:12px;margin-bottom:4px">${d.date} · 消耗 ${round(s)} kcal</div>
-        <table><tbody>${d.items.map(x=>`<tr><td>${esc(x.type)}</td><td class="muted num">${x.duration}分/${round(num(x.kcal))}kcal</td></tr>`).join("")}</tbody></table></div>`; }).join("") + `<div class="muted" style="margin-top:8px">累计消耗约 <span class="num">${round(total)}</span> kcal</div>` : '<div class="empty"><div class="sym">🍃</div>最近7天还没有记录</div>'}
-      <div style="text-align:center;margin-top:12px"><button class="btn ghost" id="exViewAllBtn">查看全部记录</button></div>
+        <table class="tbl"><tbody>${d.items.map(x=>`<tr><td>${esc(x.type)}</td><td class="num">${x.duration}分/${round(num(x.kcal))}kcal</td></tr>`).join("")}</tbody></table></div>`; }).join("") + `<div class="muted" style="margin-top:8px">累计消耗约 ${round(total)} kcal</div>` : '<div class="empty"><div class="sym">🍃</div>最近7天还没有记录</div>'}
+      <div class="center" style="margin-top:12px"><button class="btn ghost" id="exViewAllBtn">查看全部记录</button></div>
     </div>`;
   }
   return body + listHtml;
@@ -1534,9 +1529,9 @@ function pageBalance(){
   const totalIn=inSeries.reduce((a,b)=>a+b,0), totalOut=outSeries.reduce((a,b)=>a+b,0);
   let body=`
     <div class="row-stats" style="margin-bottom:14px">
-      <div class="stat sky"><div class="label">摄入</div><div class="value num">${round(totalIn)}<small>kcal</small></div></div>
-      <div class="stat sage"><div class="label">消耗</div><div class="value num">${round(totalOut)}<small>kcal</small></div></div>
-      <div class="stat accent"><div class="label">净平衡</div><div class="value num">${round(totalIn-totalOut)}<small>kcal</small></div></div>
+      <div class="stat sky"><div class="label">摄入</div><div class="value">${round(totalIn)}<small>kcal</small></div></div>
+      <div class="stat sage"><div class="label">消耗</div><div class="value">${round(totalOut)}<small>kcal</small></div></div>
+      <div class="stat accent"><div class="label">净平衡</div><div class="value">${round(totalIn-totalOut)}<small>kcal</small></div></div>
     </div>
     ${periodSeg()}
     <div class="card">
@@ -1616,12 +1611,12 @@ function pagePeriod(){
     const reg = stats.cycleStd <= 3 ? "较规律" : (stats.cycleStd <= 7 ? "一般" : "不规律");
     statHtml = `<div class="card rose" style="padding:12px 16px">
       <div class="row-stats" style="margin-bottom:0">
-        <div class="stat p stat-v"><div class="label">平均周期</div><div class="value num">${stats.avgCycle}<small>天</small></div></div>
-        <div class="stat p stat-v"><div class="label">平均经期</div><div class="value num">${stats.avgLen}<small>天</small></div></div>`;
+        <div class="stat p stat-v"><div class="label">平均周期</div><div class="value">${stats.avgCycle}<small>天</small></div></div>
+        <div class="stat p stat-v"><div class="label">平均经期</div><div class="value">${stats.avgLen}<small>天</small></div></div>`;
     if(pred){
       statHtml += `
-        <div class="stat p stat-v"><div class="label">预计开始</div><div class="value num">${pred.start.slice(5)}</div></div>
-        <div class="stat p stat-v"><div class="label">预计结束</div><div class="value num">${pred.end.slice(5)}</div></div>`;
+        <div class="stat p stat-v"><div class="label">预计开始</div><div class="value">${pred.start.slice(5)}</div></div>
+        <div class="stat p stat-v"><div class="label">预计结束</div><div class="value">${pred.end.slice(5)}</div></div>`;
     }
     statHtml += `</div>`;
     let countdownNote = "";
@@ -1788,7 +1783,7 @@ function pageSettings(){
     </div>`;
 
   let body=`
-    <div class="card sage">
+    <div class="card">
       <h2>身体资料</h2>
       <div class="row">
         <div class="field"><label>默认体重 (kg)</label><input type="number" step="0.1" id="pWeight" value="${state.profile.weight!=null?state.profile.weight:""}" placeholder="用于运动热量估算"></div>
@@ -1807,7 +1802,7 @@ function pageSettings(){
       <div class="hint">「每日」：以今天为主视图，可一键重置今日；「累计」：持续追加并显示运行总量。</div>
     </div>
 
-    <div class="card sage">
+    <div class="card">
       <h2>饮食热量目标</h2>
       <div class="field"><label>每日热量目标 (kcal)</label><input type="number" id="dietGoal" value="${s.dietGoal||1600}" step="50" min="800" max="5000"></div>
       <div style="text-align:center"><button class="btn primary sm" id="saveDietGoal">保存</button></div>
@@ -1862,15 +1857,16 @@ function pageSettings(){
 function pageSalaryBasic(){
   const sorted = state.salary.slice().sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:0);
   const recent = sorted.slice(-12);
-  const recentRows = recent.slice().reverse().map((r)=>{ const idx = state.salary.indexOf(r); return `<tr><td class="nowrap">${r.date}</td><td class="nowrap num">${round(r["应发合计"])}</td><td class="nowrap num">${round(r["扣发合计"])}</td><td class="nowrap num">${round(r["实发工资"])}</td><td class="nowrap"><button class="del" data-view-salary="${idx}"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="6.5" cy="6.5" r="4.5"/><line x1="9.8" y1="9.8" x2="14" y2="14"/></svg></button><button class="del" data-del-salary="${idx}">×</button></td></tr>`; }).join("");
+  const recentRows = recent.slice().reverse().map((r)=>{ const idx = state.salary.indexOf(r); return `<tr><td>${r.date}</td><td class="num">${round(r["应发合计"])}</td><td class="num">${round(r["扣发合计"])}</td><td class="num">${round(r["实发工资"])}</td><td style="text-align:center"><button class="del" data-view-salary="${idx}"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="6.5" cy="6.5" r="4.5"/><line x1="9.8" y1="9.8" x2="14" y2="14"/></svg></button><button class="del" data-del-salary="${idx}">×</button></td></tr>`; }).join("");
   let body = `
-    <div class="card money" style="text-align:center">
-      <button class="btn money" id="goSalaryAdd">+ 记录基本工资</button>
+    ${salarySeg("salary-basic")}
+    <div class="card" style="text-align:center">
+      <button class="btn primary" id="goSalaryAdd">+ 记录基本工资</button>
     </div>
     <div class="card">
       <h2>工资记录 <span class="sub">近12个月 · 共 ${sorted.length} 条</span></h2>
-      ${recent.length ? `<div class="scroll"><table><thead><tr><th>日期</th><th>应发合计</th><th>扣发合计</th><th>实发工资</th><th>操作</th></tr></thead><tbody>${recentRows}</tbody></table></div>` : '<div class="empty"><div class="sym">💰</div>暂无工资记录</div>'}
-      ${sorted.length > 12 ? `<div style="text-align:center;margin-top:12px"><button class="btn ghost money" id="expandAllSalary">展开全部记录</button></div>` : ''}
+      ${recent.length ? `<div class="scroll"><table class="tbl"><thead><tr><th>日期</th><th class="num">应发</th><th class="num">扣发</th><th class="num">实发</th><th></th></tr></thead><tbody>${recentRows}</tbody></table></div>` : '<div class="empty"><div class="sym">💰</div>暂无工资记录</div>'}
+      ${sorted.length > 12 ? `<div class="center" style="margin-top:12px"><button class="btn ghost sm" id="expandAllSalary">展开全部</button></div>` : ''}
     </div>`;
   return body;
 }
@@ -1880,11 +1876,11 @@ function pageSalaryAdd(){
   const fields = SALARY_HEADERS.map(h=>`<div class="field"><label>${esc(h)}</label><input type="text" name="s-${h}" value="0" placeholder="0"></div>`).join("");
   return `<div class="cal-head" style="position:sticky;top:0;z-index:20;background:var(--glass);padding:10px 0"><h2>记录基本工资</h2></div>
     <div class="content" style="overflow-y:auto">
-    <div class="card money">
+    <div class="card">
       <form id="salaryForm">
         <div class="field"><label>日期</label><input type="text" name="s-date" placeholder="如 2025.08" value="${todayStr().slice(0,7).replace('-','.')}" required></div>
         <div class="grid grid-2">${fields}</div>
-        <div style="text-align:center;margin-top:14px"><button class="btn money" type="submit">保存</button></div>
+        <div style="text-align:center;margin-top:14px"><button class="btn primary" type="submit">保存</button></div>
       </form>
     </div>
     </div>`;
@@ -1907,12 +1903,12 @@ function pageSalaryDetail(idx){
   const fields = SALARY_HEADERS.map(h=>`<div class="field"><label>${esc(h)}</label><input type="text" name="sd-${h}" value="${r[h]}"></div>`).join("");
   return `<div class="cal-head" style="position:sticky;top:0;z-index:20;background:var(--glass);padding:10px 0"><h2>工资详情 · ${r.date}</h2></div>
     <div class="content" style="overflow-y:auto">
-    <div class="card money">
+    <div class="card">
       <form id="salaryEditForm">
         <div class="field"><label>日期</label><input type="text" name="sd-date" value="${r.date}"></div>
         <div class="grid grid-2">${fields}</div>
         <div style="text-align:center;margin-top:14px">
-          <button class="btn money" id="saveSalaryEdit" type="button">保存修改</button>
+          <button class="btn primary" id="saveSalaryEdit" type="button">保存修改</button>
           <button class="btn danger" id="deleteSalaryEdit" type="button">删除此记录</button>
         </div>
       </form>
@@ -1925,15 +1921,16 @@ function pageSalaryHousing(){
   const sorted = state.housingAllowance.slice().sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:0);
   const total = sorted.reduce((s,x)=>s+num(x.amount),0);
   const recent = sorted.slice(-12);
-  const recentRows = recent.slice().reverse().map((r)=>{ const idx = state.housingAllowance.indexOf(r); return `<tr><td class="nowrap">${r.date}</td><td class="nowrap num">${round(r.amount)}</td><td class="nowrap"><button class="del" data-view-housing="${idx}"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="6.5" cy="6.5" r="4.5"/><line x1="9.8" y1="9.8" x2="14" y2="14"/></svg></button><button class="del" data-del-housing="${idx}">×</button></td></tr>`; }).join("");
+  const recentRows = recent.slice().reverse().map((r)=>{ const idx = state.housingAllowance.indexOf(r); return `<tr><td>${r.date}</td><td class="num">${round(r.amount)}</td><td style="text-align:center"><button class="del" data-view-housing="${idx}"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="6.5" cy="6.5" r="4.5"/><line x1="9.8" y1="9.8" x2="14" y2="14"/></svg></button><button class="del" data-del-housing="${idx}">×</button></td></tr>`; }).join("");
   let body = `
-    <div class="card money" style="text-align:center">
-      <button class="btn money" id="goHousingAdd">+ 记录房补</button>
+    ${salarySeg("salary-housing")}
+    <div class="card" style="text-align:center">
+      <button class="btn primary" id="goHousingAdd">+ 记录房补</button>
     </div>
     <div class="card">
-      <h2>房补记录 <span class="sub">近12个月 · 共 ${sorted.length} 条 · 合计 <span class="num">${round(total)}</span></span></h2>
-      ${recent.length ? `<div class="scroll"><table><thead><tr><th>日期</th><th>金额</th><th>操作</th></tr></thead><tbody>${recentRows}</tbody></table></div>` : '<div class="empty"><div class="sym">🏠</div>暂无房补记录</div>'}
-      ${sorted.length > 12 ? `<div style="text-align:center;margin-top:12px"><button class="btn ghost money" id="expandAllHousing">展开全部记录</button></div>` : ''}
+      <h2>房补记录 <span class="sub">共 ${sorted.length} 条 · 合计 ${round(total)}</span></h2>
+      ${recent.length ? `<div class="scroll"><table class="tbl"><thead><tr><th>日期</th><th class="num">金额</th><th></th></tr></thead><tbody>${recentRows}</tbody></table></div>` : '<div class="empty"><div class="sym">🏠</div>暂无房补记录</div>'}
+      ${sorted.length > 12 ? `<div class="center" style="margin-top:12px"><button class="btn ghost sm" id="expandAllHousing">展开全部</button></div>` : ''}
     </div>`;
   return body;
 }
@@ -1942,11 +1939,11 @@ function pageSalaryHousing(){
 function pageHousingAdd(){
   return `<div class="cal-head" style="position:sticky;top:0;z-index:20;background:var(--glass);padding:10px 0"><h2>记录房补</h2></div>
     <div class="content" style="overflow-y:auto">
-    <div class="card money">
+    <div class="card">
       <form id="housingForm">
         <div class="field"><label>日期</label><input type="text" name="h-date" placeholder="如 2025.08" value="${todayStr().slice(0,7).replace('-','.')}" required></div>
         <div class="field"><label>金额</label><input type="text" name="h-amount" placeholder="0" required></div>
-        <div style="text-align:center;margin-top:14px"><button class="btn money" type="submit">保存</button></div>
+        <div style="text-align:center;margin-top:14px"><button class="btn primary" type="submit">保存</button></div>
       </form>
     </div>
     </div>`;
@@ -1970,12 +1967,12 @@ function pageHousingDetail(idx){
   if(!r) return '<div class="empty"><div class="sym">🏠</div>记录不存在</div>';
   return `<div class="cal-head" style="position:sticky;top:0;z-index:20;background:var(--glass);padding:10px 0"><h2>房补详情 · ${r.date}</h2></div>
     <div class="content" style="overflow-y:auto">
-    <div class="card money">
+    <div class="card">
       <form id="housingEditForm">
         <div class="field"><label>日期</label><input type="text" name="hd-date" value="${r.date}"></div>
         <div class="field"><label>金额</label><input type="text" name="hd-amount" value="${r.amount}"></div>
         <div style="text-align:center;margin-top:14px">
-          <button class="btn money" id="saveHousingEdit" type="button">保存修改</button>
+          <button class="btn primary" id="saveHousingEdit" type="button">保存修改</button>
           <button class="btn danger" id="deleteHousingEdit" type="button">删除此记录</button>
         </div>
       </form>
@@ -1987,18 +1984,9 @@ function pageHousingDetail(idx){
 function pageSalarySummary(){
   const sals = state.salary.slice().sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:0);
   const housing = state.housingAllowance.slice().sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:0);
-  // 按年度分组
   const years = {};
-  sals.forEach(r=>{
-    const y = r.date.split('.')[0];
-    if(!years[y]) years[y] = {salary:[], housing:[]};
-    years[y].salary.push(r);
-  });
-  housing.forEach(r=>{
-    const y = r.date.split('.')[0];
-    if(!years[y]) years[y] = {salary:[], housing:[]};
-    years[y].housing.push(r);
-  });
+  sals.forEach(r=>{ const y = r.date.split('.')[0]; if(!years[y]) years[y] = {salary:[], housing:[]}; years[y].salary.push(r); });
+  housing.forEach(r=>{ const y = r.date.split('.')[0]; if(!years[y]) years[y] = {salary:[], housing:[]}; years[y].housing.push(r); });
   const yearKeys = Object.keys(years).sort((a,b)=>b.localeCompare(a));
   let grandTotal = {salaryGross:0, salaryNet:0, housing:0, gjj:0, netPlusHousing:0};
   let rows = yearKeys.map(y=>{
@@ -2015,22 +2003,23 @@ function pageSalarySummary(){
     grandTotal.netPlusHousing += sn + ht + gjj;
     return `<tr><td><b>${y}年</b></td><td class="num">${round(sg)}</td><td class="num">${round(sn)}</td><td class="num">${round(ht)}</td><td class="num">${round(gjj)}</td><td class="num"><b>${round(sn+ht+gjj)}</b></td></tr>`;
   }).join("");
-  return `<div class="card money">
-    <h2>工资汇总</h2>
-    <div class="row-stats" style="margin-bottom:10px">
-      <div class="stat money"><div class="label">总应发合计</div><div class="value num">${round(grandTotal.salaryGross)}<small>元</small></div></div>
-      <div class="stat money"><div class="label">总实发工资</div><div class="value num">${round(grandTotal.salaryNet)}<small>元</small></div></div>
-    </div>
-    <div class="row-stats" style="margin-bottom:10px">
-      <div class="stat money"><div class="label">总房补</div><div class="value num">${round(grandTotal.housing)}<small>元</small></div></div>
-      <div class="stat money"><div class="label">总公积金</div><div class="value num">${round(grandTotal.gjj)}<small>元</small></div></div>
-    </div>
-    <div class="stat money" style="text-align:center;margin-bottom:14px;padding:14px">
-      <div class="label">总包</div>
-      <div class="value num" style="font-size:26px">${round(grandTotal.netPlusHousing)}<small>元</small></div>
-    </div>
-    ${yearKeys.length ? `<div class="scroll"><table><thead><tr><th>年度</th><th>应发合计</th><th>实发合计</th><th>房补合计</th><th>公积金</th><th>总包</th></tr></thead><tbody>${rows}</tbody></table></div>` : '<div class="empty"><div class="sym">💰</div>暂无数据</div>'}
-  </div>`;
+  return `${salarySeg("salary-summary")}
+    <div class="card">
+      <h2>工资汇总</h2>
+      <div class="row-stats" style="margin-bottom:10px">
+        <div class="stat accent"><div class="label">总应发</div><div class="value">${round(grandTotal.salaryGross)}<small>元</small></div></div>
+        <div class="stat accent"><div class="label">总实发</div><div class="value">${round(grandTotal.salaryNet)}<small>元</small></div></div>
+      </div>
+      <div class="row-stats" style="margin-bottom:10px">
+        <div class="stat sage"><div class="label">总房补</div><div class="value">${round(grandTotal.housing)}<small>元</small></div></div>
+        <div class="stat sky"><div class="label">总公积金</div><div class="value">${round(grandTotal.gjj)}<small>元</small></div></div>
+      </div>
+      <div class="stat accent" style="text-align:center;margin-bottom:14px;padding:14px">
+        <div class="label">总包</div>
+        <div class="value" style="font-size:26px">${round(grandTotal.netPlusHousing)}<small>元</small></div>
+      </div>
+      ${yearKeys.length ? `<div class="scroll"><table class="tbl"><thead><tr><th>年度</th><th class="num">应发</th><th class="num">实发</th><th class="num">房补</th><th class="num">公积金</th><th class="num">总包</th></tr></thead><tbody>${rows}</tbody></table></div>` : '<div class="empty"><div class="sym">💰</div>暂无数据</div>'}
+    </div>`;
 }
 
 /* ============== 路由与渲染 ============== */
@@ -3107,7 +3096,7 @@ function pageStockOverview(){
   // 按分类统计
   const catCount = {};
   items.forEach(i=>{ catCount[i.category] = (catCount[i.category]||0) + i.quantity; });
-  const catHtml = Object.entries(catCount).map(([c,n])=>`<div class="stat"><div class="label">${c}</div><div class="value num">${n}</div></div>`).join("");
+  const catHtml = Object.entries(catCount).map(([c,n])=>`<div class="stat"><div class="label">${c}</div><div class="value">${n}</div></div>`).join("");
 
   // 库存不足（数量 <= 最低库存）
   const lowStock = items.filter(i => (i.minStock || 1) > 0 && i.quantity <= (i.minStock || 1) && i.status !== '已用完');
@@ -3125,34 +3114,35 @@ function pageStockOverview(){
   allCons.sort((a,b)=>a.date<b.date?1:-1);
   const recentCons = allCons.slice(0, 5);
 
-  return `<div class="row-stats" style="margin-bottom:14px">
-      <div class="stat"><div class="label">总物品</div><div class="value num">${total}<small>种</small></div></div>
-      <div class="stat sage"><div class="label">未开封</div><div class="value num">${unopened}</div></div>
-      <div class="stat sky"><div class="label">使用中</div><div class="value num">${inUse}</div></div>
-      <div class="stat rose"><div class="label">已用完</div><div class="value num">${usedUp}</div></div>
+  return `${stockSeg("stock-overview")}
+    <div class="row-stats" style="margin-bottom:14px">
+      <div class="stat"><div class="label">总物品</div><div class="value">${total}<small>种</small></div></div>
+      <div class="stat sage"><div class="label">未开封</div><div class="value">${unopened}</div></div>
+      <div class="stat sky"><div class="label">使用中</div><div class="value">${inUse}</div></div>
+      <div class="stat rose"><div class="label">已用完</div><div class="value">${usedUp}</div></div>
     </div>
     ${catHtml ? `<div class="card"><h2>按分类</h2><div class="row-stats">${catHtml}</div></div>` : ''}
-    ${lowStock.length ? `<div class="card" style="border-left:3px solid var(--danger)"><h2>库存不足 <span class="sub">${lowStock.length} 件</span></h2>
-      <div class="scroll"><table><thead><tr><th>名称</th><th>剩余</th><th>最低库存</th><th>空间</th></tr></thead><tbody>
+    ${lowStock.length ? `<div class="card"><h2>库存不足 <span class="sub">${lowStock.length} 件</span></h2>
+      <div class="scroll"><table class="tbl"><thead><tr><th>名称</th><th class="num">剩余</th><th class="num">最低</th><th>空间</th></tr></thead><tbody>
         ${lowStock.map(i=>{
           return `<tr><td>${esc(i.name)}</td><td class="num" style="color:var(--danger)">${i.quantity} ${i.unit}</td><td class="num">${i.minStock||1}</td><td class="muted">${esc(getSpacePath(i.storageLocation))}</td></tr>`;
         }).join("")}
       </tbody></table></div></div>` : ''}
-    ${soon.length ? `<div class="card" style="border-left:3px solid var(--rose)"><h2>即将过期 <span class="sub">${soon.length} 件</span></h2>
-      <div class="scroll"><table><thead><tr><th>名称</th><th>到期</th><th>空间</th><th></th></tr></thead><tbody>
+    ${soon.length ? `<div class="card"><h2>即将过期 <span class="sub">${soon.length} 件</span></h2>
+      <div class="scroll"><table class="tbl"><thead><tr><th>名称</th><th class="num">到期</th><th>空间</th><th></th></tr></thead><tbody>
         ${soon.map(i=>{
           const ri = state.stock.indexOf(i);
-          return `<tr><td>${esc(i.name)}</td><td class="num">${i.expiryDate}</td><td class="muted">${esc(getSpacePath(i.storageLocation))}</td><td><button class="del" data-dismiss-expiry="${ri}">×</button></td></tr>`;
+          return `<tr><td>${esc(i.name)}</td><td class="num">${i.expiryDate}</td><td class="muted">${esc(getSpacePath(i.storageLocation))}</td><td style="text-align:center"><button class="del" data-dismiss-expiry="${ri}">×</button></td></tr>`;
         }).join("")}
       </tbody></table></div></div>` : ''}
     <div class="card">
       <h2>消耗记录 <span class="sub">最近</span></h2>
-      ${recentCons.length ? `<div class="scroll"><table><thead><tr><th>日期</th><th>物品</th><th>数量</th><th>备注</th></tr></thead><tbody>
+      ${recentCons.length ? `<div class="scroll"><table class="tbl"><thead><tr><th class="num">日期</th><th>物品</th><th class="num">数量</th><th>备注</th></tr></thead><tbody>
         ${recentCons.map(c => `<tr><td class="num">${c.date}</td><td>${esc(c.itemName)}</td><td class="num">-${c.quantity}</td><td class="muted">${esc(c.note||'')}</td></tr>`).join("")}
       </tbody></table></div>` : '<div class="empty" style="padding:8px 0">暂无消耗记录</div>'}
-      <div style="text-align:center;margin-top:10px"><button class="btn ghost sm" id="goConsumeBtn">+ 录入消耗</button></div>
+      <div class="center" style="margin-top:10px"><button class="btn soft sm" id="goConsumeBtn">+ 录入消耗</button></div>
     </div>
-    <div style="text-align:center;margin-top:14px"><button class="btn primary" id="goStockAdd">+ 新增物品</button></div>`;
+    <div class="center" style="margin-bottom:14px"><button class="btn primary" id="goStockAdd">+ 新增物品</button></div>`;
 }
 
 /* ============== 页面：新增物品 ============== */
@@ -3160,7 +3150,8 @@ function pageStockAdd(){
   const catOpts = STOCK_CATEGORIES.map(c=>`<option value="${c}">${c}</option>`).join("");
   const spaceOpts = spaceOptsHtml();
   const aiDisabled = !(state.settings.api.enabled && state.settings.api.key);
-  return `<div class="card">
+  return `${stockSeg("stock-add")}
+    <div class="card">
     <h2>新增物品</h2>
     <form id="stockForm">
       <div class="field"><label>名称</label><input type="text" name="s-name" placeholder="如 清扬洗发水" required></div>
@@ -3207,7 +3198,8 @@ function pageStockAll(){
   // 所有标签
   const allTags = [...new Set(items.flatMap(i => i.tags || []))].sort();
   const tagOpts = allTags.map(t => `<option value="${t}">${t}</option>`).join('');
-  return `<div class="card">
+  return `${stockSeg("stock-all")}
+    <div class="card">
     <h2>全部物品 <span class="sub">共 ${items.length} 种</span></h2>
     <div class="row" style="margin-bottom:10px;flex-wrap:wrap">
       <div class="field" style="flex:2;min-width:120px"><label>搜索</label><input type="text" id="stockSearch" placeholder="搜索名称…" style="font-size:13px"></div>
@@ -3663,13 +3655,14 @@ function pageStockSpaces(){
       </div>`;
     }).join('');
   }
-  return `<div class="card">
+  return `${stockSeg("stock-spaces")}
+    <div class="card">
     <h2 style="display:flex;align-items:center;gap:8px;margin-bottom:16px">
       <svg viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--gold-dark)"><path d="M2 6l8-4 8 4v10a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1z"/><path d="M2 6l8 4 8-4"/><path d="M10 10v10"/></svg>
       空间管理
     </h2>
     <div id="spaceTreePage">${tree.children.length ? renderNode(tree.children, 0) : '<div class="empty" style="padding:20px 0">暂无空间，点击下方添加</div>'}</div>
-    <div style="text-align:center;margin-top:16px;padding-top:12px;border-top:1px solid var(--line)">
+    <div class="center" style="margin-top:16px;padding-top:12px;border-top:1px solid var(--line)">
       <button class="btn primary" id="addRootSpacePage" style="min-width:160px">+ 添加一级空间</button>
     </div>
   </div>`;
