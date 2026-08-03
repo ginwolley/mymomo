@@ -461,7 +461,6 @@
   .diet-progress-fill.over{background:var(--rose);}
   .diet-progress-label{font-size:13px;color:var(--ink-muted);min-width:32px;text-align:right;}
 
-  .diet-meal{border-left:3px solid var(--line);}
   .diet-meal[data-meal="breakfast"]{border-left-color:var(--gold);}
   .diet-meal[data-meal="lunch"]{border-left-color:var(--sage);}
   .diet-meal[data-meal="dinner"]{border-left-color:var(--sky);}
@@ -492,6 +491,26 @@
   .fp-item .muted{font-size:11px;}
   .fp-manual-row{display:flex;gap:6px;align-items:center;}
   .fp-manual-row input{padding:6px 8px;border:1px solid var(--line);border-radius:6px;font-size:13px;background:white;}
+
+  /* 手动输入卡片 */
+  .diet-manual-card{padding:12px 14px !important;}
+  .diet-manual-header{display:flex;align-items:baseline;gap:8px;margin-bottom:8px;}
+  .diet-manual-title{font-size:13px;font-weight:600;color:var(--ink);}
+  .diet-ai-row{display:flex;gap:6px;align-items:center;margin-top:6px;}
+  .diet-ai-row input{flex:1;padding:6px 8px;border:1px solid var(--line);border-radius:6px;font-size:13px;background:white;}
+  .diet-converter{margin-top:6px;padding-top:6px;border-top:1px solid var(--line);}
+  .diet-converter-label{font-size:11px;color:var(--ink-muted);font-weight:500;}
+  .diet-converter-row{display:flex;gap:4px;align-items:center;margin-top:4px;flex-wrap:wrap;}
+  .diet-converter-row input{flex:1;min-width:50px;padding:4px 6px;border:1px solid var(--line);border-radius:6px;font-size:12px;background:white;max-width:90px;}
+  .diet-converter-op{font-size:11px;color:var(--ink-muted);}
+  .diet-converter-row .num{font-size:14px;font-weight:600;min-width:36px;text-align:right;}
+
+  /* 饮食主页面优化 */
+  .diet-meal{border-left:3px solid var(--line);padding:12px 14px !important;}
+  .diet-meal-head{margin-bottom:6px;}
+  .diet-meal-table td{padding:4px 4px;}
+  .diet-meal-add{margin-top:4px;}
+  .diet-meal-add .btn{font-size:12px;}
 
   /* 食物份量选择面板 */
   .fd-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
@@ -1223,6 +1242,35 @@ function pageDietAdd(meal){
     <div class="card">
       <h2>${mealIcon} ${mealName} — 添加食物</h2>
     </div>
+    <div class="card diet-manual-card">
+      <div class="diet-manual-header">
+        <span class="diet-manual-title">手动输入</span>
+        <span class="muted" style="font-size:11px">名称 + 热量，直接添加</span>
+      </div>
+      <div class="fp-manual-row">
+        <input type="text" id="fpManualName" placeholder="食物名称" style="flex:2">
+        <input type="number" id="fpManualKcal" placeholder="热量 kcal" style="flex:1">
+        <input type="number" id="fpManualQty" placeholder="份数" value="1" style="flex:0.6" min="0.5" step="0.5">
+        <button class="btn primary sm" id="fpManualAdd">添加</button>
+      </div>
+      <div class="diet-ai-row">
+        <input type="text" id="dishNameInput" placeholder="输入菜名，如 土豆炖牛肉" style="flex:1">
+        <button class="btn ghost sm" id="aiDishBtn" ${state.settings.api.enabled&&state.settings.api.key?"":"disabled"}>${state.settings.api.enabled&&state.settings.api.key?"AI估算":"需配置AI"}</button>
+      </div>
+      <div class="diet-converter">
+        <span class="diet-converter-label">包装食品计算器</span>
+        <div class="diet-converter-row">
+          <input type="number" id="pkgWeight" placeholder="包装重量(g)">
+          <span class="diet-converter-op">×</span>
+          <input type="number" id="pkgKj" placeholder="每100g千焦">
+          <span class="diet-converter-op">=</span>
+          <span class="num" id="pkgKcal">0</span>
+          <span class="muted" style="font-size:11px">kcal</span>
+          <button class="btn ghost sm" id="pkgUseBtn" style="font-size:11px;padding:3px 8px">填入</button>
+        </div>
+        <div class="hint">输入包装上的净含量和每100g千焦，自动算出这包的热量</div>
+      </div>
+    </div>
     <div class="card">
       <div class="fp-search-wrap">
         <input type="text" id="fpSearch" placeholder="搜索食物..." autocomplete="off">
@@ -1256,34 +1304,13 @@ function pageDietAdd(meal){
       </div>
     </div>
     <div class="card">
-      <h2>手动输入</h2>
-      <div class="fp-manual-row">
-        <input type="text" id="fpManualName" placeholder="食物名称" style="flex:2">
-        <input type="number" id="fpManualKcal" placeholder="热量 kcal" style="flex:1">
-        <input type="number" id="fpManualQty" placeholder="份数" value="1" style="flex:0.6" min="0.5" step="0.5">
-        <button class="btn primary sm" id="fpManualAdd">添加</button>
+      <div class="diet-manual-header">
+        <span class="diet-manual-title">拍照识别</span>
+        <span class="muted" style="font-size:11px">上传食物图片，AI自动识别</span>
       </div>
-      <div style="margin-top:6px;display:flex;gap:6px;align-items:center">
-        <input type="text" id="dishNameInput" placeholder="输入菜名，如 土豆炖牛肉" style="flex:1;padding:6px 8px;border:1px solid var(--line);border-radius:6px;font-size:13px;background:white">
-        <button class="btn ghost sm" id="aiDishBtn" ${state.settings.api.enabled&&state.settings.api.key?"":"disabled"}>${state.settings.api.enabled&&state.settings.api.key?"AI估算":"需配置AI"}</button>
-      </div>
-      <div class="fp-converter" style="margin-top:8px;padding-top:8px;border-top:1px solid var(--line)">
-        <span style="font-size:12px;color:var(--ink-muted);font-weight:500">包装食品计算器</span>
-        <div style="display:flex;gap:6px;align-items:center;margin-top:4px;flex-wrap:wrap">
-          <input type="number" id="pkgWeight" placeholder="包装重量(g)" style="flex:1;min-width:60px;padding:5px 6px;border:1px solid var(--line);border-radius:6px;font-size:13px">
-          <span style="font-size:12px;color:var(--ink-muted)">×</span>
-          <input type="number" id="pkgKj" placeholder="每100g千焦" style="flex:1;min-width:60px;padding:5px 6px;border:1px solid var(--line);border-radius:6px;font-size:13px">
-          <span style="font-size:13px;font-weight:500">=</span>
-          <span class="num" id="pkgKcal" style="font-size:14px;font-weight:600;min-width:40px">0</span>
-          <span style="font-size:12px">kcal</span>
-          <button class="btn ghost sm" id="pkgUseBtn" style="font-size:12px">填入</button>
-        </div>
-        <div class="hint" style="margin-top:4px">输入包装上的净含量和每100g千焦，自动算出这包的热量</div>
-      </div>
-    </div>
-    <div class="card">
-      <h2>拍照识别</h2>
-      <div class="field" style="margin-bottom:6px"><label class="btn ghost sm" for="fpImgInput">选择图片（拍照或相册）</label>
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
+        <label class="btn ghost sm" for="fpImgInput" style="margin:0">选择图片</label>
+        <span class="muted" style="font-size:12px">拍照或相册</span>
         <input type="file" id="fpImgInput" accept="image/*" style="display:none">
       </div>
       <div id="fpPreview"></div>
