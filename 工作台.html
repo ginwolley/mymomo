@@ -2610,7 +2610,7 @@ function bindPage(id, params){
 function bindOverview(){
   startSalaryTimer();
   // 生理期卡、工资卡可点击
-  document.querySelectorAll("[data-nav='period'],[data-nav='salary-basic'],[data-nav='weight'],[data-nav='exercise']").forEach(el=>{
+  document.querySelectorAll("[data-nav='period'],[data-nav='salary-basic'],[data-nav='weight'],[data-nav='exercise'],[data-nav='measure']").forEach(el=>{
     el.addEventListener("click", ()=>{
       if(window.innerWidth > 768){
         navigate(el.dataset.nav);
