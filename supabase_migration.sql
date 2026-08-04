@@ -91,6 +91,7 @@ CREATE POLICY "Allow owner uploads to stock-photos" ON storage.objects
   WITH CHECK (bucket_id = 'stock-photos' AND auth.jwt() ->> 'email' = 'huangying0404@qq.com');
 
 -- 允许公开读取 stock-photos 存储桶的文件（图片 URL 需要在网页中显示）
+DROP POLICY IF EXISTS "Allow public reads from stock-photos" ON storage.objects;
 CREATE POLICY "Allow public reads from stock-photos" ON storage.objects
   FOR SELECT TO anon, authenticated
   USING (bucket_id = 'stock-photos');
