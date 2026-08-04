@@ -5168,7 +5168,9 @@ function glog(msg){
   try{
     const t = new Date();
     const time = String(t.getHours()).padStart(2,"0")+":"+String(t.getMinutes()).padStart(2,"0")+":"+String(t.getSeconds()).padStart(2,"0");
-    state.settings.supabaseDebug = time+" "+msg+"\n"+(state.settings.supabaseDebug||"").slice(0,600);
+    // 保留最近 20 行完整日志（最新在前），避免 600 字符截断丢失历史
+    const lines = (time+" "+msg+"\n"+(state.settings.supabaseDebug||"")).split("\n");
+    state.settings.supabaseDebug = lines.slice(0, 20).join("\n");
     save(false); // false = 不触发同步，避免循环
   }catch(e){}
 }
@@ -5305,9 +5307,12 @@ function compressImage(file, maxWidth = 800, quality = 0.8) {
         canvas.height = targetHeight;
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+        // 超时兜底：极端情况下编码器异常导致回调永不触发，避免流程卡死
+        const timer = setTimeout(() => reject(new Error("图片压缩超时")), 10000);
         canvas.toBlob((blob) => {
+          clearTimeout(timer);
           resolve({
-            blob: blob,
+            blob: blob, // blob 可能为 null，此时 dataUrl 仍有效，会走 Base64 回退
             dataUrl: canvas.toDataURL('image/jpeg', quality),
             width: targetWidth,
             height: targetHeight
