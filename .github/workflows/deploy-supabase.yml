@@ -1,0 +1,30 @@
+# 自动部署 Supabase Edge Functions：push 代码后自动部署，无需手动操作
+name: 部署 Supabase Edge Functions
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/functions/**'
+      - '.github/workflows/deploy-supabase.yml'
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: 部署 barcode-lookup
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: supabase functions deploy barcode-lookup --project-ref ${{ secrets.SUPABASE_PROJECT_ID }}
+      - name: 部署 generate-sticker
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: supabase functions deploy generate-sticker --project-ref ${{ secrets.SUPABASE_PROJECT_ID }}
+      - name: 更新函数环境变量（secrets）
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          supabase secrets set MODELSCOPE_TOKEN="${{ secrets.MODELSCOPE_TOKEN }}" --project-ref ${{ secrets.SUPABASE_PROJECT_ID }}
+          supabase secrets set APIZERO_KEY="${{ secrets.APIZERO_KEY }}" --project-ref ${{ secrets.SUPABASE_PROJECT_ID }}
