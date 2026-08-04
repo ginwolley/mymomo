@@ -4980,10 +4980,6 @@ function importData(e){
 /* ============== Supabase 同步 ============== */
 // 引入 Supabase JavaScript SDK（已在 HTML 头部加载）
 
-// 离线操作队列
-let offlineQueue = [];
-let isSyncing = false;
-
 class SupabaseClient {
   constructor(url, key) {
     if (typeof window.supabase !== 'undefined') {
@@ -5192,39 +5188,12 @@ async function initSupabase() {
   return false;
 }
 
-// 将操作加入离线队列
-function queueOperation(operation) {
-  offlineQueue.push(operation);
-  try {
-    localStorage.setItem('supabase_offline_queue', JSON.stringify(offlineQueue));
-  } catch (e) {}
-}
-
-// 处理离线队列
-async function processOfflineQueue() {
-  if (!supabaseClient || !supabaseClient.isReady()) return;
-  if (isSyncing || offlineQueue.length === 0) return;
-  
-  isSyncing = true;
-  try {
-    // 目前简单处理：将最新的全量数据同步上去即可，无需逐条重放
-    const lastOp = offlineQueue[offlineQueue.length - 1];
-    if (lastOp && lastOp.type === 'sync') {
-      await syncToSupabase(false);
-      offlineQueue = [];
-      localStorage.setItem('supabase_offline_queue', JSON.stringify(offlineQueue));
-      glog("Offline queue processed");
-    }
-  } finally {
-    isSyncing = false;
-  }
-}
-
 // 同步到 Supabase
 async function syncToSupabase(showToast = true) {
   if (!supabaseClient || !supabaseClient.isReady()) {
-    glog("syncToSupabase: Supabase not ready, queued for offline");
-    queueOperation({ type: 'sync', timestamp: Date.now() });
+    glog("syncToSupabase: Supabase not ready, mark pending sync");
+    state.settings.supabasePendingSync = true;
+    save(false);
     return;
   }
   
@@ -5239,6 +5208,7 @@ async function syncToSupabase(showToast = true) {
     if (success) {
       state.settings.supabaseLastSync = Date.now();
       state.settings.supabaseLastSyncStatus = "ok";
+      state.settings.supabasePendingSync = false;
       save(false); // 不触发递归同步
       updateSyncStatus();
       if (showToast) toast("同步成功");
@@ -5250,10 +5220,10 @@ async function syncToSupabase(showToast = true) {
     glog("syncToSupabase: 异常 " + e.message);
     state.settings.supabaseLastSync = Date.now();
     state.settings.supabaseLastSyncStatus = "error:" + e.message;
+    state.settings.supabasePendingSync = true;
     save(false);
     updateSyncStatus();
     if (showToast) toast("同步失败：" + e.message);
-    queueOperation({ type: 'sync', timestamp: Date.now() });
   }
 }
 
@@ -5311,8 +5281,13 @@ async function initSync() {
   save(false);
   updateSyncStatus();
   
-  // 启动离线队列处理
-  processOfflineQueue();
+  // 如有待补传数据（上次同步失败/离线），自动重新同步
+  if (state.settings.supabasePendingSync) {
+    glog("initSync: 检测到待补传数据，自动重新同步");
+    await syncToSupabase(false);
+    state.settings.supabasePendingSync = false;
+    save(false);
+  }
 }
 
 // 图片压缩函数（将图片压缩到最大宽度800px，质量0.8）
