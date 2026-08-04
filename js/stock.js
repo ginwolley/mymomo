@@ -159,12 +159,11 @@ function pageStockAdd(){
   const catOpts = STOCK_CATEGORIES.map(c=>`<option value="${c}">${c}</option>`).join("");
   const spaceOpts = spaceOptsHtml();
   const aiDisabled = !(state.settings.api.enabled && state.settings.api.key);
-  const stickerDisabled = !(state.settings.modelscopeToken && supabaseClient && supabaseClient.isReady());
   const defaultCategory = "食品";
   const stickerPreviewHtml = `<div class="field"><label>物品贴纸</label>
     <div id="currentStockIconAdd" style="margin-bottom:8px">${renderStockSticker({ category: defaultCategory, name: "新品" }, "md")}</div>
     <div style="display:flex;gap:8px">
-      <button class="btn ghost sm" type="button" id="stockAiStickerBtn" ${stickerDisabled?'disabled':''}>
+      <button class="btn ghost sm" type="button" id="stockAiStickerBtn">
         <svg viewBox="0 0 20 20" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:2px"><circle cx="10" cy="10" r="3"/><path d="M10 3v2M10 15v2M3 10h2M15 10h2M5.6 5.6l1.4 1.4M13 13l1.4 1.4M5.6 14.4L7 13M13 7l1.4-1.4"/></svg>
         AI生成贴纸
       </button>
@@ -292,11 +291,10 @@ function pageStockDetail(idx){
   const unitOpts = (STOCK_UNITS[r.category]||["个"]).map(u=>`<option value="${u}" ${u===r.unit?"selected":""}>${u}</option>`).join("");
   const statusOpts = ["未开封","使用中","已用完"].map(s=>`<option ${s===r.status?"selected":""}>${s}</option>`).join("");
   const spaceOpts = spaceOptsHtml(r.storageLocation);
-  const stickerDisabled = !(state.settings.modelscopeToken && supabaseClient && supabaseClient.isReady());
   const stickerPreviewHtml = `<div class="field"><label>物品贴纸</label>
     <div id="currentStockIcon" style="margin-bottom:8px">${renderStockSticker(r, "md")}</div>
     <div style="display:flex;gap:8px">
-      <button class="btn ghost sm" type="button" id="stockAiStickerBtnDetail" ${stickerDisabled?'disabled':''}>
+      <button class="btn ghost sm" type="button" id="stockAiStickerBtnDetail">
         <svg viewBox="0 0 20 20" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:2px"><circle cx="10" cy="10" r="3"/><path d="M10 3v2M10 15v2M3 10h2M15 10h2M5.6 5.6l1.4 1.4M13 13l1.4 1.4M5.6 14.4L7 13M13 7l1.4-1.4"/></svg>
         AI生成贴纸
       </button>
@@ -427,6 +425,17 @@ function bindStockAdd(){
 
   const aiStickerBtn = document.getElementById("stockAiStickerBtn");
   if(aiStickerBtn) aiStickerBtn.addEventListener("click", async ()=>{
+    // 检查配置
+    if(!state.settings.modelscopeToken){
+      toast("请先在设置页配置「魔搭访问令牌」");
+      navigate("settings");
+      return;
+    }
+    if(!supabaseClient || !supabaseClient.isReady()){
+      toast("请先在设置页配置「Supabase 云同步」并确保已连接");
+      navigate("settings");
+      return;
+    }
     const typedName = (nameInput && nameInput.value.trim()) || "新品";
     if(!typedName || typedName === "新品"){ toast("请先输入物品名称"); return; }
     aiStickerBtn.disabled = true;
@@ -438,7 +447,11 @@ function bindStockAdd(){
       if(tempItem.stickerUrl){
         generatedStickerUrl = tempItem.stickerUrl;
         currentIconDisplay.innerHTML = renderStockSticker(tempItem, "md");
+      }else{
+        toast("生成失败，请检查配置或网络");
       }
+    }catch(e){
+      toast("生成出错：" + e.message);
     }finally{
       aiStickerBtn.disabled = false;
       aiStickerBtn.innerHTML = origHtml;
@@ -731,6 +744,17 @@ function bindStockDetail(idx){
 
   const aiStickerBtn = document.getElementById("stockAiStickerBtnDetail");
   if(aiStickerBtn) aiStickerBtn.addEventListener("click", async ()=>{
+    // 检查配置
+    if(!state.settings.modelscopeToken){
+      toast("请先在设置页配置「魔搭访问令牌」");
+      navigate("settings");
+      return;
+    }
+    if(!supabaseClient || !supabaseClient.isReady()){
+      toast("请先在设置页配置「Supabase 云同步」并确保已连接");
+      navigate("settings");
+      return;
+    }
     const typedName = (nameInput && nameInput.value.trim()) || r.name;
     aiStickerBtn.disabled = true;
     const origHtml = aiStickerBtn.innerHTML;
@@ -741,7 +765,13 @@ function bindStockDetail(idx){
       if(tempItem.stickerUrl){
         r.stickerUrl = tempItem.stickerUrl;
         currentIconDisplay.innerHTML = renderStockSticker(r, "md");
+        save(false); // 自动保存贴纸 URL
+        toast("贴纸已生成并保存");
+      }else{
+        toast("生成失败，请检查配置或网络");
       }
+    }catch(e){
+      toast("生成出错：" + e.message);
     }finally{
       aiStickerBtn.disabled = false;
       aiStickerBtn.innerHTML = origHtml;
