@@ -10,6 +10,8 @@
 <meta name="apple-mobile-web-app-title" content="momo">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon.jpg">
+<!-- Supabase JavaScript SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{
     /* 冷调浅蓝 + 亮青绿 扁平马卡龙 */
@@ -737,9 +739,13 @@
     .diet-add-page .diet-ai-row input{font-size:12px;padding:5px 6px;}
     .diet-add-page .diet-converter-label{font-size:10px;}
     .diet-add-page .diet-converter-op{font-size:10px;}
-    .diet-add-page .diet-converter-row .btn{padding:3px 6px;font-size:10px;}
+    .diet-add-page .diet-converter-row .btn{padding:3px 6px;}
     .diet-add-page .food-history-drop .fh-item{padding:6px 8px;font-size:11px;}
   }
+
+  /* 冰箱视图样式 */
+  .fridge-item:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.1);}
+  .fridge-item:active{transform:translateY(0);}
 </style>
 </head>
 <body>
@@ -812,6 +818,7 @@ const NAV_TREE = [
     {id:"stock-overview", name:"统计", icon:"grid"},
     {id:"stock-add", name:"新增物品", icon:"plus"},
     {id:"stock-all", name:"全部物品", icon:"list"},
+    {id:"stock-fridge", name:"冰箱", icon:"fridge"},
     {id:"stock-spaces", name:"空间", icon:"house"},
   ]},
   {id:"passwords", name:"密码", icon:"lock"},
@@ -843,6 +850,7 @@ const ICONS = {
   'eye-off':'<path d="M1 1l22 22"/><path d="M9.58 9.58A3 3 0 0 0 14.42 14.42"/><path d="M4.22 6.22A16.37 16.37 0 0 0 1 12s4 8 11 8c1.85 0 3.58-.4 5.16-1.1"/><path d="M19.78 17.78A16.37 16.37 0 0 0 23 12s-4-8-11-8c-1.85 0-3.58.4-5.16 1.1"/>',
   edit:'<path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>',
   copy:'<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
+  fridge:'<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M4 10h16"/><circle cx="8" cy="7" r="0.5" fill="currentColor"/><circle cx="8" cy="14" r="0.5" fill="currentColor"/>',
 };
 
 // MET 值表（代谢当量）：kcal = MET × 体重(kg) × 时长(h)
@@ -979,7 +987,7 @@ const DEFAULTS = {
     api:{endpoint:"https://api.deepseek.com/chat/completions", key:"", model:"deepseek-chat", enabled:false},
     modules:{weight:"cumulative", measure:"cumulative", diet:"daily", exercise:"daily", balance:"cumulative"}, period:90, dietGoal:1600,
     navOpen:{fitness:false, period:false, salary:false},
-    gistToken:"", gistId:"", gistLastSync:null, gistLastSyncStatus:"", gistDebug:"",
+    supabaseUrl:"", supabaseKey:"", supabaseLastSync:null, supabaseLastSyncStatus:"local_only", supabaseDebug:"",
     passwordCategories:["工作","社交","银行","购物","娱乐","其他"],
     spaces: {
       id:"root", name:"全部空间", children:[
@@ -1063,12 +1071,14 @@ function migrateData(data){
   data.meta = data.meta || {};
   data.meta.version = v;
 }
-function save(){
+function save(shouldSync = true){
   state.meta.lastModified = Date.now();
   try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
   catch(e){ toast("保存失败：" + e.message); }
-  // 自动同步到 Gist（如果已配置）
-  if(state.settings.gistToken && state.settings.gistId) syncToGist();
+  // 自动同步到 Supabase（如果已配置）
+  if(shouldSync && state.settings.supabaseUrl && state.settings.supabaseKey){
+    syncToSupabase(false); // 静默同步，不显示 toast
+  }
 }
 function deepMerge(base, over){
   if(Array.isArray(base)) return Array.isArray(over) ? over : base;
@@ -1167,7 +1177,7 @@ function salarySeg(active){
   return `<div class="seg-sub">${items.map(i=>`<button class="${i.id===active?'active':''}" onclick="navigate('${i.id}')">${i.label}</button>`).join('')}</div>`;
 }
 function stockSeg(active){
-  const items = [{id:"stock-overview",label:"统计"},{id:"stock-add",label:"新增"},{id:"stock-all",label:"全部"},{id:"stock-spaces",label:"空间"}];
+  const items = [{id:"stock-overview",label:"统计"},{id:"stock-add",label:"新增"},{id:"stock-all",label:"全部"},{id:"stock-fridge",label:"冰箱"},{id:"stock-spaces",label:"空间"}];
   return `<div class="seg" style="margin-bottom:14px">${items.map(i=>`<button class="${i.id===active?'active':''}" onclick="navigate('${i.id}')">${i.label}</button>`).join('')}</div>`;
 }
 function bindPeriod(){
@@ -2018,15 +2028,16 @@ function pageSettings(){
     </div>
 
     <div class="card">
-      <h2>GitHub Gist 同步</h2>
-      <div class="field"><label>Token</label><input type="password" id="gistToken" value="${esc(s.gistToken)}" placeholder="ghp_xxxxxxxx"></div>
-      <div class="hint">用于跨设备同步数据。需在 GitHub 生成一个仅含 gist 权限的 token，不会上传到任何服务器。</div>
+      <h2>Supabase 云同步</h2>
+      <div class="field"><label>Project URL</label><input type="text" id="supabaseUrl" value="${esc(s.supabaseUrl)}" placeholder="https://xxxx.supabase.co"></div>
+      <div class="field"><label>Anon Public Key</label><input type="password" id="supabaseKey" value="${esc(s.supabaseKey)}" placeholder="eyJhbGci..."></div>
+      <div class="hint">用于跨设备同步数据。需在 Supabase Dashboard 创建 Project 后获取。未配置时将仅使用本地存储模式。</div>
       <div style="text-align:center;margin:10px 0">
-        <button class="btn primary sm" id="saveGistToken">保存 Token</button>
+        <button class="btn primary sm" id="saveSupabaseConfig">保存配置</button>
         <button class="btn ghost sm" id="syncNowBtn">立即同步</button>
       </div>
-      <div id="gistStatus" class="hint" style="text-align:center"></div>
-      <div id="gistDebugBox" style="white-space:pre-wrap;font-size:11px;color:var(--ink-muted);margin-top:8px;max-height:140px;overflow-y:auto;display:${s.gistDebug?"block":"none"}">${esc(s.gistDebug)}</div>
+      <div id="supabaseStatus" class="hint" style="text-align:center"></div>
+      <div id="supabaseDebugBox" style="white-space:pre-wrap;font-size:11px;color:var(--ink-muted);margin-top:8px;max-height:140px;overflow-y:auto;display:${s.supabaseDebug?"block":"none"}">${esc(s.supabaseDebug)}</div>
     </div>
 
     <div class="card">
@@ -2211,6 +2222,7 @@ const PAGES = {
   get "stock-overview"(){ return window.pageStockOverview; },
   get "stock-add"(){ return window.pageStockAdd; },
   get "stock-all"(){ return window.pageStockAll; },
+  get "stock-fridge"(){ return window.pageStockFridge; },
   get "stock-detail"(){ return window.pageStockDetail; },
   get "stock-spaces"(){ return window.pageStockSpaces; },
   passwords:pagePasswords, "password-detail":pagePasswordDetail,
@@ -2224,18 +2236,18 @@ const TITLES = {
   "salary-basic":"基本工资", "salary-housing":"房补", "salary-summary":"工资汇总",
   "salary-all":"全部工资记录", "salary-detail":"工资详情", "salary-add":"记录工资",
   "housing-all":"全部房补记录", "housing-detail":"房补详情", "housing-add":"记录房补",
-  "stock-overview":"囤货", "stock-add":"新增物品", "stock-all":"全部物品", "stock-detail":"物品详情", "stock-spaces":"空间管理",
+  "stock-overview":"囤货", "stock-add":"新增物品", "stock-all":"全部物品", "stock-fridge":"冰箱视图", "stock-detail":"物品详情", "stock-spaces":"空间管理",
   passwords:"密码管理", "password-detail":"密码详情",
   "diet-add":"添加食物",
   "tab-home":"首页", "tab-record":"健康", "tab-more":"更多",
 };
 
 /* 手机端底部Tab：显示Tab栏的页面（子页面隐藏） */
-const TAB_IDS = ["tab-home","tab-record","stock-overview","tab-more","overview","weight","measure","diet","exercise","settings","salary-basic","salary-housing","salary-summary","passwords","password-detail","stock-add","stock-all","stock-spaces"];
+const TAB_IDS = ["tab-home","tab-record","stock-overview","tab-more","overview","weight","measure","diet","exercise","settings","salary-basic","salary-housing","salary-summary","passwords","password-detail","stock-add","stock-all","stock-fridge","stock-spaces"];
 const TAB_MATCH = {
   "tab-home":["tab-home","overview","salary-basic","salary-housing","salary-summary","passwords","password-detail"],
   "tab-record":["tab-record","diet","exercise","weight","measure"],
-  "stock-overview":["stock-overview","stock-add","stock-all","stock-spaces"],
+  "stock-overview":["stock-overview","stock-add","stock-all","stock-fridge","stock-spaces"],
   "tab-more":["tab-more","settings"],
 };
 let segHome = "overview";   // tab-home 分段：overview/salary-basic/passwords
@@ -2369,7 +2381,7 @@ function navigate(id, params){
   const BACK_MAP = {
     "salary-add":"salary-basic","salary-all":"salary-basic","salary-detail":"salary-basic",
     "housing-add":"salary-housing","housing-all":"salary-housing","housing-detail":"salary-housing",
-    "stock-add":"stock-overview","stock-all":"stock-overview","stock-detail":"stock-overview","stock-spaces":"stock-overview",
+    "stock-add":"stock-overview","stock-all":"stock-overview","stock-fridge":"stock-overview","stock-detail":"stock-overview","stock-spaces":"stock-overview",
     "password-detail":"passwords",
     "exercise-all":"exercise",
     "diet-add":"diet",
@@ -2601,6 +2613,7 @@ function bindPage(id, params){
   if(id==="stock-overview") window.bindStockOverview();
   if(id==="stock-add") window.bindStockAdd();
   if(id==="stock-all") window.bindStockAll();
+  if(id==="stock-fridge") window.bindStockFridge();
   if(id==="stock-detail") window.bindStockDetail(currentStockIdx);
   if(id==="stock-spaces") window.bindStockSpaces();
   if(id==="passwords") bindPasswords();
@@ -3300,20 +3313,24 @@ function bindSettings(){
       save(); toast("已清空"); navigate("overview");
     }
   });
-  // Gist 同步
-  const sgt=document.getElementById("saveGistToken");
+  // Supabase 同步
+  const sgt=document.getElementById("saveSupabaseConfig");
   if(sgt) sgt.addEventListener("click",()=>{
-    const v=document.getElementById("gistToken").value.trim();
-    state.settings.gistToken=v;
-    if(!v){ state.settings.gistId=""; state.settings.gistLastSync=null; state.settings.gistLastSyncStatus=""; }
-    save(); toast("已保存 Token");
+    const url=document.getElementById("supabaseUrl").value.trim();
+    const key=document.getElementById("supabaseKey").value.trim();
+    state.settings.supabaseUrl=url;
+    state.settings.supabaseKey=key;
+    if(!url || !key){ state.settings.supabaseLastSync=null; state.settings.supabaseLastSyncStatus="local_only"; }
+    initSupabase();
+    save(); toast("已保存配置");
     updateSyncStatus();
   });
   const snb=document.getElementById("syncNowBtn");
   if(snb) snb.addEventListener("click",()=>{
-    if(!state.settings.gistToken){ toast("请先输入 Token"); return; }
+    if(!state.settings.supabaseUrl || !state.settings.supabaseKey){ toast("请先配置 Supabase URL 和 Key"); return; }
+    if(!supabaseClient || !supabaseClient.isReady()){ toast("Supabase SDK 未加载，请刷新页面"); return; }
     snb.textContent="同步中..."; snb.disabled=true;
-    syncToGist().finally(()=>{ snb.textContent="立即同步"; snb.disabled=false; });
+    syncToSupabase(true).finally(()=>{ snb.textContent="立即同步"; snb.disabled=false; });
   });
   updateSyncStatus();
 }
@@ -3498,6 +3515,66 @@ const STOCK_UNITS = {
 };
 const STOCK_DEFAULT_UNIT = {化妆品:"个",护肤品:"瓶",日化用品:"包",食品:"kg",其他:"个"};
 
+// 囤货贴纸系统：Emoji 库和分类颜色
+const STOCK_EMOJIS = {
+  "化妆品": ["💄","💋","👁️","👃","🦋","🌸","🌺","🌷","🎀","💍","👜","👛","👗","👘","🦶","🪞","✨","⭐","🌟","💎"],
+  "护肤品": ["🧴","🧻","🫧","💧","💦","🧊","❄️","🌊","🫒","🥥","🌿","🍃","🌱","🌾","🌸","🌺","🌻","🌼","🌷","🌹"],
+  "日化用品": ["🧻","🧼","🧴","🧹","🧺","🧻","🧽","🧰","🪣","🧴","💡","🔋","🔌","🧯","🧹","🪥","🦷","🪥","🧼","🧴"],
+  "食品": ["🍎","🍊","🍋","🍌","🍉","🍇","🍓","🫐","🍈","🍒","🍑","🥭","🍍","🥥","🥝","🍅","🍆","🥑","🥦","🥕","🌽","🥔","🍅","🍄","🧅","🧄","🥒","🥬","🥗","🍞","🥐","🧀","🥚","🍗","🥩","🍖","🥓","🍔","🍟","🌭","🥪","🌮","🌯","🫓","🥙","🍝","🍜","🍲","🍛","🍣","🍤","🍙","🍚","🍱","🥟","🍤","🍥","🍢","🍧","🍨","🍰","🎂","🧁","🍮","🍯","🍼","🥛","☕","🫖","🍵","🧋","🥤","🧃","🧉","🍺","🍻","🥂","🍷","🥃","🍸","🍹","🧊","🥢","🍽️","🥄","🔪","🫙","🏺","🍶","🧂","🥫","🍱","🍤"],
+  "其他": ["📦","📦","🗃️","🗄️","📁","📂","🗒️","🗓️","📔","📕","📖","📗","📘","📙","📚","📓","📒","🖍️","✏️","✒️","🖊️","🖋️","🖊️","🖌️","🎨","🧰","🔧","🔨","⚒️","🛠️","🔩","⚙️","🪛","🗜️","⚖️","🔗","⛓️","🪚","🔦","🔌","🔋","🔌","🧯","💡","🔦","🕯️"]
+};
+
+// 分类颜色映射（用于贴纸背景）
+const STOCK_CATEGORY_COLORS = {
+  "化妆品": { bg: "#FFE4E9", text: "#FF6B8A", border: "#FFD0DB" },
+  "护肤品": { bg: "#E8F5E9", text: "#66BB6A", border: "#C8E6C9" },
+  "日化用品": { bg: "#E3F2FD", text: "#42A5F5", border: "#BBDEFB" },
+  "食品": { bg: "#FFF3E0", text: "#FFA726", border: "#FFE0B2" },
+  "其他": { bg: "#F3E5F5", text: "#AB47BC", border: "#E1BEE7" }
+};
+
+// 获取商品图标（优先使用自定义，否则根据分类匹配默认）
+function getStockIcon(item) {
+  if (item && item.icon) return item.icon;
+  const emojis = STOCK_EMOJIS[item?.category] || STOCK_EMOJIS["其他"];
+  // 根据物品名称的哈希值选择一个固定的 emoji，保证一致性
+  const name = item?.name || "";
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = ((hash << 5) - hash) + name.charCodeAt(i);
+    hash |= 0;
+  }
+  return emojis[Math.abs(hash) % emojis.length];
+}
+
+// 获取分类颜色
+function getCategoryColor(category) {
+  return STOCK_CATEGORY_COLORS[category] || STOCK_CATEGORY_COLORS["其他"];
+}
+
+// 生成贴纸 HTML
+function renderStockSticker(item, size = "md") {
+  const color = getCategoryColor(item.category);
+  const icon = getStockIcon(item);
+  const sizes = {
+    sm: { wrapper: "width:40px;height:40px;font-size:20px;", inner: "" },
+    md: { wrapper: "width:56px;height:56px;font-size:28px;", inner: "" },
+    lg: { wrapper: "width:80px;height:80px;font-size:42px;", inner: "" }
+  };
+  const s = sizes[size] || sizes.md;
+  return `<div class="stock-sticker" style="${s.wrapper};background:${color.bg};border:2px solid ${color.border};border-radius:${size==='lg'?'20px':'14px'};display:flex;align-items:center;justify-content:center;flex-shrink:0;">${icon}</div>`;
+}
+
+// 定义分类贴纸库的展示容器 HTML
+function renderEmojiPicker(currentIcon, category) {
+  const emojis = STOCK_EMOJIS[category] || STOCK_EMOJIS["其他"];
+  const color = getCategoryColor(category);
+  const options = emojis.map(e => 
+    `<div class="emoji-option ${e===currentIcon?'selected':''}" data-emoji="${e}" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;border-radius:8px;cursor:pointer;font-size:20px;border:${e===currentIcon?'2px solid '+color.text:'1px solid transparent'};background:${e===currentIcon?color.bg:'transparent'};">${e}</div>`
+  ).join("");
+  return `<div class="emoji-picker" style="display:grid;grid-template-columns:repeat(10,1fr);gap:6px;margin:10px 0;padding:12px;background:#F8F9FA;border-radius:12px;border:1px solid #E9ECEF;">${options}</div>`;
+}
+
 function pageStockOverview(){
   const items = state.stock;
   const total = items.length;
@@ -3569,6 +3646,12 @@ function pageStockAdd(){
   const catOpts = STOCK_CATEGORIES.map(c=>`<option value="${c}">${c}</option>`).join("");
   const spaceOpts = spaceOptsHtml();
   const aiDisabled = !(state.settings.api.enabled && state.settings.api.key);
+  // 默认食品分类
+  const defaultCategory = "食品";
+  const emojiPickerHtml = `<div class="field"><label>物品图标 <span style="color:var(--ink-muted);font-weight:normal">（可点击选择自定义 emoji）</span></label>
+    <div id="currentStockIconAdd" style="margin-bottom:8px">${renderStockSticker({ category: defaultCategory, name: "新品" }, "md")}</div>
+    ${renderEmojiPicker(null, defaultCategory)}
+  </div>`;
   return `${stockSeg("stock-add")}
     <div class="card">
     <form id="stockForm">
@@ -3589,6 +3672,7 @@ function pageStockAdd(){
       <div class="field" id="foodBestBefore" style="display:none"><label>最佳食用日期</label><input type="date" name="s-bestBefore" placeholder="可选"></div>
       <div class="field"><label>空间</label><select name="s-location" id="sLocation">${spaceOpts}</select></div>
       <div class="field"><label>状态</label><select name="s-status"><option>未开封</option><option>使用中</option><option>已用完</option></select></div>
+      ${emojiPickerHtml}
       <div class="field"><label>实物照片</label><input type="file" id="stockPhoto" accept="image/*"></div>
       <div id="stockPhotoPreview"></div>
       <div class="row">
@@ -3652,11 +3736,9 @@ function renderStockList(items){
       const expCls = r.expiryDate && daysBetween(todayStr(), r.expiryDate) <= 30 ? ' style="color:var(--danger)"' : '';
       const lowStock = r.quantity <= (r.minStock || 1) && r.status !== '已用完';
       const tags = (r.tags||[]).map(t => `<span class="pill" style="font-size:10px;padding:1px 6px;margin:0 2px 2px 0">${esc(t)}</span>`).join('');
-      const photoHtml = r.photo ? `<img src="${r.photo}" style="width:48px;height:48px;border-radius:var(--radius-sm);object-fit:cover;flex-shrink:0">` : '';
+      const photoHtml = r.photo ? `<img src="${r.photo}" style="width:48px;height:48px;border-radius:var(--radius-sm);object-fit:cover;flex-shrink:0">` : renderStockSticker(r, "sm");
       return `<div class="card" style="padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:12px;${lowStock?'border-left:3px solid var(--danger)':''}">
-        ${photoHtml || `<div style="width:48px;height:48px;border-radius:var(--radius-sm);background:var(--gold-soft);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--gold-dark);font-size:20px">
-          <svg viewBox="0 0 20 20" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="14" height="16" rx="2"/><path d="M3 8h14"/><path d="M10 3v18"/></svg>
-        </div>`}
+        ${photoHtml}
         <div style="flex:1;min-width:0">
           <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
             <span style="font-weight:600;font-size:14px;color:var(--ink)">${esc(r.name)}</span>
@@ -3701,6 +3783,10 @@ function pageStockDetail(idx){
   const statusOpts = ["未开封","使用中","已用完"].map(s=>`<option ${s===r.status?"selected":""}>${s}</option>`).join("");
   const spaceOpts = spaceOptsHtml(r.storageLocation);
   const imgHtml = r.photo ? `<img class="preview-img" src="${r.photo}" style="max-width:200px">` : '';
+  const emojiPickerHtml = `<div class="field"><label>物品图标 <span style="color:var(--ink-muted);font-weight:normal">（可点击选择自定义 emoji）</span></label>
+    <div id="currentStockIcon" style="margin-bottom:8px">${renderStockSticker(r, "md")}</div>
+    ${renderEmojiPicker(r.icon, r.category)}
+  </div>`;
   const cons = (r.consumption||[]).slice().reverse();
   return `<div class="card">
     <h2>物品详情 · ${esc(r.name)}</h2>
@@ -3722,6 +3808,7 @@ function pageStockDetail(idx){
       ${isFood ? `<div class="field"><label>最佳食用日期</label><input type="date" name="se-bestBefore" value="${r.bestBeforeDate||''}"></div>` : ''}
       <div class="field"><label>空间</label><select name="se-location" id="seLocation">${spaceOpts}</select></div>
       <div class="field"><label>状态</label><select name="se-status">${statusOpts}</select></div>
+      ${emojiPickerHtml}
       <div class="row">
         <div class="field"><label>标签</label><input type="text" name="se-tags" value="${esc((r.tags||[]).join(', '))}" placeholder="逗号分隔" style="font-size:13px"></div>
         <div class="field"><label>最低库存</label><input type="number" name="se-minStock" value="${r.minStock||1}" min="0" style="font-size:13px;max-width:100px"></div>
@@ -3816,11 +3903,68 @@ function bindStockAdd(){
   // 照片预览
   const photoInput = document.getElementById("stockPhoto");
   let pendingPhoto = null;
-  if(photoInput) photoInput.addEventListener("change",()=>{
+  let pendingPhotoUrl = null; // 存储实际保存的 URL（可能是 Supabase URL 或 Base64）
+  if(photoInput) photoInput.addEventListener("change", async ()=>{
     const file = photoInput.files[0]; if(!file) return;
-    const reader = new FileReader();
-    reader.onload = ()=>{ pendingPhoto = reader.result; document.getElementById("stockPhotoPreview").innerHTML = `<img class="preview-img" src="${pendingPhoto}">`; };
-    reader.readAsDataURL(file);
+    try {
+      // 预览使用原始 Base64
+      const reader = new FileReader();
+      reader.onload = ()=>{ pendingPhoto = reader.result; document.getElementById("stockPhotoPreview").innerHTML = `<img class="preview-img" src="${pendingPhoto}">`; };
+      reader.readAsDataURL(file);
+      
+      // 尝试压缩并上传
+      pendingPhotoUrl = await handleStockPhotoUpload(file);
+      console.log("Photo processed, saved as:", pendingPhotoUrl.substring(0, 50) + "...");
+    } catch(e) {
+      toast("图片处理失败：" + e.message);
+    }
+  });
+
+  // Emoji 选择器
+  let selectedIcon = null;
+  const currentIconDisplay = document.getElementById("currentStockIconAdd");
+  
+  function updateIconDisplay() {
+    if (currentIconDisplay) {
+      const tempItem = { category: catSel.value, name: "新品", icon: selectedIcon };
+      currentIconDisplay.innerHTML = renderStockSticker(tempItem, "md");
+    }
+    // 更新选中样式
+    document.querySelectorAll(".emoji-option").forEach(opt => {
+      const emoji = opt.dataset.emoji;
+      const color = getCategoryColor(catSel.value);
+      if (emoji === selectedIcon) {
+        opt.style.border = `2px solid ${color.text}`;
+        opt.style.background = color.bg;
+      } else {
+        opt.style.border = "1px solid transparent";
+        opt.style.background = "transparent";
+      }
+    });
+  }
+  
+  // 绑定 emoji 选项点击事件
+  document.querySelectorAll(".emoji-option").forEach(opt => {
+    opt.addEventListener("click", () => {
+      selectedIcon = opt.dataset.emoji;
+      updateIconDisplay();
+    });
+  });
+  updateIconDisplay();
+  
+  // 分类变化时更新 emoji 选项
+  catSel.addEventListener("change", () => {
+    // 重新渲染 emoji picker
+    const newPicker = renderEmojiPicker(null, catSel.value);
+    document.querySelector(".emoji-picker")?.replaceWith(new DOMParser().parseFromString(newPicker, 'text/html').body.firstChild);
+    // 重新绑定事件
+    document.querySelectorAll(".emoji-option").forEach(opt => {
+      opt.addEventListener("click", () => {
+        selectedIcon = opt.dataset.emoji;
+        updateIconDisplay();
+      });
+    });
+    updateIconDisplay();
   });
 
   // AI识图（独立功能入口）
@@ -3846,7 +3990,6 @@ function bindStockAdd(){
   // 扫码录入
   const barcodeBtn = document.getElementById("stockBarcodeBtn");
   if(barcodeBtn) barcodeBtn.addEventListener("click", async ()=>{
-    if(!('BarcodeDetector' in window)){ toast("当前浏览器不支持扫码功能，请使用Chrome或Edge"); return; }
     try{
       const stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
       const video = document.createElement('video');
@@ -3854,38 +3997,98 @@ function bindStockAdd(){
       video.play();
       const overlay = document.createElement('div');
       overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:1000;display:flex;flex-direction:column;align-items:center;justify-content:center';
-      overlay.innerHTML = `<video style="max-width:100%;max-height:70vh;border-radius:12px"></video>
+      overlay.innerHTML = `<video id="barcodeVideo" style="max-width:100%;max-height:70vh;border-radius:12px"></video>
         <div style="color:#fff;margin-top:12px;font-size:14px">正在扫描条码…</div>
         <button class="btn ghost" id="barcodeCancel" style="margin-top:12px;color:#fff;border-color:rgba(255,255,255,.3)">取消</button>`;
-      overlay.querySelector('video').srcObject = stream;
+      overlay.querySelector('#barcodeVideo').srcObject = stream;
       document.body.appendChild(overlay);
-      const detector = new BarcodeDetector({formats:['ean_13','ean_8','upc_a','upc_e','code_128','code_39','qr_code']});
+      
       let scanned = false;
-      const interval = setInterval(async ()=>{
-        if(scanned) return;
-        try{
-          const barcodes = await detector.detect(video);
-          if(barcodes.length > 0){
+      let detectInterval = null;
+      
+      // 优先使用原生 BarcodeDetector
+      if('BarcodeDetector' in window){
+        const detector = new BarcodeDetector({formats:['ean_13','ean_8','upc_a','upc_e','code_128','code_39','qr_code']});
+        detectInterval = setInterval(async ()=>{
+          if(scanned) return;
+          try{
+            const barcodes = await detector.detect(video);
+            if(barcodes.length > 0){
+              scanned = true;
+              clearInterval(detectInterval);
+              cleanup(stream, overlay);
+              const code = barcodes[0].rawValue;
+              document.getElementById("stockForm")["s-name"].value = '扫码: ' + code;
+              toast('已识别条码: ' + code);
+            }
+          }catch(e){}
+        }, 500);
+      } else {
+        // 降级方案：动态加载 html5-qrcode
+        await scanWithHtml5Qrcode(video).then(code => {
+          if(code){
             scanned = true;
-            clearInterval(interval);
-            stream.getTracks().forEach(t=>t.stop());
-            overlay.remove();
-            const code = barcodes[0].rawValue;
+            cleanup(stream, overlay);
             document.getElementById("stockForm")["s-name"].value = '扫码: ' + code;
             toast('已识别条码: ' + code);
           }
-        }catch(e){}
-      }, 500);
+        });
+      }
+      
       overlay.querySelector('#barcodeCancel').addEventListener('click', ()=>{
-        clearInterval(interval);
-        stream.getTracks().forEach(t=>t.stop());
-        overlay.remove();
+        if(detectInterval) clearInterval(detectInterval);
+        cleanup(stream, overlay);
       });
     }catch(err){
       if(err.name === 'NotAllowedError'){ toast('请允许相机权限'); return; }
       toast('扫码启动失败: '+err.message);
     }
   });
+
+  // 清理资源
+  function cleanup(stream, overlay){
+    stream.getTracks().forEach(t=>t.stop());
+    if(overlay.parentNode) overlay.remove();
+  }
+
+  // 使用 html5-qrcode 扫码（降级方案）
+  async function scanWithHtml5Qrcode(videoElement) {
+    return new Promise((resolve) => {
+      // 动态加载 html5-qrcode
+      const script = document.createElement('script');
+      script.src = 'https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js';
+      script.onload = async () => {
+        try {
+          const html5QrCode = new Html5Qrcode(videoElement);
+          const config = { fps: 10, qrbox: 250 };
+          
+          html5QrCode.start(
+            { facingMode: "environment" },
+            config,
+            (decodedText) => {
+              html5QrCode.stop().then(() => resolve(decodedText));
+            },
+            () => {} // 忽略扫描失败的回调
+          );
+          
+          // 60 秒超时
+          setTimeout(() => {
+            if (!html5QrCode.isScanning) {
+              resolve(null);
+            }
+          }, 60000);
+        } catch (e) {
+          console.warn("html5-qrcode failed:", e);
+          resolve(null);
+        }
+      };
+      script.onerror = () => {
+        console.warn("html5-qrcode script failed to load");
+        resolve(null);
+      };
+      document.head.appendChild(script);
+    });
+  }
 
   // 表单提交
   const f = document.getElementById("stockForm");
@@ -3907,7 +4110,8 @@ function bindStockAdd(){
       bestBeforeDate: f["s-bestBefore"] ? (f["s-bestBefore"].value || "") : "",
       storageLocation: f["s-location"].value,
       status: f["s-status"].value,
-      photo: pendingPhoto || "",
+      icon: selectedIcon, // 保存选择的 emoji
+      photo: pendingPhotoUrl || pendingPhoto || "",
       notes: f["s-notes"].value.trim(),
       tags: f["s-tags"] ? f["s-tags"].value.split(/[,，]/).map(t=>t.trim()).filter(Boolean) : [],
       minStock: num(f["s-minStock"]?.value) || 1,
@@ -4004,13 +4208,52 @@ function bindStockDetail(idx){
 
   // 照片
   let pendingPhoto = null;
+  let pendingPhotoUrl = null;
   const photoInput = document.getElementById("stockEditPhoto");
-  if(photoInput) photoInput.addEventListener("change",()=>{
+  if(photoInput) photoInput.addEventListener("change", async ()=>{
     const file = photoInput.files[0]; if(!file) return;
-    const reader = new FileReader();
-    reader.onload = ()=>{ pendingPhoto = reader.result; document.getElementById("stockEditPhotoPreview").innerHTML = `<img class="preview-img" src="${pendingPhoto}">`; };
-    reader.readAsDataURL(file);
+    try {
+      const reader = new FileReader();
+      reader.onload = ()=>{ pendingPhoto = reader.result; document.getElementById("stockEditPhotoPreview").innerHTML = `<img class="preview-img" src="${pendingPhoto}">`; };
+      reader.readAsDataURL(file);
+      
+      pendingPhotoUrl = await handleStockPhotoUpload(file);
+    } catch(e) {
+      toast("图片处理失败：" + e.message);
+    }
   });
+
+  // Emoji 选择器
+  let selectedIcon = r.icon || getStockIcon(r);
+  const currentIconDisplay = document.getElementById("currentStockIcon");
+  
+  function updateIconDisplay() {
+    if (currentIconDisplay) {
+      const tempItem = { ...r, icon: selectedIcon };
+      currentIconDisplay.innerHTML = renderStockSticker(tempItem, "md");
+    }
+    // 更新选中样式
+    document.querySelectorAll(".emoji-option").forEach(opt => {
+      const emoji = opt.dataset.emoji;
+      const color = getCategoryColor(r.category);
+      if (emoji === selectedIcon) {
+        opt.style.border = `2px solid ${color.text}`;
+        opt.style.background = color.bg;
+      } else {
+        opt.style.border = "1px solid transparent";
+        opt.style.background = "transparent";
+      }
+    });
+  }
+  
+  // 绑定 emoji 选项点击事件
+  document.querySelectorAll(".emoji-option").forEach(opt => {
+    opt.addEventListener("click", () => {
+      selectedIcon = opt.dataset.emoji;
+      updateIconDisplay();
+    });
+  });
+  updateIconDisplay();
 
   const saveBtn = document.getElementById("saveStockEdit");
   if(saveBtn) saveBtn.addEventListener("click",()=>{
@@ -4028,7 +4271,8 @@ function bindStockDetail(idx){
     r.bestBeforeDate = f["se-bestBefore"] ? (f["se-bestBefore"].value || "") : "";
     r.storageLocation = f["se-location"].value;
     r.status = f["se-status"].value;
-    if(pendingPhoto) r.photo = pendingPhoto;
+    r.icon = selectedIcon; // 保存选择的 emoji
+    if(pendingPhotoUrl || pendingPhoto) r.photo = pendingPhotoUrl || pendingPhoto;
     r.notes = f["se-notes"].value.trim();
     r.tags = f["se-tags"] ? f["se-tags"].value.split(/[,，]/).map(t=>t.trim()).filter(Boolean) : [];
     r.minStock = num(f["se-minStock"]?.value) || 1;
@@ -4179,9 +4423,117 @@ function bindStockSpaces(){
   });
 }
 
+/* ============== 页面：冰箱视图 ============== */
+function pageStockFridge(){
+  // 只显示食品类物品
+  const foodItems = state.stock.filter(item => item.category === "食品" && item.status !== "已用完");
+  
+  if(!foodItems.length){
+    return `${stockSeg("stock-fridge")}
+      <div class="card">
+        <div class="empty" style="padding:40px 20px">
+          <div style="font-size:60px;margin-bottom:12px">🧊</div>
+          <div style="font-weight:500;margin-bottom:8px">冰箱是空的</div>
+          <div style="color:var(--ink-muted);font-size:13px">添加一些食品来填满你的冰箱吧！</div>
+          <button class="btn primary" style="margin-top:16px" onclick="navigate('stock-add')">+ 添加食品</button>
+        </div>
+      </div>`;
+  }
+  
+  // 按存储位置分组
+  const groups = {};
+  foodItems.forEach(item => {
+    const location = item.storageLocation || "未指定位置";
+    if(!groups[location]) groups[location] = [];
+    groups[location].push(item);
+  });
+  
+  // 按位置排序
+  const sortedLocations = Object.keys(groups).sort((a, b) => {
+    const order = ['冰箱', '冷藏室', '冷冻室', '柜', '其他'];
+    const idxA = order.findIndex(o => a.includes(o));
+    const idxB = order.findIndex(o => b.includes(o));
+    if(idxA === -1 && idxB === -1) return a.localeCompare(b);
+    if(idxA === -1) return 1;
+    if(idxB === -1) return -1;
+    return idxA - idxB;
+  });
+  
+  const fridgeHtml = sortedLocations.map(location => {
+    const items = groups[location];
+    const itemHtml = items.map(item => {
+      const idx = state.stock.indexOf(item);
+      const expiringSoon = item.expiryDate && daysBetween(todayStr(), item.expiryDate) <= 7;
+      const icon = getStockIcon(item);
+      const color = getCategoryColor(item.category);
+      
+      return `<div class="fridge-item" data-view-stock="${idx}" 
+        style="background:${color.bg};border:2px solid ${color.border};border-radius:16px;padding:12px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;transition:transform 0.2s,box-shadow 0.2s">
+        <div style="font-size:42px;line-height:1">${icon}</div>
+        <div style="font-weight:600;font-size:12px;text-align:center;line-height:1.3">${esc(item.name)}</div>
+        <div style="font-size:11px;color:var(--ink-muted)">${item.quantity} ${item.unit}</div>
+        ${expiringSoon ? `<div style="position:absolute;top:-4px;right:-4px;background:var(--danger);color:#fff;font-size:10px;padding:2px 6px;border-radius:10px">即将过期</div>` : ''}
+      </div>`;
+    }).join('');
+    
+    return `<div style="margin-bottom:20px">
+      <h3 style="font-size:14px;font-weight:600;margin-bottom:12px;color:var(--ink)">${location} <span style="color:var(--ink-muted);font-weight:normal;font-size:12px">(${items.length})</span></h3>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:12px;position:relative">
+        ${itemHtml}
+      </div>
+    </div>`;
+  }).join('');
+  
+  return `${stockSeg("stock-fridge")}
+    <div class="card">
+      <h2 style="font-size:13px;font-weight:500;color:var(--ink-muted);margin-bottom:10px">冰箱 · 共 ${foodItems.length} 种食品</h2>
+      ${fridgeHtml}
+    </div>`;
+}
+
+function bindStockFridge(){
+  document.querySelectorAll("[data-view-stock]").forEach(b => b.addEventListener("click", ()=>{
+    const idx = num(b.dataset.viewStock);
+    navigate("stock-detail", idx);
+  }));
+}
+
 /* AI识图 - 识别产品 */
 async function recognizeProduct(dataUrl){
-  const {endpoint, key, model} = state.settings.api;
+  const {endpoint, key, model, enabled} = state.settings.api;
+  
+  if(!enabled || !key){
+    throw new Error("请先在设置中开启 AI 功能并配置 API Key");
+  }
+  
+  // 检查是否使用 Supabase Edge Function 代理（避免前端暴露 API Key）
+  const useEdgeFunction = supabaseClient && supabaseClient.isReady();
+  
+  if(useEdgeFunction){
+    try {
+      // 先上传图片到 Storage
+      const compressed = await compressImage(new File([dataUrlToBlob(dataUrl)], 'image/jpeg', {type: 'image/jpeg'}));
+      const fileName = `ai_recognize_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.jpg`;
+      const imageUrl = await supabaseClient.uploadImage(fileName, compressed.blob, 'image/jpeg');
+      
+      if(imageUrl){
+        // 调用 Edge Function
+        const { data, error } = await supabaseClient.functions.invoke('recognize-product', {
+          body: { image_url: imageUrl, model: model }
+        });
+        
+        if(error) throw new Error("Edge Function error: " + error.message);
+        if(data && data.name){
+          return { name: data.name, category: data.category || "其他" };
+        }
+        throw new Error("无法识别商品");
+      }
+    } catch(e) {
+      console.warn("Edge Function failed, falling back to direct API:", e);
+    }
+  }
+  
+  // 降级方案：直接调用 API（Key 暴露在前端）
   const body = {
     model,
     messages:[
@@ -4206,15 +4558,28 @@ async function recognizeProduct(dataUrl){
   }
 }
 
+// 辅助函数：将 base64 data URL 转换为 Blob
+function dataUrlToBlob(dataUrl) {
+  const arr = dataUrl.split(',');
+  const mime = arr[0].match(/:(.*?);/)[1];
+  const bstr = atob(arr[1]);
+  let n = bstr.length;
+  const u8 = new Uint8Array(n);
+  while(n--) { u8[n] = bstr.charCodeAt(n); }
+  return new Blob([u8], {type: mime});
+}
+
 /* Expose to global scope */
 window.pageStockOverview = pageStockOverview;
 window.pageStockAdd = pageStockAdd;
 window.pageStockAll = pageStockAll;
+window.pageStockFridge = pageStockFridge;
 window.pageStockDetail = pageStockDetail;
 window.pageStockSpaces = pageStockSpaces;
 window.bindStockOverview = bindStockOverview;
 window.bindStockAdd = bindStockAdd;
 window.bindStockAll = bindStockAll;
+window.bindStockFridge = bindStockFridge;
 window.bindStockDetail = bindStockDetail;
 window.bindStockSpaces = bindStockSpaces;
 })();
@@ -4608,18 +4973,119 @@ function importData(e){
   e.target.value="";
 }
 
-/* ============== Gist 同步 ============== */
+/* ============== Supabase 同步 ============== */
+// 引入 Supabase JavaScript SDK（已在 HTML 头部加载）
+
+// 离线操作队列
+let offlineQueue = [];
+let isSyncing = false;
+
+class SupabaseClient {
+  constructor(url, key) {
+    if (typeof window.supabase !== 'undefined') {
+      this.client = window.supabase.createClient(url, key);
+      this.connected = true;
+    } else {
+      this.connected = false;
+    }
+  }
+
+  async syncAll(data, userId) {
+    if (!this.connected) return false;
+    try {
+      const { error } = await this.client
+        .from('user_data')
+        .upsert({ user_id: userId, data: data }, { onConflict: 'user_id' });
+      
+      if (error) {
+        glog("Supabase syncAll error: " + error.message);
+        return false;
+      }
+      return true;
+    } catch (e) {
+      glog("Supabase syncAll exception: " + e.message);
+      return false;
+    }
+  }
+
+  async fetchAll(userId) {
+    if (!this.connected) return null;
+    try {
+      const { data, error } = await this.client
+        .from('user_data')
+        .select('data')
+        .eq('user_id', userId)
+        .limit(1);
+
+      if (error) {
+        glog("Supabase fetchAll error: " + error.message);
+        return null;
+      }
+      return data && data.length > 0 ? data[0].data : null;
+    } catch (e) {
+      glog("Supabase fetchAll exception: " + e.message);
+      return null;
+    }
+  }
+
+  async uploadImage(filePath, fileBuffer, contentType) {
+    if (!this.connected) return null;
+    try {
+      const { data, error } = await this.client
+        .storage
+        .from('stock-photos')
+        .upload(filePath, fileBuffer, {
+          contentType: contentType,
+          upsert: true
+        });
+
+      if (error) {
+        glog("Supabase uploadImage error: " + error.message);
+        return null;
+      }
+      
+      const { data: urlData } = this.client
+        .storage
+        .from('stock-photos')
+        .getPublicUrl(filePath);
+        
+      return urlData.publicUrl;
+    } catch (e) {
+      glog("Supabase uploadImage exception: " + e.message);
+      return null;
+    }
+  }
+
+  async invokeFunction(name, body) {
+    if (!this.connected) return { data: null, error: new Error("Supabase not connected") };
+    try {
+      const { data, error } = await this.client.functions.invoke(name, { body });
+      return { data, error };
+    } catch (e) {
+      glog("Supabase invokeFunction exception: " + e.message);
+      return { data: null, error: e };
+    }
+  }
+
+  isReady() {
+    return this.connected;
+  }
+}
+
+let supabaseClient = null;
+
 function getSyncData(){
   const d = {...state};
   delete d.settings; // 不上传 token 和偏好设置
   return d;
 }
+
 function fmtTime(t){
   if(!t) return "从未同步";
   const d=new Date(t);
   return d.getFullYear()+"-"+(d.getMonth()+1).toString().padStart(2,"0")+"-"+d.getDate().toString().padStart(2,"0")+" "+d.getHours().toString().padStart(2,"0")+":"+d.getMinutes().toString().padStart(2,"0");
 }
-// 数据记录数（用于判断哪份数据更全）
+
 function countRecords(d){
   let n = 0;
   ["periods","salary","housingAllowance","weight","measure","diet","exercise","stock"].forEach(k=>{
@@ -4627,43 +5093,7 @@ function countRecords(d){
   });
   return n;
 }
-// 自动发现云端已有的工作台 Gist（取数据最全的一个）
-async function findGist(){
-  const token=state.settings.gistToken;
-  if(!token) return null;
-  glog("findGist: 开始查找云端 Gist...");
-  try{
-    const res = await fetch("https://api.github.com/gists?per_page=100", {
-      headers:{"Authorization":"Bearer "+token}
-    });
-    if(!res.ok){ glog("findGist: 列表接口失败 HTTP "+res.status); return null; }
-    const gists = await res.json();
-    glog("findGist: 共 "+gists.length+" 个 Gist");
-    let best=null, bestCount=-1;
-    for(const g of gists){
-      if(!g.files || !g.files["workbench-data.json"]) continue;
-      // 列表接口不含 content，需用详细接口获取内容
-      let d=null;
-      try{
-        const detail = await fetch("https://api.github.com/gists/"+g.id, {
-          headers:{"Authorization":"Bearer "+token}
-        });
-        if(!detail.ok) continue;
-        const full = await detail.json();
-        const content = full.files && full.files["workbench-data.json"] && full.files["workbench-data.json"].content;
-        if(!content) continue;
-        d = JSON.parse(content);
-      }catch(e){ continue; }
-      const c = countRecords(d);
-      glog("findGist: "+g.id.slice(0,8)+" 记录数="+c);
-      if(c > bestCount){ best=g; bestCount=c; }
-    }
-    if(best) glog("findGist: 选定 "+best.id.slice(0,8)+"（"+bestCount+" 条）");
-    else glog("findGist: 未找到任何数据 Gist");
-    return best;
-  }catch(e){ glog("findGist: 异常 "+e.message); return null; }
-}
-// 合并远程数据：远程数据更全或更新时覆盖本地（保留本地 settings）
+
 function mergeRemote(remote){
   if(!remote || !remote.meta) return false;
   const lc = countRecords(state);
@@ -4677,156 +5107,234 @@ function mergeRemote(remote){
   state.meta.lastModified = remote.meta.lastModified;
   return true;
 }
+
 function updateSyncStatus(){
-  const el=document.getElementById("gistStatus");
+  const el = document.getElementById("supabaseStatus");
   if(!el) return;
-  const s=state.settings;
-  const dbg=document.getElementById("gistDebugBox");
+  const s = state.settings;
+  const dbg = document.getElementById("supabaseDebugBox");
+  
   if(dbg){
-    dbg.style.display = s.gistDebug ? "block" : "none";
-    dbg.textContent = s.gistDebug || "";
+    dbg.style.display = s.supabaseDebug ? "block" : "none";
+    dbg.textContent = s.supabaseDebug || "";
   }
-  if(!s.gistToken){ el.textContent="未配置 Token，请在输入框填写后保存。"; return; }
-  if(!s.gistId){ el.textContent="Token 已保存，点击「立即同步」自动连接云端并同步数据。"; return; }
-  const status = s.gistLastSyncStatus;
-  const time = fmtTime(s.gistLastSync);
+  
+  if(!s.supabaseUrl || !s.supabaseKey){
+    el.textContent = "未配置 Supabase，请在下方输入 URL 和 Anon Key。";
+    return;
+  }
+  
+  if(!supabaseClient || !supabaseClient.isReady()){
+    el.textContent = "Supabase SDK 未加载，将使用本地存储模式。";
+    return;
+  }
+  
+  const status = s.supabaseLastSyncStatus;
+  const time = fmtTime(s.supabaseLastSync);
   if(status==="ok") el.textContent="✅ 上次同步成功："+time;
   else if(status && status.startsWith("error")) el.textContent="❌ 同步失败："+status.slice(6)+"（"+time+"）";
-  else el.textContent="⏳ 状态未知";
+  else el.textContent="⏳ 就绪，等待同步...";
 }
-function persistGistState(){
-  try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }catch(e){}
-}
-// 同步调试日志（写入 localStorage，设置页可见）
+
 function glog(msg){
   try{
     const t = new Date();
     const time = String(t.getHours()).padStart(2,"0")+":"+String(t.getMinutes()).padStart(2,"0")+":"+String(t.getSeconds()).padStart(2,"0");
-    state.settings.gistDebug = time+" "+msg+"\n"+(state.settings.gistDebug||"").slice(0,600);
-    persistGistState();
+    state.settings.supabaseDebug = time+" "+msg+"\n"+(state.settings.supabaseDebug||"").slice(0,600);
+    save(false); // false = 不触发同步，避免循环
   }catch(e){}
 }
-// 解析目标 Gist：优先云端数据最全的 Gist，否则沿用当前 ID
-async function resolveGist(){
-  const token=state.settings.gistToken;
-  if(!token) return null;
-  const found = await findGist();
-  let foundCount = -1;
-  if(found){
-    // 列表接口不含 content，需重新拉取详细数据计算记录数
-    const fd = await pullFromGist(found.id);
-    if(fd) foundCount = countRecords(fd);
+
+// 初始化 Supabase 客户端
+function initSupabase() {
+  const s = state.settings;
+  if (s.supabaseUrl && s.supabaseKey && typeof window.supabase !== 'undefined') {
+    supabaseClient = new SupabaseClient(s.supabaseUrl, s.supabaseKey);
+    glog("Supabase client initialized");
+    return true;
   }
-  const curId = state.settings.gistId;
-  if(!curId){
-    if(found){ state.settings.gistId = found.id; persistGistState(); glog("resolveGist: 绑定 "+found.id.slice(0,8)); return found.id; }
-    return null; // 需要新建
-  }
-  if(found && curId === found.id) return curId;
-  // 比较当前 Gist 与云端最全 Gist 的数据量
-  let curCount = 0;
-  const cur = await pullFromGist(curId);
-  if(cur) curCount = countRecords(cur);
-  glog("resolveGist: 云端最全="+foundCount+"，当前="+curCount);
-  if(foundCount > curCount){
-    state.settings.gistId = found.id;
-    persistGistState();
-    glog("resolveGist: 切换到 "+found.id.slice(0,8));
-    return found.id;
-  }
-  return curId;
+  supabaseClient = null;
+  return false;
 }
-async function syncToGist(){
-  const token=state.settings.gistToken;
-  if(!token) return;
-  glog("syncToGist: 开始同步");
-  try{
-    // 1. 确定目标 Gist：自动发现云端最全的，没有则创建
-    let gistId = await resolveGist();
-    glog("syncToGist: 目标 gistId="+(gistId||"无"));
-    if(!gistId){
-      glog("syncToGist: 创建新 Gist...");
-      const createRes = await fetch("https://api.github.com/gists", {
-        method:"POST",
-        headers:{"Authorization":"Bearer "+token,"Content-Type":"application/json"},
-        body:JSON.stringify({description:"工作台数据同步", public:false, files:{"workbench-data.json":{content:"{}"}}})
-      });
-      if(!createRes.ok){ glog("syncToGist: 创建失败 HTTP "+createRes.status); throw new Error("HTTP "+createRes.status); }
-      const g = await createRes.json();
-      gistId = g.id;
-      state.settings.gistId = gistId;
-      glog("syncToGist: 已创建 "+gistId.slice(0,8));
+
+// 将操作加入离线队列
+function queueOperation(operation) {
+  offlineQueue.push(operation);
+  try {
+    localStorage.setItem('supabase_offline_queue', JSON.stringify(offlineQueue));
+  } catch (e) {}
+}
+
+// 处理离线队列
+async function processOfflineQueue() {
+  if (!supabaseClient || !supabaseClient.isReady()) return;
+  if (isSyncing || offlineQueue.length === 0) return;
+  
+  isSyncing = true;
+  try {
+    // 目前简单处理：将最新的全量数据同步上去即可，无需逐条重放
+    const lastOp = offlineQueue[offlineQueue.length - 1];
+    if (lastOp && lastOp.type === 'sync') {
+      await syncToSupabase(false);
+      offlineQueue = [];
+      localStorage.setItem('supabase_offline_queue', JSON.stringify(offlineQueue));
+      glog("Offline queue processed");
     }
-    // 2. 上传前先拉取云端数据，更全或更新则先合并
-    glog("syncToGist: 拉取云端数据...");
-    const remote = await pullFromGist(gistId);
-    if(remote) glog("syncToGist: 云端记录数="+countRecords(remote));
-    const merged = remote ? mergeRemote(remote) : false;
-    glog("syncToGist: 合并结果="+merged+"，本地记录数="+countRecords(state));
-    // 3. 上传（合并后的）数据
-    const body = JSON.stringify(getSyncData(), null, 2);
-    const res = await fetch("https://api.github.com/gists/"+gistId, {
-      method:"PATCH",
-      headers:{"Authorization":"Bearer "+token,"Content-Type":"application/json"},
-      body:JSON.stringify({files:{"workbench-data.json":{content:body}}})
-    });
-    if(!res.ok){ const err=await res.text(); glog("syncToGist: 上传失败 HTTP "+res.status); throw new Error("HTTP "+res.status); }
-    glog("syncToGist: 上传成功");
-    state.settings.gistId = gistId;
-    state.settings.gistLastSync=Date.now();
-    state.settings.gistLastSyncStatus="ok";
-    persistGistState();
-    updateSyncStatus();
-    toast(merged ? "已合并云端数据并同步，请刷新页面查看最新数据" : "同步成功");
-    // 不自动 navigate 以免丢失当前页面未保存的表单状态
-  }catch(e){
-    glog("syncToGist: 异常 "+e.message);
-    state.settings.gistLastSync=Date.now();
-    state.settings.gistLastSyncStatus="error:"+e.message;
-    persistGistState();
-    updateSyncStatus();
-    toast("同步失败："+e.message);
+  } finally {
+    isSyncing = false;
   }
 }
-async function pullFromGist(gistId){
-  const token=state.settings.gistToken;
-  if(!token) return null;
-  try{
-    if(!gistId){
-      const found = await findGist();
-      if(!found) return null;
-      gistId = found.id;
-      state.settings.gistId = gistId;
-      persistGistState();
+
+// 同步到 Supabase
+async function syncToSupabase(showToast = true) {
+  if (!supabaseClient || !supabaseClient.isReady()) {
+    glog("syncToSupabase: Supabase not ready, queued for offline");
+    queueOperation({ type: 'sync', timestamp: Date.now() });
+    return;
+  }
+  
+  glog("syncToSupabase: 开始同步");
+  try {
+    const dataToSync = getSyncData();
+    const success = await supabaseClient.syncAll(dataToSync, 'user_default');
+    
+    if (success) {
+      state.settings.supabaseLastSync = Date.now();
+      state.settings.supabaseLastSyncStatus = "ok";
+      save(false); // 不触发递归同步
+      updateSyncStatus();
+      if (showToast) toast("同步成功");
+      glog("syncToSupabase: 同步成功");
+    } else {
+      throw new Error("Sync failed");
     }
-    const res = await fetch("https://api.github.com/gists/"+gistId, {
-      headers:{"Authorization":"Bearer "+token}
-    });
-    if(!res.ok){ glog("pullFromGist: 获取失败 HTTP "+res.status); return null; }
-    const gist = await res.json();
-    const content = gist.files && gist.files["workbench-data.json"] && gist.files["workbench-data.json"].content;
-    if(!content){ glog("pullFromGist: 文件内容为空"); return null; }
-    return JSON.parse(content);
-  }catch(e){ glog("pullFromGist: 异常 "+e.message); return null; }
+  } catch (e) {
+    glog("syncToSupabase: 异常 " + e.message);
+    state.settings.supabaseLastSync = Date.now();
+    state.settings.supabaseLastSyncStatus = "error:" + e.message;
+    save(false);
+    updateSyncStatus();
+    if (showToast) toast("同步失败：" + e.message);
+    queueOperation({ type: 'sync', timestamp: Date.now() });
+  }
 }
-async function initSync(){
-  const s=state.settings;
-  if(!s.gistToken) return;
+
+// 从 Supabase 拉取
+async function pullFromSupabase() {
+  if (!supabaseClient || !supabaseClient.isReady()) {
+    glog("pullFromSupabase: Supabase not ready");
+    return null;
+  }
+  
+  glog("pullFromSupabase: 开始拉取");
+  try {
+    const remote = await supabaseClient.fetchAll('user_default');
+    if (remote) {
+      glog("pullFromSupabase: 拉取成功，记录数=" + countRecords(remote));
+      return remote;
+    } else {
+      glog("pullFromSupabase: 无远端数据");
+      return null;
+    }
+  } catch (e) {
+    glog("pullFromSupabase: 异常 " + e.message);
+    return null;
+  }
+}
+
+// 初始化同步（启动时调用）
+async function initSync() {
+  initSupabase();
+  if (!supabaseClient || !supabaseClient.isReady()) {
+    glog("initSync: Supabase 未配置或 SDK 未加载");
+    // 即使未配置也保持本地存储可用
+    state.settings.supabaseLastSync = Date.now();
+    state.settings.supabaseLastSyncStatus = "local_only";
+    save(false);
+    updateSyncStatus();
+    return;
+  }
+  
   glog("initSync: 启动拉取");
-  const gistId = await resolveGist();
-  if(!gistId){ glog("initSync: 无目标 Gist"); return; }
-  const remote = await pullFromGist(gistId);
+  const remote = await pullFromSupabase();
   const merged = remote ? mergeRemote(remote) : false;
-  glog("initSync: 合并="+merged+"，本地记录数="+countRecords(state));
-  if(merged){
-    save(); // 写回 localStorage
+  glog("initSync: 合并=" + merged + "，本地记录数=" + countRecords(state));
+  
+  if (merged) {
+    save(false); // 写回 localStorage
     toast("已从云端同步最新数据");
-    if(currentPage) navigate(currentPage);
   }
-  s.gistLastSync=Date.now();
-  s.gistLastSyncStatus="ok";
-  persistGistState();
+  
+  state.settings.supabaseLastSync = Date.now();
+  state.settings.supabaseLastSyncStatus = "ok";
+  save(false);
   updateSyncStatus();
+  
+  // 启动离线队列处理
+  processOfflineQueue();
+}
+
+// 图片压缩函数（将图片压缩到最大宽度800px，质量0.8）
+function compressImage(file, maxWidth = 800, quality = 0.8) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const targetWidth = Math.min(img.width, maxWidth);
+        const ratio = targetWidth / img.width;
+        const targetHeight = Math.round(img.height * ratio);
+        const canvas = document.createElement('canvas');
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+        canvas.toBlob((blob) => {
+          resolve({
+            blob: blob,
+            dataUrl: canvas.toDataURL('image/jpeg', quality),
+            width: targetWidth,
+            height: targetHeight
+          });
+        }, 'image/jpeg', quality);
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+// 上传图片到 Supabase Storage 或返回压缩后的 Base64
+async function handleStockPhotoUpload(file) {
+  try {
+    const compressed = await compressImage(file);
+    
+    // 如果 Supabase 已配置且可用，尝试上传
+    if (supabaseClient && supabaseClient.isReady()) {
+      try {
+        const fileName = `stock_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.jpg`;
+        const url = await supabaseClient.uploadImage(fileName, compressed.blob, 'image/jpeg');
+        if (url) {
+          return url; // 返回 Supabase URL
+        }
+      } catch (e) {
+        console.warn("Supabase upload failed, falling back to base64:", e);
+      }
+    }
+    
+    // 回退：返回 Base64 Data URL
+    return compressed.dataUrl;
+  } catch (e) {
+    console.error("Image processing failed:", e);
+    throw e;
+  }
+}
+
+// 立即同步（手动触发）
+function syncNow() {
+  syncToSupabase(true);
 }
 
 /* ============== 启动 ============== */
