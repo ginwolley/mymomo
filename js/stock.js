@@ -75,13 +75,16 @@ async function lookupBarcode(code){
   }catch(e){ return null; }
 }
 
-async function autoGenerateSticker(item){
+async function autoGenerateSticker(item, timeoutMs = 30000){
   const s = state.settings;
   if(!s.modelscopeToken || !(supabaseClient && supabaseClient.isReady())) return;
   try{
-    const { data, error } = await supabaseClient.functions.invoke('generate-sticker', {
+    // 用 Promise.race 实现超时控制
+    const invokePromise = supabaseClient.functions.invoke('generate-sticker', {
       body: { name: item.name, category: item.category, token: s.modelscopeToken, model: s.modelscopeModel }
     });
+    const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("生成超时，请检查网络或稍后重试")), timeoutMs));
+    const { data, error } = await Promise.race([invokePromise, timeoutPromise]);
     if(error){ console.warn("generate-sticker:", error.message); return; }
     if(data && data.url){
       item.stickerUrl = data.url;
@@ -408,11 +411,11 @@ function bindStockAdd(){
   updateSubAndUnit();
 
   const currentIconDisplay = document.getElementById("currentStockIconAdd");
-  const nameInput = document.getElementById("stockForm")["s-name"];
+  const nameInput = document.querySelector('#stockForm [name="s-name"]');
   let generatedStickerUrl = null; // 存储 AI 生成的贴纸 URL
 
   function updateStickerDisplay() {
-    if (currentIconDisplay) {
+    if (currentIconDisplay && catSel) {
       const typedName = (nameInput && nameInput.value.trim()) || "新品";
       const tempItem = { category: catSel.value, name: typedName };
       if(generatedStickerUrl) tempItem.stickerUrl = generatedStickerUrl;
