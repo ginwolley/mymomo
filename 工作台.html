@@ -987,7 +987,7 @@ const DEFAULTS = {
     api:{endpoint:"https://api.deepseek.com/chat/completions", key:"", model:"deepseek-chat", enabled:false},
     modules:{weight:"cumulative", measure:"cumulative", diet:"daily", exercise:"daily", balance:"cumulative"}, period:90, dietGoal:1600,
     navOpen:{fitness:false, period:false, salary:false},
-    supabaseUrl:"", supabaseKey:"", supabaseLastSync:null, supabaseLastSyncStatus:"local_only", supabaseDebug:"",
+    supabaseUrl:"", supabaseKey:"", supabaseEmail:"", supabasePass:"", supabaseLastSync:null, supabaseLastSyncStatus:"local_only", supabaseDebug:"",
     passwordCategories:["工作","社交","银行","购物","娱乐","其他"],
     spaces: {
       id:"root", name:"全部空间", children:[
@@ -2031,7 +2031,9 @@ function pageSettings(){
       <h2>Supabase 云同步</h2>
       <div class="field"><label>Project URL</label><input type="text" id="supabaseUrl" value="${esc(s.supabaseUrl)}" placeholder="https://xxxx.supabase.co"></div>
       <div class="field"><label>Anon Public Key</label><input type="password" id="supabaseKey" value="${esc(s.supabaseKey)}" placeholder="eyJhbGci..."></div>
-      <div class="hint">用于跨设备同步数据。需在 Supabase Dashboard 创建 Project 后获取。未配置时将仅使用本地存储模式。</div>
+      <div class="field"><label>登录邮箱</label><input type="text" id="supabaseEmail" value="${esc(s.supabaseEmail)}" placeholder="你的 Supabase 登录邮箱" autocomplete="username"></div>
+      <div class="field"><label>登录密码</label><input type="password" id="supabasePass" value="${esc(s.supabasePass)}" placeholder="你的 Supabase 登录密码" autocomplete="current-password"></div>
+      <div class="hint">用于跨设备同步数据。需在 Supabase Dashboard 创建 Project 后获取，并在 Auth 中创建登录账号（邮箱需与后台创建的一致）。未配置时将仅使用本地存储模式。</div>
       <div style="text-align:center;margin:10px 0">
         <button class="btn primary sm" id="saveSupabaseConfig">保存配置</button>
         <button class="btn ghost sm" id="syncNowBtn">立即同步</button>
@@ -3318,12 +3320,14 @@ function bindSettings(){
   if(sgt) sgt.addEventListener("click",()=>{
     const url=document.getElementById("supabaseUrl").value.trim();
     const key=document.getElementById("supabaseKey").value.trim();
+    const email=document.getElementById("supabaseEmail").value.trim();
+    const pass=document.getElementById("supabasePass").value;
     state.settings.supabaseUrl=url;
     state.settings.supabaseKey=key;
-    if(!url || !key){ state.settings.supabaseLastSync=null; state.settings.supabaseLastSyncStatus="local_only"; }
-    initSupabase();
-    save(); toast("已保存配置");
-    updateSyncStatus();
+    state.settings.supabaseEmail=email;
+    state.settings.supabasePass=pass;
+    if(!url || !key || !email || !pass){ state.settings.supabaseLastSync=null; state.settings.supabaseLastSyncStatus="local_only"; }
+    initSupabase().then(()=>{ save(); toast("已保存配置"); updateSyncStatus(); });
   });
   const snb=document.getElementById("syncNowBtn");
   if(snb) snb.addEventListener("click",()=>{
@@ -4983,10 +4987,37 @@ let isSyncing = false;
 class SupabaseClient {
   constructor(url, key) {
     if (typeof window.supabase !== 'undefined') {
-      this.client = window.supabase.createClient(url, key);
+      this.client = window.supabase.createClient(url, key, { auth: { persistSession: true, autoRefreshToken: true } });
       this.connected = true;
     } else {
       this.connected = false;
+    }
+  }
+
+  // 登录（Supabase Auth）
+  async login(email, password) {
+    if (!this.connected) return { ok: false, error: "SDK 未加载" };
+    try {
+      const { data, error } = await this.client.auth.signInWithPassword({ email, password });
+      if (error) return { ok: false, error: error.message };
+      return { ok: true, user: data.user };
+    } catch (e) {
+      return { ok: false, error: e.message };
+    }
+  }
+
+  // 检查当前会话是否有效
+  async ensureLoggedIn(email, password) {
+    if (!this.connected) return false;
+    try {
+      const { data } = await this.client.auth.getSession();
+      if (data && data.session) return true;
+      if (!email || !password) return false;
+      const res = await this.login(email, password);
+      return res.ok;
+    } catch (e) {
+      glog("Supabase ensureLoggedIn exception: " + e.message);
+      return false;
     }
   }
 
@@ -5131,9 +5162,10 @@ function updateSyncStatus(){
   
   const status = s.supabaseLastSyncStatus;
   const time = fmtTime(s.supabaseLastSync);
-  if(status==="ok") el.textContent="✅ 上次同步成功："+time;
+  const loginTip = (s.supabaseEmail && s.supabasePass) ? "" : "（未填写登录邮箱/密码）";
+  if(status==="ok") el.textContent="✅ 上次同步成功："+time+loginTip;
   else if(status && status.startsWith("error")) el.textContent="❌ 同步失败："+status.slice(6)+"（"+time+"）";
-  else el.textContent="⏳ 就绪，等待同步...";
+  else el.textContent="⏳ 就绪，等待同步..."+loginTip;
 }
 
 function glog(msg){
@@ -5146,12 +5178,15 @@ function glog(msg){
 }
 
 // 初始化 Supabase 客户端
-function initSupabase() {
+async function initSupabase() {
   const s = state.settings;
   if (s.supabaseUrl && s.supabaseKey && typeof window.supabase !== 'undefined') {
     supabaseClient = new SupabaseClient(s.supabaseUrl, s.supabaseKey);
     glog("Supabase client initialized");
-    return true;
+    // RLS 已收紧为仅 authenticated，需自动登录
+    const loggedIn = await supabaseClient.ensureLoggedIn(s.supabaseEmail, s.supabasePass);
+    glog(loggedIn ? "Supabase 已登录" : "Supabase 未登录（请检查设置页的登录邮箱/密码）");
+    return loggedIn;
   }
   supabaseClient = null;
   return false;
@@ -5195,6 +5230,9 @@ async function syncToSupabase(showToast = true) {
   
   glog("syncToSupabase: 开始同步");
   try {
+    const s = state.settings;
+    const loggedIn = await supabaseClient.ensureLoggedIn(s.supabaseEmail, s.supabasePass);
+    if (!loggedIn) throw new Error("Supabase 未登录（请检查登录邮箱/密码）");
     const dataToSync = getSyncData();
     const success = await supabaseClient.syncAll(dataToSync, 'user_default');
     
@@ -5228,6 +5266,9 @@ async function pullFromSupabase() {
   
   glog("pullFromSupabase: 开始拉取");
   try {
+    const s = state.settings;
+    const loggedIn = await supabaseClient.ensureLoggedIn(s.supabaseEmail, s.supabasePass);
+    if (!loggedIn) { glog("pullFromSupabase: 未登录"); return null; }
     const remote = await supabaseClient.fetchAll('user_default');
     if (remote) {
       glog("pullFromSupabase: 拉取成功，记录数=" + countRecords(remote));
@@ -5244,7 +5285,7 @@ async function pullFromSupabase() {
 
 // 初始化同步（启动时调用）
 async function initSync() {
-  initSupabase();
+  await initSupabase();
   if (!supabaseClient || !supabaseClient.isReady()) {
     glog("initSync: Supabase 未配置或 SDK 未加载");
     // 即使未配置也保持本地存储可用
