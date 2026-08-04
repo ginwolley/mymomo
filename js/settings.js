@@ -55,6 +55,15 @@ function pageSettings(){
     </div>
 
     <div class="card">
+      <h2>囤货 AI 贴纸与条码查询</h2>
+      <div class="field"><label>魔搭访问令牌（图片生成）</label><input type="password" id="modelscopeToken" value="${esc(s.modelscopeToken)}" placeholder="ms-..." autocomplete="off"></div>
+      <div class="field"><label>魔搭图片模型</label><input type="text" id="modelscopeModel" value="${esc(s.modelscopeModel)}" placeholder="iic/stable-diffusion-xl-base-1.0"></div>
+      <div class="field"><label>条码查询 API Key（apizero，可选）</label><input type="password" id="apizeroKey" value="${esc(s.apizeroKey)}" placeholder="不填则用匿名额度（每日20次）" autocomplete="off"></div>
+      <div style="text-align:center"><button class="btn primary sm" id="saveAIConfig">保存配置</button></div>
+      <div class="hint">魔搭令牌用于 AI 生成囤货专属贴纸（经 Supabase Edge Function 转发，不暴露在前端）；未配置时自动使用内置手绘贴纸库。条码查询 Key 可选，配置后每日额度提升至 200 次。</div>
+    </div>
+
+    <div class="card">
       <h2>Supabase 云同步</h2>
       <div class="field"><label>Project URL</label><input type="text" id="supabaseUrl" value="${esc(s.supabaseUrl)}" placeholder="https://xxxx.supabase.co"></div>
       <div class="field"><label>Anon Public Key</label><input type="password" id="supabaseKey" value="${esc(s.supabaseKey)}" placeholder="eyJhbGci..."></div>
@@ -132,6 +141,13 @@ function bindSettings(){
       state.settings = savedSettings;
       save(); toast("已清空"); navigate("overview");
     }
+  });
+  const sai=document.getElementById("saveAIConfig");
+  if(sai) sai.addEventListener("click",()=>{
+    state.settings.modelscopeToken=document.getElementById("modelscopeToken").value.trim();
+    state.settings.modelscopeModel=document.getElementById("modelscopeModel").value.trim();
+    state.settings.apizeroKey=document.getElementById("apizeroKey").value.trim();
+    save(); toast("AI 配置已保存");
   });
   // Supabase 同步
   const sgt=document.getElementById("saveSupabaseConfig");

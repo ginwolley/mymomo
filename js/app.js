@@ -18,7 +18,6 @@ const NAV_TREE = [
     {id:"stock-overview", name:"统计", icon:"grid"},
     {id:"stock-add", name:"新增物品", icon:"plus"},
     {id:"stock-all", name:"全部物品", icon:"list"},
-    {id:"stock-fridge", name:"冰箱", icon:"fridge"},
     {id:"stock-spaces", name:"空间", icon:"house"},
   ]},
   {id:"passwords", name:"密码", icon:"lock"},
@@ -50,7 +49,6 @@ const ICONS = {
   'eye-off':'<path d="M1 1l22 22"/><path d="M9.58 9.58A3 3 0 0 0 14.42 14.42"/><path d="M4.22 6.22A16.37 16.37 0 0 0 1 12s4 8 11 8c1.85 0 3.58-.4 5.16-1.1"/><path d="M19.78 17.78A16.37 16.37 0 0 0 23 12s-4-8-11-8c-1.85 0-3.58.4-5.16 1.1"/>',
   edit:'<path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>',
   copy:'<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
-  fridge:'<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M4 10h16"/><circle cx="8" cy="7" r="0.5" fill="currentColor"/><circle cx="8" cy="14" r="0.5" fill="currentColor"/>',
 };
 /* ============== 路由与渲染 ============== */
 const PAGES = {
@@ -63,7 +61,6 @@ const PAGES = {
   get "stock-overview"(){ return window.pageStockOverview; },
   get "stock-add"(){ return window.pageStockAdd; },
   get "stock-all"(){ return window.pageStockAll; },
-  get "stock-fridge"(){ return window.pageStockFridge; },
   get "stock-detail"(){ return window.pageStockDetail; },
   get "stock-spaces"(){ return window.pageStockSpaces; },
   passwords:pagePasswords, "password-detail":pagePasswordDetail,
@@ -77,18 +74,18 @@ const TITLES = {
   "salary-basic":"基本工资", "salary-housing":"房补", "salary-summary":"工资汇总",
   "salary-all":"全部工资记录", "salary-detail":"工资详情", "salary-add":"记录工资",
   "housing-all":"全部房补记录", "housing-detail":"房补详情", "housing-add":"记录房补",
-  "stock-overview":"囤货", "stock-add":"新增物品", "stock-all":"全部物品", "stock-fridge":"冰箱视图", "stock-detail":"物品详情", "stock-spaces":"空间管理",
+  "stock-overview":"囤货", "stock-add":"新增物品", "stock-all":"全部物品", "stock-detail":"物品详情", "stock-spaces":"空间管理",
   passwords:"密码管理", "password-detail":"密码详情",
   "diet-add":"添加食物",
   "tab-home":"首页", "tab-record":"健康", "tab-more":"更多",
 };
 
 /* 手机端底部Tab：显示Tab栏的页面（子页面隐藏） */
-const TAB_IDS = ["tab-home","tab-record","stock-overview","tab-more","overview","weight","measure","diet","exercise","settings","salary-basic","salary-housing","salary-summary","passwords","password-detail","stock-add","stock-all","stock-fridge","stock-spaces"];
+const TAB_IDS = ["tab-home","tab-record","stock-overview","tab-more","overview","weight","measure","diet","exercise","settings","salary-basic","salary-housing","salary-summary","passwords","password-detail","stock-add","stock-all","stock-spaces"];
 const TAB_MATCH = {
   "tab-home":["tab-home","overview","salary-basic","salary-housing","salary-summary","passwords","password-detail"],
   "tab-record":["tab-record","diet","exercise","weight","measure"],
-  "stock-overview":["stock-overview","stock-add","stock-all","stock-fridge","stock-spaces"],
+  "stock-overview":["stock-overview","stock-add","stock-all","stock-spaces"],
   "tab-more":["tab-more","settings"],
 };
 let segHome = "overview";   // tab-home 分段：overview/salary-basic/passwords
@@ -222,7 +219,7 @@ function navigate(id, params){
   const BACK_MAP = {
     "salary-add":"salary-basic","salary-all":"salary-basic","salary-detail":"salary-basic",
     "housing-add":"salary-housing","housing-all":"salary-housing","housing-detail":"salary-housing",
-    "stock-add":"stock-overview","stock-all":"stock-overview","stock-fridge":"stock-overview","stock-detail":"stock-overview","stock-spaces":"stock-overview",
+    "stock-add":"stock-overview","stock-all":"stock-overview","stock-detail":"stock-overview","stock-spaces":"stock-overview",
     "password-detail":"passwords",
     "exercise-all":"exercise",
     "diet-add":"diet",
@@ -452,7 +449,6 @@ function bindPage(id, params){
   if(id==="stock-overview") window.bindStockOverview();
   if(id==="stock-add") window.bindStockAdd();
   if(id==="stock-all") window.bindStockAll();
-  if(id==="stock-fridge") window.bindStockFridge();
   if(id==="stock-detail") window.bindStockDetail(currentStockIdx);
   if(id==="stock-spaces") window.bindStockSpaces();
   if(id==="passwords") bindPasswords();

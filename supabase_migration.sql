@@ -101,3 +101,17 @@ DROP POLICY IF EXISTS "Allow deletions from stock-photos" ON storage.objects;
 CREATE POLICY "Allow owner deletions from stock-photos" ON storage.objects
   FOR DELETE TO authenticated
   USING (bucket_id = 'stock-photos' AND auth.jwt() ->> 'email' = 'huangying0404@qq.com');
+
+-- 5. 创建贴纸存储桶（AI 生成的囤货贴纸）
+INSERT INTO storage.buckets (id, name, public) 
+VALUES ('stock-stickers', 'stock-stickers', true)
+ON CONFLICT (id) DO NOTHING;
+
+DROP POLICY IF EXISTS "Allow owner uploads to stock-stickers" ON storage.objects;
+CREATE POLICY "Allow owner uploads to stock-stickers" ON storage.objects
+  FOR INSERT TO authenticated
+  WITH CHECK (bucket_id = 'stock-stickers' AND auth.jwt() ->> 'email' = 'huangying0404@qq.com');
+
+CREATE POLICY "Allow public reads from stock-stickers" ON storage.objects
+  FOR SELECT TO anon, authenticated
+  USING (bucket_id = 'stock-stickers');

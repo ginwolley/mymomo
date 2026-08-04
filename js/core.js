@@ -14,6 +14,7 @@ const DEFAULTS = {
     modules:{weight:"cumulative", measure:"cumulative", diet:"daily", exercise:"daily", balance:"cumulative"}, period:90, dietGoal:1600,
     navOpen:{fitness:false, period:false, salary:false},
     supabaseUrl:"", supabaseKey:"", supabaseEmail:"", supabasePass:"", supabaseLastSync:null, supabaseLastSyncStatus:"local_only", supabaseDebug:"",
+    modelscopeToken:"", modelscopeModel:"iic/stable-diffusion-xl-base-1.0", apizeroKey:"",
     passwordCategories:["工作","社交","银行","购物","娱乐","其他"],
     spaces: {
       id:"root", name:"全部空间", children:[
@@ -203,7 +204,7 @@ function salarySeg(active){
   return `<div class="seg-sub">${items.map(i=>`<button class="${i.id===active?'active':''}" onclick="navigate('${i.id}')">${i.label}</button>`).join('')}</div>`;
 }
 function stockSeg(active){
-  const items = [{id:"stock-overview",label:"统计"},{id:"stock-add",label:"新增"},{id:"stock-all",label:"全部"},{id:"stock-fridge",label:"冰箱"},{id:"stock-spaces",label:"空间"}];
+  const items = [{id:"stock-overview",label:"统计"},{id:"stock-add",label:"新增"},{id:"stock-all",label:"全部"},{id:"stock-spaces",label:"空间"}];
   return `<div class="seg" style="margin-bottom:14px">${items.map(i=>`<button class="${i.id===active?'active':''}" onclick="navigate('${i.id}')">${i.label}</button>`).join('')}</div>`;
 }
 function bindPeriod(){
