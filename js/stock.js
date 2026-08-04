@@ -251,8 +251,8 @@ function pageStockAdd(){
   const aiDisabled = !(state.settings.api.enabled && state.settings.api.key);
   // 默认食品分类
   const defaultCategory = "食品";
-  const emojiPickerHtml = `<div class="field"><label>物品图标 <span style="color:var(--ink-muted);font-weight:normal">（可点击选择自定义 emoji）</span></label>
-    <div id="currentStockIconAdd" style="margin-bottom:8px">${renderStockSticker({ category: defaultCategory, name: "新品" }, "md")}</div>
+  const emojiPickerHtml = `<div class="field"><label>物品图标 <span style="color:var(--ink-muted);font-weight:normal">（输入名称自动匹配贴纸，可点选 emoji 自定义）</span></label>
+    <div id="currentStockIconAdd" style="margin-bottom:8px">${renderStockSticker({ category: defaultCategory, name: "新品" }, "md")}<div id="stockStickerHintAdd" style="font-size:12px;color:var(--ink-muted);margin-top:6px"></div></div>
     ${renderEmojiPicker(null, defaultCategory)}
   </div>`;
   return `${stockSeg("stock-add")}
@@ -383,8 +383,8 @@ function pageStockDetail(idx){
   const unitOpts = (STOCK_UNITS[r.category]||["个"]).map(u=>`<option value="${u}" ${u===r.unit?"selected":""}>${u}</option>`).join("");
   const statusOpts = ["未开封","使用中","已用完"].map(s=>`<option ${s===r.status?"selected":""}>${s}</option>`).join("");
   const spaceOpts = spaceOptsHtml(r.storageLocation);
-  const emojiPickerHtml = `<div class="field"><label>物品图标 <span style="color:var(--ink-muted);font-weight:normal">（可点击选择自定义 emoji）</span></label>
-    <div id="currentStockIcon" style="margin-bottom:8px">${renderStockSticker(r, "md")}</div>
+  const emojiPickerHtml = `<div class="field"><label>物品图标 <span style="color:var(--ink-muted);font-weight:normal">（输入名称自动匹配贴纸，可点选 emoji 自定义）</span></label>
+    <div id="currentStockIcon" style="margin-bottom:8px">${renderStockSticker(r, "md")}<div id="stockStickerHint" style="font-size:12px;color:var(--ink-muted);margin-top:6px"></div></div>
     ${renderEmojiPicker(r.icon, r.category)}
   </div>`;
   const cons = (r.consumption||[]).slice().reverse();
@@ -501,11 +501,20 @@ function bindStockAdd(){
   // Emoji 选择器
   let selectedIcon = null;
   const currentIconDisplay = document.getElementById("currentStockIconAdd");
+  const nameInput = document.getElementById("stockForm")["s-name"];
+  const hintEl = document.getElementById("stockStickerHintAdd");
   
   function updateIconDisplay() {
     if (currentIconDisplay) {
-      const tempItem = { category: catSel.value, name: "新品", icon: selectedIcon };
+      const typedName = (nameInput && nameInput.value.trim()) || "新品";
+      const tempItem = { category: catSel.value, name: typedName, icon: selectedIcon };
       currentIconDisplay.innerHTML = renderStockSticker(tempItem, "md");
+      // 提示当前匹配状态：手绘贴纸命中与否
+      if(hintEl){
+        hintEl.textContent = getStockSticker(tempItem)
+          ? "已按名称自动匹配内置手绘贴纸"
+          : (selectedIcon ? "" : "未匹配到内置贴纸，将显示 emoji 图标");
+      }
     }
     // 更新选中样式
     document.querySelectorAll(".emoji-option").forEach(opt => {
@@ -529,6 +538,9 @@ function bindStockAdd(){
     });
   });
   updateIconDisplay();
+
+  // 输入品名时实时联想匹配手绘贴纸
+  if(nameInput) nameInput.addEventListener("input", updateIconDisplay);
   
   // 分类变化时更新 emoji 选项
   catSel.addEventListener("change", () => {
@@ -829,11 +841,19 @@ function bindStockDetail(idx){
   // Emoji 选择器
   let selectedIcon = r.icon || getStockIcon(r);
   const currentIconDisplay = document.getElementById("currentStockIcon");
+  const nameInput = f ? f["se-name"] : null;
+  const hintEl = document.getElementById("stockStickerHint");
   
   function updateIconDisplay() {
     if (currentIconDisplay) {
-      const tempItem = { ...r, icon: selectedIcon };
+      const tempItem = { ...r, name: (nameInput && nameInput.value.trim()) || r.name, icon: selectedIcon };
       currentIconDisplay.innerHTML = renderStockSticker(tempItem, "md");
+      // 提示当前匹配状态：手绘贴纸命中与否
+      if(hintEl){
+        hintEl.textContent = getStockSticker(tempItem)
+          ? "已按名称自动匹配内置手绘贴纸"
+          : (selectedIcon ? "" : "未匹配到内置贴纸，将显示 emoji 图标");
+      }
     }
     // 更新选中样式
     document.querySelectorAll(".emoji-option").forEach(opt => {
@@ -857,6 +877,9 @@ function bindStockDetail(idx){
     });
   });
   updateIconDisplay();
+
+  // 修改品名时实时联想匹配手绘贴纸
+  if(nameInput) nameInput.addEventListener("input", updateIconDisplay);
 
   const saveBtn = document.getElementById("saveStockEdit");
   if(saveBtn) saveBtn.addEventListener("click",()=>{
