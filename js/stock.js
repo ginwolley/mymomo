@@ -539,8 +539,9 @@ function bindStockAdd(){
       videoEl.setAttribute('playsinline', '');
       videoEl.setAttribute('autoplay', '');
       videoEl.setAttribute('muted', '');
-      await videoEl.play();
+      // 先将 overlay 添加到 DOM，再播放视频，否则移动端会报 "play() request was interrupted" 错误
       document.body.appendChild(overlay);
+      await videoEl.play();
       
       let scanned = false;
       let detectInterval = null;
