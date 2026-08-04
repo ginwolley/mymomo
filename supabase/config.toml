@@ -1,0 +1,8 @@
+# Supabase CLI 配置（GitHub Actions 自动部署用）
+project_id = "inhsftgjzkemsnwffvna"
+
+[functions.barcode-lookup]
+verify_jwt = false
+
+[functions.generate-sticker]
+verify_jwt = false
