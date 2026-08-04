@@ -18,16 +18,6 @@ const STOCK_UNITS = {
 };
 const STOCK_DEFAULT_UNIT = {化妆品:"个",护肤品:"瓶",日化用品:"包",食品:"kg",其他:"个"};
 
-// 囤货贴纸系统：Emoji 库和分类颜色
-const STOCK_EMOJIS = {
-  "化妆品": ["💄","💋","👁️","👃","🦋","🌸","🌺","🌷","🎀","💍","👜","👛","👗","👘","🦶","🪞","✨","⭐","🌟","💎"],
-  "护肤品": ["🧴","🧻","🫧","💧","💦","🧊","❄️","🌊","🫒","🥥","🌿","🍃","🌱","🌾","🌸","🌺","🌻","🌼","🌷","🌹"],
-  "日化用品": ["🧻","🧼","🧴","🧹","🧺","🧻","🧽","🧰","🪣","🧴","💡","🔋","🔌","🧯","🧹","🪥","🦷","🪥","🧼","🧴"],
-  "食品": ["🍎","🍊","🍋","🍌","🍉","🍇","🍓","🫐","🍈","🍒","🍑","🥭","🍍","🥥","🥝","🍅","🍆","🥑","🥦","🥕","🌽","🥔","🍅","🍄","🧅","🧄","🥒","🥬","🥗","🍞","🥐","🧀","🥚","🍗","🥩","🍖","🥓","🍔","🍟","🌭","🥪","🌮","🌯","🫓","🥙","🍝","🍜","🍲","🍛","🍣","🍤","🍙","🍚","🍱","🥟","🍤","🍥","🍢","🍧","🍨","🍰","🎂","🧁","🍮","🍯","🍼","🥛","☕","🫖","🍵","🧋","🥤","🧃","🧉","🍺","🍻","🥂","🍷","🥃","🍸","🍹","🧊","🥢","🍽️","🥄","🔪","🫙","🏺","🍶","🧂","🥫","🍱","🍤"],
-  "其他": ["📦","📦","🗃️","🗄️","📁","📂","🗒️","🗓️","📔","📕","📖","📗","📘","📙","📚","📓","📒","🖍️","✏️","✒️","🖊️","🖋️","🖊️","🖌️","🎨","🧰","🔧","🔨","⚒️","🛠️","🔩","⚙️","🪛","🗜️","⚖️","🔗","⛓️","🪚","🔦","🔌","🔋","🔌","🧯","💡","🔦","🕯️"]
-};
-
-// 分类颜色映射（用于贴纸背景）
 const STOCK_CATEGORY_COLORS = {
   "化妆品": { bg: "#FFE4E9", text: "#FF6B8A", border: "#FFD0DB" },
   "护肤品": { bg: "#E8F5E9", text: "#66BB6A", border: "#C8E6C9" },
@@ -36,91 +26,26 @@ const STOCK_CATEGORY_COLORS = {
   "其他": { bg: "#F3E5F5", text: "#AB47BC", border: "#E1BEE7" }
 };
 
-// 获取商品图标（优先使用自定义，否则根据分类匹配默认）
-function getStockIcon(item) {
-  if (item && item.icon) return item.icon;
-  const emojis = STOCK_EMOJIS[item?.category] || STOCK_EMOJIS["其他"];
-  // 根据物品名称的哈希值选择一个固定的 emoji，保证一致性
-  const name = item?.name || "";
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) {
-    hash = ((hash << 5) - hash) + name.charCodeAt(i);
-    hash |= 0;
-  }
-  return emojis[Math.abs(hash) % emojis.length];
-}
-
-// 获取分类颜色
 function getCategoryColor(category) {
   return STOCK_CATEGORY_COLORS[category] || STOCK_CATEGORY_COLORS["其他"];
 }
 
-// 白边手绘风贴纸库：名称关键词 → SVG 贴纸（白底深描边，免费即时，零 API 消耗）
-const STOCK_STICKERS = {
-  "水|饮料|可乐|汽水|雪碧|果汁|矿泉水|纯净水|茶饮|奶茶|咖啡|啤酒": `<svg viewBox="0 0 64 64" width="100%" height="100%" style="display:block"><rect x="3" y="3" width="58" height="58" rx="15" fill="#FFFFFF" stroke="#3A3A3A" stroke-width="3"/><rect x="23" y="6" width="18" height="9" rx="2.5" fill="none" stroke="#3A3A3A" stroke-width="3"/><path d="M25 15h14l1 33a6 6 0 0 1-6 6h-4a6 6 0 0 1-6-6z" fill="#FFF7E6" stroke="#3A3A3A" stroke-width="3"/><path d="M29 24h6v16h-6z" fill="#FFD98C" stroke="#3A3A3A" stroke-width="2"/><path d="M27 46h10" stroke="#3A3A3A" stroke-width="2.5" stroke-linecap="round"/></svg>`,
-  "牛奶|酸奶|乳|豆奶": `<svg viewBox="0 0 64 64" width="100%" height="100%" style="display:block"><rect x="3" y="3" width="58" height="58" rx="15" fill="#FFFFFF" stroke="#3A3A3A" stroke-width="3"/><path d="M24 12h16l-2 42a5 5 0 0 1-5 4.8h-2A5 5 0 0 1 26 54z" fill="#E8F4FF" stroke="#3A3A3A" stroke-width="3"/><path d="M26 14l-4 6h20l-4-6" fill="none" stroke="#3A3A3A" stroke-width="3" stroke-linejoin="round"/><path d="M24 34h16" stroke="#3A3A3A" stroke-width="2.5"/></svg>`,
-  "面包|吐司|蛋糕|饼干|曲奇": `<svg viewBox="0 0 64 64" width="100%" height="100%" style="display:block"><rect x="3" y="3" width="58" height="58" rx="15" fill="#FFFFFF" stroke="#3A3A3A" stroke-width="3"/><path d="M14 30c0-10 8-16 18-16s18 6 18 16c4 3 4 12 0 14H14c-4-2-4-11 0-14z" fill="#FFE3C2" stroke="#3A3A3A" stroke-width="3"/><path d="M22 24c3-3 6 2 10 0M34 26c3-3 6 1 8 0M20 36c3-3 6 2 10 0M34 38c3-3 6 1 8 0" stroke="#3A3A3A" stroke-width="2" fill="none" stroke-linecap="round"/></svg>`,
-  "苹果|水果|香蕉|橙|梨|桃|葡萄|西瓜": `<svg viewBox="0 0 64 64" width="100%" height="100%" style="display:block"><rect x="3" y="3" width="58" height="58" rx="15" fill="#FFFFFF" stroke="#3A3A3A" stroke-width="3"/><path d="M32 22c-9-6-18-2-18 7 0 11 9 20 18 20s18-9 18-20c0-9-9-13-18-7z" fill="#FFD9DE" stroke="#3A3A3A" stroke-width="3"/><path d="M32 22c0-4 2-8 6-10" fill="none" stroke="#3A3A3A" stroke-width="2.5"/><path d="M38 14c2 3 2 6 0 8" fill="none" stroke="#3A3A3A" stroke-width="2.5"/></svg>`,
-  "鸡蛋|蛋": `<svg viewBox="0 0 64 64" width="100%" height="100%" style="display:block"><rect x="3" y="3" width="58" height="58" rx="15" fill="#FFFFFF" stroke="#3A3A3A" stroke-width="3"/><ellipse cx="32" cy="37" rx="15" ry="19" fill="#FFF3E0" stroke="#3A3A3A" stroke-width="3"/><path d="M32 18c0-4 3-8 8-9" fill="none" stroke="#3A3A3A" stroke-width="2.5"/></svg>`,
-  "大米|米|面粉|面条|挂面": `<svg viewBox="0 0 64 64" width="100%" height="100%" style="display:block"><rect x="3" y="3" width="58" height="58" rx="15" fill="#FFFFFF" stroke="#3A3A3A" stroke-width="3"/><path d="M18 14h28l3 38H15z" fill="#FFF7E6" stroke="#3A3A3A" stroke-width="3" stroke-linejoin="round"/><path d="M22 22h20M22 30h20M22 38h14" stroke="#3A3A3A" stroke-width="2.5"/><path d="M14 46h36" stroke="#3A3A3A" stroke-width="2.5"/></svg>`,
-  "方便面|泡面|速食": `<svg viewBox="0 0 64 64" width="100%" height="100%" style="display:block"><rect x="3" y="3" width="58" height="58" rx="15" fill="#FFFFFF" stroke="#3A3A3A" stroke-width="3"/><path d="M14 30h36v18a5 5 0 0 1-5 5H19a5 5 0 0 1-5-5z" fill="#FFE3C2" stroke="#3A3A3A" stroke-width="3"/><path d="M14 30c0-6 18-8 36-8" fill="none" stroke="#3A3A3A" stroke-width="3"/><path d="M22 38c4-3 8 3 12 0M40 38c4-3 8 3 12 0" stroke="#3A3A3A" stroke-width="2" fill="none"/><path d="M24 14c2 3 2 6 0 8M40 14c2 3 2 6 0 8" stroke="#3A3A3A" stroke-width="2" fill="none" stroke-linecap="round"/></svg>`,
-  "零食|薯片|糖果|巧克力|果冻|辣条": `<svg viewBox="0 0 64 64" width="100%" height="100%" style="display:block"><rect x="3" y="3" width="58" height="58" rx="15" fill="#FFFFFF" stroke="#3A3A3A" stroke-width="3"/><path d="M16 14h32a4 4 0 0 1 4 4v26a4 4 0 0 1-4 4H16a4 4 0 0 1-4-4V18a4 4 0 0 1 4-4z" fill="#FFE9C9" stroke="#3A3A3A" stroke-width="3" rx="4"/><path d="M18 22h28M18 30h28M18 38h28" stroke="#3A3A3A" stroke-width="2.5"/></svg>`,
-  "肉|牛肉|猪肉|鸡肉|排骨|腊肠|火腿": `<svg viewBox="0 0 64 64" width="100%" height="100%" style="display:block"><rect x="3" y="3" width="58" height="58" rx="15" fill="#FFFFFF" stroke="#3A3A3A" stroke-width="3"/><path d="M16 22l26-6 6 8-26 6z" fill="#FFC9C9" stroke="#3A3A3A" stroke-width="3" stroke-linejoin="round"/><path d="M20 26l-6 4 6-4M30 22l-2 6 2-6" stroke="#3A3A3A" stroke-width="2" fill="none"/></svg>`,
-  "蔬菜|青菜|白菜|萝卜|土豆|番茄|黄瓜|葱": `<svg viewBox="0 0 64 64" width="100%" height="100%" style="display:block"><rect x="3" y="3" width="58" height="58" rx="15" fill="#FFFFFF" stroke="#3A3A3A" stroke-width="3"/><path d="M32 12v20" stroke="#3A3A3A" stroke-width="3"/><path d="M32 14C20 16 16 26 18 34c4 2 10 0 14-8M32 14c12 2 16 12 14 20-4 2-10 0-14-8" fill="#DFF5D9" stroke="#3A3A3A" stroke-width="3"/></svg>`,
-  "抽纸|纸巾|纸|湿巾|湿纸巾": `<svg viewBox="0 0 64 64" width="100%" height="100%" style="display:block"><rect x="3" y="3" width="58" height="58" rx="15" fill="#FFFFFF" stroke="#3A3A3A" stroke-width="3"/><path d="M16 24h32v26a4 4 0 0 1-4 4H20a4 4 0 0 1-4-4z" fill="#FFF7E6" stroke="#3A3A3A" stroke-width="3"/><path d="M26 24l3-6h6l3 6" fill="none" stroke="#3A3A3A" stroke-width="3" stroke-linejoin="round"/><path d="M24 38c4-3 8 3 16 0" stroke="#3A3A3A" stroke-width="2" fill="none"/></svg>`,
-  "洗衣|洗衣液|洗衣粉|柔顺": `<svg viewBox="0 0 64 64" width="100%" height="100%" style="display:block"><rect x="3" y="3" width="58" height="58" rx="15" fill="#FFFFFF" stroke="#3A3A3A" stroke-width="3"/><rect x="22" y="8" width="20" height="10" rx="3" fill="none" stroke="#3A3A3A" stroke-width="3"/><path d="M25 18h14l-2 38h-10z" fill="#D9F2FF" stroke="#3A3A3A" stroke-width="3"/><path d="M28 30h8v14h-8z" fill="#FFFFFF" stroke="#3A3A3A" stroke-width="2"/><path d="M28 32l4 3 4-3M28 36l4 3 4-3" stroke="#3A3A3A" stroke-width="2" fill="none"/></svg>`,
-  "洗发|沐浴|护发素|沐浴露|洗护": `<svg viewBox="0 0 64 64" width="100%" height="100%" style="display:block"><rect x="3" y="3" width="58" height="58" rx="15" fill="#FFFFFF" stroke="#3A3A3A" stroke-width="3"/><path d="M27 10h10l3 44a5 5 0 0 1-5 4.8h-6A5 5 0 0 1 24 54z" fill="#F0E4FF" stroke="#3A3A3A" stroke-width="3"/><rect x="25" y="6" width="14" height="6" rx="2" fill="none" stroke="#3A3A3A" stroke-width="2.5"/><path d="M26 30h12" stroke="#3A3A3A" stroke-width="2.5"/><path d="M30 16c2-3 4-2 4 0" stroke="#3A3A3A" stroke-width="2" fill="none" stroke-linecap="round"/></svg>`,
-  "牙膏|牙刷|牙线": `<svg viewBox="0 0 64 64" width="100%" height="100%" style="display:block"><rect x="3" y="3" width="58" height="58" rx="15" fill="#FFFFFF" stroke="#3A3A3A" stroke-width="3"/><rect x="18" y="16" width="10" height="36" rx="5" fill="#FFF" stroke="#3A3A3A" stroke-width="3"/><rect x="28" y="12" width="22" height="12" rx="3" fill="#D9F2FF" stroke="#3A3A3A" stroke-width="3"/><path d="M28 18h22" stroke="#3A3A3A" stroke-width="2"/></svg>`,
-  "垃圾袋|垃圾": `<svg viewBox="0 0 64 64" width="100%" height="100%" style="display:block"><rect x="3" y="3" width="58" height="58" rx="15" fill="#FFFFFF" stroke="#3A3A3A" stroke-width="3"/><path d="M22 16c-2-5 4-8 10-8s12 3 10 8l4 34a5 5 0 0 1-5 5H23a5 5 0 0 1-5-5z" fill="#E8E8E8" stroke="#3A3A3A" stroke-width="3" stroke-linejoin="round"/><path d="M24 20h16" stroke="#3A3A3A" stroke-width="2.5"/></svg>`,
-  "保鲜膜|保鲜袋|锡纸": `<svg viewBox="0 0 64 64" width="100%" height="100%" style="display:block"><rect x="3" y="3" width="58" height="58" rx="15" fill="#FFFFFF" stroke="#3A3A3A" stroke-width="3"/><rect x="22" y="10" width="20" height="44" rx="4" fill="none" stroke="#3A3A3A" stroke-width="3"/><path d="M22 22h20M22 34h20" stroke="#3A3A3A" stroke-width="2.5"/><rect x="14" y="14" width="14" height="6" rx="2" fill="#E8F4FF" stroke="#3A3A3A" stroke-width="2.5"/></svg>`,
-  "电池": `<svg viewBox="0 0 64 64" width="100%" height="100%" style="display:block"><rect x="3" y="3" width="58" height="58" rx="15" fill="#FFFFFF" stroke="#3A3A3A" stroke-width="3"/><rect x="14" y="20" width="36" height="24" rx="6" fill="#FFE9C9" stroke="#3A3A3A" stroke-width="3"/><rect x="26" y="14" width="12" height="8" rx="2" fill="none" stroke="#3A3A3A" stroke-width="2.5"/><path d="M20 30h24v-4H20z" fill="#3A3A3A"/><path d="M28 40l-6-6 6-6M36 40l6-6-6-6" stroke="#3A3A3A" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
-  "洗洁精|清洁剂|洁厕|消毒": `<svg viewBox="0 0 64 64" width="100%" height="100%" style="display:block"><rect x="3" y="3" width="58" height="58" rx="15" fill="#FFFFFF" stroke="#3A3A3A" stroke-width="3"/><path d="M26 8h12v46a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4z" fill="#D9F2FF" stroke="#3A3A3A" stroke-width="3"/><path d="M30 18h4v10h-4z" fill="#FFFFFF" stroke="#3A3A3A" stroke-width="2"/><path d="M30 34h4v6h-4z" fill="#FFFFFF" stroke="#3A3A3A" stroke-width="2"/></svg>`,
-  "面霜|乳液|精华|身体乳|护肤乳|爽肤水|喷雾": `<svg viewBox="0 0 64 64" width="100%" height="100%" style="display:block"><rect x="3" y="3" width="58" height="58" rx="15" fill="#FFFFFF" stroke="#3A3A3A" stroke-width="3"/><rect x="20" y="18" width="24" height="10" rx="3" fill="none" stroke="#3A3A3A" stroke-width="3"/><path d="M22 28h20v20a6 6 0 0 1-6 6h-8a6 6 0 0 1-6-6z" fill="#F0E4FF" stroke="#3A3A3A" stroke-width="3"/><path d="M27 38h10v4H27z" fill="#FFFFFF" stroke="#3A3A3A" stroke-width="2"/></svg>`,
-  "洗面奶|洁面|卸妆": `<svg viewBox="0 0 64 64" width="100%" height="100%" style="display:block"><rect x="3" y="3" width="58" height="58" rx="15" fill="#FFFFFF" stroke="#3A3A3A" stroke-width="3"/><path d="M24 14l18 2-4 34a5 5 0 0 1-5 4.6h-2A5 5 0 0 1 26 50z" fill="#E8F4FF" stroke="#3A3A3A" stroke-width="3"/><rect x="24" y="10" width="16" height="7" rx="2" fill="none" stroke="#3A3A3A" stroke-width="2.5"/><path d="M28 24h10v8H28z" fill="#FFFFFF" stroke="#3A3A3A" stroke-width="2"/></svg>`,
-  "防晒|隔离": `<svg viewBox="0 0 64 64" width="100%" height="100%" style="display:block"><rect x="3" y="3" width="58" height="58" rx="15" fill="#FFFFFF" stroke="#3A3A3A" stroke-width="3"/><path d="M26 6v10M20 10l4 3M38 10l-4 3" stroke="#3A3A3A" stroke-width="3" stroke-linecap="round"/><rect x="18" y="20" width="28" height="32" rx="6" fill="#FFF7E6" stroke="#3A3A3A" stroke-width="3"/><circle cx="32" cy="34" r="7" fill="#FFD98C" stroke="#3A3A3A" stroke-width="2.5"/><path d="M24 46h16" stroke="#3A3A3A" stroke-width="2.5"/></svg>`,
-  "口红|唇膏": `<svg viewBox="0 0 64 64" width="100%" height="100%" style="display:block"><rect x="3" y="3" width="58" height="58" rx="15" fill="#FFFFFF" stroke="#3A3A3A" stroke-width="3"/><rect x="24" y="6" width="16" height="12" rx="3" fill="#3A3A3A"/><rect x="22" y="18" width="20" height="8" rx="2" fill="#FFD98C" stroke="#3A3A3A" stroke-width="2.5"/><path d="M26 26h12l2 26a4 4 0 0 1-4 4h-8a4 4 0 0 1-4-4z" fill="#FF8A9B" stroke="#3A3A3A" stroke-width="3"/><path d="M28 34c2 2 4 2 8 0" stroke="#3A3A3A" stroke-width="2" fill="none"/></svg>`,
-  "粉底|气垫|遮瑕|散粉": `<svg viewBox="0 0 64 64" width="100%" height="100%" style="display:block"><rect x="3" y="3" width="58" height="58" rx="15" fill="#FFFFFF" stroke="#3A3A3A" stroke-width="3"/><rect x="16" y="10" width="32" height="44" rx="6" fill="#E8F4FF" stroke="#3A3A3A" stroke-width="3"/><path d="M16 24h32" stroke="#3A3A3A" stroke-width="2.5"/><circle cx="32" cy="38" r="9" fill="#FFF7E6" stroke="#3A3A3A" stroke-width="2.5"/><path d="M28 38h8M32 34v8" stroke="#3A3A3A" stroke-width="2"/></svg>`,
-  "眼影|腮红|眼线|眉笔|美瞳": `<svg viewBox="0 0 64 64" width="100%" height="100%" style="display:block"><rect x="3" y="3" width="58" height="58" rx="15" fill="#FFFFFF" stroke="#3A3A3A" stroke-width="3"/><rect x="14" y="16" width="36" height="32" rx="6" fill="#F0E4FF" stroke="#3A3A3A" stroke-width="3"/><rect x="20" y="24" width="12" height="10" rx="3" fill="#FFB8C0" stroke="#3A3A3A" stroke-width="2"/><rect x="34" y="24" width="12" height="10" rx="3" fill="#FFD98C" stroke="#3A3A3A" stroke-width="2"/><rect x="20" y="37" width="26" height="6" rx="3" fill="#C9B8F0" stroke="#3A3A3A" stroke-width="2"/></svg>`,
-  "药|感冒|胃药|退烧|消炎|膏药": `<svg viewBox="0 0 64 64" width="100%" height="100%" style="display:block"><rect x="3" y="3" width="58" height="58" rx="15" fill="#FFFFFF" stroke="#3A3A3A" stroke-width="3"/><rect x="14" y="12" width="36" height="40" rx="6" fill="#FFE9C9" stroke="#3A3A3A" stroke-width="3"/><path d="M14 24h36" stroke="#3A3A3A" stroke-width="2.5"/><rect x="22" y="30" width="9" height="9" rx="2" fill="#FFFFFF" stroke="#3A3A3A" stroke-width="2.5"/><rect x="33" y="30" width="9" height="9" rx="2" fill="#FFFFFF" stroke="#3A3A3A" stroke-width="2.5"/></svg>`,
-  "工具|螺丝|扳手|锤子|钉子": `<svg viewBox="0 0 64 64" width="100%" height="100%" style="display:block"><rect x="3" y="3" width="58" height="58" rx="15" fill="#FFFFFF" stroke="#3A3A3A" stroke-width="3"/><path d="M40 10a14 14 0 0 0-14 24l-12 12a4 4 0 0 0 0 6l6 6a4 4 0 0 0 6 0l12-12a14 14 0 0 0 24-14 8 8 0 0 1-14-14 8 8 0 0 1-8-8z" fill="none" stroke="#3A3A3A" stroke-width="3" stroke-linejoin="round"/></svg>`,
-  "米面|粮|食用油|酱油|醋|料酒|蚝油|调味": `<svg viewBox="0 0 64 64" width="100%" height="100%" style="display:block"><rect x="3" y="3" width="58" height="58" rx="15" fill="#FFFFFF" stroke="#3A3A3A" stroke-width="3"/><path d="M26 10l14 4-4 40a5 5 0 0 1-5 4.6h0A5 5 0 0 1 26 52z" fill="#FFE3C2" stroke="#3A3A3A" stroke-width="3"/><path d="M26 8h14" stroke="#3A3A3A" stroke-width="3"/><rect x="27" y="22" width="12" height="16" rx="2" fill="#FFF7E6" stroke="#3A3A3A" stroke-width="2"/><path d="M29 34l4-6 4 6" stroke="#3A3A3A" stroke-width="2" fill="none"/></svg>`,
-};
-
-// 根据名称匹配内置手绘贴纸（返回 SVG，无匹配返回 null）
-function getStockSticker(item) {
-  if(!item || !item.name) return null;
-  const name = item.name;
-  for(const [kws, svg] of Object.entries(STOCK_STICKERS)){
-    if(kws.split("|").some(k => name.includes(k))) return svg;
-  }
-  return null;
-}
-
-// 生成贴纸 HTML（AI 生成图 > 内置手绘贴纸 > emoji 兜底）
 function renderStockSticker(item, size = "md") {
-  const color = getCategoryColor(item.category);
+  const color = getCategoryColor(item?.category);
   const sizes = {
-    sm: { wrapper: "width:40px;height:40px;", inner: "" },
-    md: { wrapper: "width:56px;height:56px;", inner: "" },
-    lg: { wrapper: "width:80px;height:80px;", inner: "" }
+    sm: { w: 44, h: 44, fs: 16, r: 16 },
+    md: { w: 64, h: 64, fs: 24, r: 16 },
+    lg: { w: 96, h: 96, fs: 36, r: 20 }
   };
   const s = sizes[size] || sizes.md;
-  const radius = size==='lg'?'20px':'14px';
-  // 1. AI 生成的贴纸图（已缓存）
-  if(item && item.stickerUrl){
-    return `<div class="stock-sticker" style="${s.wrapper};background:#fff;border:2px solid #E9ECEF;border-radius:${radius};display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden"><img src="${item.stickerUrl}" style="width:100%;height:100%;object-fit:cover"></div>`;
+  if (item && item.stickerUrl) {
+    return `<div class="stock-sticker" style="width:${s.w}px;height:${s.h}px;background:#fff;border:2px solid #E9ECEF;border-radius:${s.r}px;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden"><img src="${item.stickerUrl}" style="width:100%;height:100%;object-fit:cover"></div>`;
   }
-  // 2. 内置白边手绘贴纸
-  const stk = getStockSticker(item);
-  if(stk){
-    return `<div class="stock-sticker" style="${s.wrapper};display:flex;align-items:center;justify-content:center;flex-shrink:0">${stk}</div>`;
-  }
-  // 3. emoji 兜底
-  const icon = getStockIcon(item);
-  return `<div class="stock-sticker" style="${s.wrapper};background:${color.bg};border:2px solid ${color.border};border-radius:${radius};display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:${size==='lg'?'42px':'28px'}">${icon}</div>`;
+  const name = (item && item.name) ? item.name.trim() : "?";
+  const ch = name ? name.charAt(0) : "?";
+  return `<div class="stock-sticker" style="width:${s.w}px;height:${s.h}px;background:${color.bg};border:2px solid ${color.border};border-radius:${s.r}px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:${s.fs}px;font-weight:600;color:${color.text};line-height:1">${ch}</div>`;
 }
 
-// 根据名称关键词推断囤货分类
 function inferStockCategory(name) {
   const n = String(name||"").toLowerCase();
   const rules = [
@@ -133,7 +58,6 @@ function inferStockCategory(name) {
   return "其他";
 }
 
-// 条码查询：优先 Supabase Edge Function（Key 在服务端），失败回退直连 apizero
 async function lookupBarcode(code){
   const s = state.settings;
   if(supabaseClient && supabaseClient.isReady()){
@@ -151,7 +75,6 @@ async function lookupBarcode(code){
   }catch(e){ return null; }
 }
 
-// 自动生成专属贴纸（AI，经 Edge Function，生成后缓存到 Storage；未配置或失败则静默跳过）
 async function autoGenerateSticker(item){
   const s = state.settings;
   if(!s.modelscopeToken || !(supabaseClient && supabaseClient.isReady())) return;
@@ -162,20 +85,13 @@ async function autoGenerateSticker(item){
     if(error){ console.warn("generate-sticker:", error.message); return; }
     if(data && data.url){
       item.stickerUrl = data.url;
-      save(false);
-      toast("已为「"+item.name+"」生成专属贴纸");
+      // 只有当物品已保存（有 id 且在 state.stock 中）时才自动保存
+      if(item.id && state.stock.includes(item)){
+        save(false);
+        toast("已为「"+item.name+"」生成专属贴纸");
+      }
     }
   }catch(e){ console.warn("generate-sticker exception:", e.message); }
-}
-
-// 定义分类贴纸库的展示容器 HTML
-function renderEmojiPicker(currentIcon, category) {
-  const emojis = STOCK_EMOJIS[category] || STOCK_EMOJIS["其他"];
-  const color = getCategoryColor(category);
-  const options = emojis.map(e => 
-    `<div class="emoji-option ${e===currentIcon?'selected':''}" data-emoji="${e}" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;border-radius:8px;cursor:pointer;font-size:20px;border:${e===currentIcon?'2px solid '+color.text:'1px solid transparent'};background:${e===currentIcon?color.bg:'transparent'};">${e}</div>`
-  ).join("");
-  return `<div class="emoji-picker" style="display:grid;grid-template-columns:repeat(10,1fr);gap:6px;margin:10px 0;padding:12px;background:#F8F9FA;border-radius:12px;border:1px solid #E9ECEF;">${options}</div>`;
 }
 
 function pageStockOverview(){
@@ -184,7 +100,6 @@ function pageStockOverview(){
   const unopened = items.filter(i=>i.status==="未开封").length;
   const inUse = items.filter(i=>i.status==="使用中").length;
   const usedUp = items.filter(i=>i.status==="已用完").length;
-  // 近30天过期（排除已忽略的，食品同时检查最佳食用日期）
   const soon = items.filter(i=>{
     if(i.dismissedExpiry) return false;
     const expiry = i.expiryDate || i.bestBeforeDate;
@@ -192,18 +107,14 @@ function pageStockOverview(){
     const diff = daysBetween(todayStr(), expiry);
     return diff >= 0 && diff <= 30;
   });
-  // 按分类统计
   const catCount = {};
   items.forEach(i=>{ catCount[i.category] = (catCount[i.category]||0) + i.quantity; });
   const catHtml = Object.entries(catCount).map(([c,n])=>`<div class="stat"><div class="label">${c}</div><div class="value">${n}</div></div>`).join("");
 
-  // 库存不足（数量 <= 最低库存）
   const lowStock = items.filter(i => (i.minStock || 1) > 0 && i.quantity <= (i.minStock || 1) && i.status !== '已用完');
 
-  // 所有标签
   const allTags = [...new Set(items.flatMap(i => i.tags || []))].sort();
 
-  // 最近消耗记录
   const allCons = [];
   items.forEach((item, idx)=>{
     if(item.consumption && item.consumption.length){
@@ -244,16 +155,20 @@ function pageStockOverview(){
     <div class="center" style="margin-bottom:14px"><button class="btn primary" id="goStockAdd">+ 新增物品</button></div>`;
 }
 
-/* ============== 页面：新增物品 ============== */
 function pageStockAdd(){
   const catOpts = STOCK_CATEGORIES.map(c=>`<option value="${c}">${c}</option>`).join("");
   const spaceOpts = spaceOptsHtml();
   const aiDisabled = !(state.settings.api.enabled && state.settings.api.key);
-  // 默认食品分类
+  const stickerDisabled = !(state.settings.modelscopeToken && supabaseClient && supabaseClient.isReady());
   const defaultCategory = "食品";
-  const emojiPickerHtml = `<div class="field"><label>物品图标 <span style="color:var(--ink-muted);font-weight:normal">（输入名称自动匹配贴纸，可点选 emoji 自定义）</span></label>
-    <div id="currentStockIconAdd" style="margin-bottom:8px">${renderStockSticker({ category: defaultCategory, name: "新品" }, "md")}<div id="stockStickerHintAdd" style="font-size:12px;color:var(--ink-muted);margin-top:6px"></div></div>
-    ${renderEmojiPicker(null, defaultCategory)}
+  const stickerPreviewHtml = `<div class="field"><label>物品贴纸</label>
+    <div id="currentStockIconAdd" style="margin-bottom:8px">${renderStockSticker({ category: defaultCategory, name: "新品" }, "md")}</div>
+    <div style="display:flex;gap:8px">
+      <button class="btn ghost sm" type="button" id="stockAiStickerBtn" ${stickerDisabled?'disabled':''}>
+        <svg viewBox="0 0 20 20" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:2px"><circle cx="10" cy="10" r="3"/><path d="M10 3v2M10 15v2M3 10h2M15 10h2M5.6 5.6l1.4 1.4M13 13l1.4 1.4M5.6 14.4L7 13M13 7l1.4-1.4"/></svg>
+        AI生成贴纸
+      </button>
+    </div>
   </div>`;
   return `${stockSeg("stock-add")}
     <div class="card">
@@ -275,7 +190,7 @@ function pageStockAdd(){
       <div class="field" id="foodBestBefore" style="display:none"><label>最佳食用日期</label><input type="date" name="s-bestBefore" placeholder="可选"></div>
       <div class="field"><label>空间</label><select name="s-location" id="sLocation">${spaceOpts}</select></div>
       <div class="field"><label>状态</label><select name="s-status"><option>未开封</option><option>使用中</option><option>已用完</option></select></div>
-      ${emojiPickerHtml}
+      ${stickerPreviewHtml}
       <div class="row">
         <div class="field"><label>标签</label><input type="text" name="s-tags" placeholder="逗号分隔，如: 常用,回购" style="font-size:13px"></div>
         <div class="field"><label>最低库存</label><input type="number" name="s-minStock" value="1" min="0" style="font-size:13px;max-width:100px"></div>
@@ -290,15 +205,12 @@ function pageStockAdd(){
   </div>`;
 }
 
-/* ============== 页面：全部物品（空间浏览模式 + 卡片展示） ============== */
 function pageStockAll(){
   const items = state.stock;
   const catOpts = `<option value="">全部</option>${STOCK_CATEGORIES.map(c=>`<option value="${c}">${c}</option>`).join("")}`;
   const statusOpts = `<option value="">全部</option><option>未开封</option><option>使用中</option><option>已用完</option>`;
-  // 级联空间：一级空间
   const topSpaces = (state.settings.spaces.children||[]);
   const topOpts = `<option value="">全部一级空间</option>${topSpaces.map(s => `<option value="${s.id}">${s.name}</option>`).join('')}`;
-  // 所有标签
   const allTags = [...new Set(items.flatMap(i => i.tags || []))].sort();
   const tagOpts = allTags.map(t => `<option value="${t}">${t}</option>`).join('');
   return `${stockSeg("stock-all")}
@@ -318,14 +230,12 @@ function pageStockAll(){
 
 function renderStockList(items){
   if(!items.length) return '<div class="empty" style="padding:24px 20px"><svg viewBox="0 0 20 20" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin:0 auto 8px;color:var(--ink-muted)"><rect x="3" y="3" width="14" height="16" rx="2"/><path d="M3 8h14"/><path d="M10 3v18"/></svg>暂无囤货记录</div>';
-  // 按空间分组
   const groups = {};
   items.forEach(r => {
     const sp = r.storageLocation || '未指定';
     if(!groups[sp]) groups[sp] = [];
     groups[sp].push(r);
   });
-  // 空间排序：按路径
   const spaceOrder = Object.keys(groups).sort((a,b) => {
     const pa = getSpacePath(a) || a;
     const pb = getSpacePath(b) || b;
@@ -373,7 +283,6 @@ function renderStockList(items){
   }).join('');
 }
 
-/* ============== 页面：物品详情/编辑 ============== */
 function pageStockDetail(idx){
   const r = state.stock[idx];
   if(!r) return '<div class="empty" style="padding:24px 20px"><svg viewBox="0 0 20 20" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin:0 auto 8px;color:var(--ink-muted)"><rect x="3" y="3" width="14" height="16" rx="2"/><path d="M3 8h14"/><path d="M10 3v18"/></svg>物品不存在</div>';
@@ -383,9 +292,15 @@ function pageStockDetail(idx){
   const unitOpts = (STOCK_UNITS[r.category]||["个"]).map(u=>`<option value="${u}" ${u===r.unit?"selected":""}>${u}</option>`).join("");
   const statusOpts = ["未开封","使用中","已用完"].map(s=>`<option ${s===r.status?"selected":""}>${s}</option>`).join("");
   const spaceOpts = spaceOptsHtml(r.storageLocation);
-  const emojiPickerHtml = `<div class="field"><label>物品图标 <span style="color:var(--ink-muted);font-weight:normal">（输入名称自动匹配贴纸，可点选 emoji 自定义）</span></label>
-    <div id="currentStockIcon" style="margin-bottom:8px">${renderStockSticker(r, "md")}<div id="stockStickerHint" style="font-size:12px;color:var(--ink-muted);margin-top:6px"></div></div>
-    ${renderEmojiPicker(r.icon, r.category)}
+  const stickerDisabled = !(state.settings.modelscopeToken && supabaseClient && supabaseClient.isReady());
+  const stickerPreviewHtml = `<div class="field"><label>物品贴纸</label>
+    <div id="currentStockIcon" style="margin-bottom:8px">${renderStockSticker(r, "md")}</div>
+    <div style="display:flex;gap:8px">
+      <button class="btn ghost sm" type="button" id="stockAiStickerBtnDetail" ${stickerDisabled?'disabled':''}>
+        <svg viewBox="0 0 20 20" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:2px"><circle cx="10" cy="10" r="3"/><path d="M10 3v2M10 15v2M3 10h2M15 10h2M5.6 5.6l1.4 1.4M13 13l1.4 1.4M5.6 14.4L7 13M13 7l1.4-1.4"/></svg>
+        AI生成贴纸
+      </button>
+    </div>
   </div>`;
   const cons = (r.consumption||[]).slice().reverse();
   return `<div class="card">
@@ -408,7 +323,7 @@ function pageStockDetail(idx){
       ${isFood ? `<div class="field"><label>最佳食用日期</label><input type="date" name="se-bestBefore" value="${r.bestBeforeDate||''}"></div>` : ''}
       <div class="field"><label>空间</label><select name="se-location" id="seLocation">${spaceOpts}</select></div>
       <div class="field"><label>状态</label><select name="se-status">${statusOpts}</select></div>
-      ${emojiPickerHtml}
+      ${stickerPreviewHtml}
       <div class="row">
         <div class="field"><label>标签</label><input type="text" name="se-tags" value="${esc((r.tags||[]).join(', '))}" placeholder="逗号分隔" style="font-size:13px"></div>
         <div class="field"><label>最低库存</label><input type="number" name="se-minStock" value="${r.minStock||1}" min="0" style="font-size:13px;max-width:100px"></div>
@@ -425,13 +340,11 @@ function pageStockDetail(idx){
   </div>`;
 }
 
-/* ============== 囤货事件绑定 ============== */
 function bindStockOverview(){
   const goAdd = document.getElementById("goStockAdd");
   if(goAdd) goAdd.addEventListener("click",()=>{ navigate("stock-add"); });
   const goConsume = document.getElementById("goConsumeBtn");
   if(goConsume) goConsume.addEventListener("click", ()=>{
-    // 弹出消耗录入对话框
     const items = state.stock.filter(i => i.status !== '已用完');
     if(!items.length){ toast("没有可消耗的物品"); return; }
     const itemOpts = items.map((i,idx) => `<option value="${state.stock.indexOf(i)}">${esc(i.name)} (剩余 ${i.quantity} ${i.unit})</option>`).join('');
@@ -466,13 +379,11 @@ function bindStockOverview(){
       const remaining = item.quantity - alreadyConsumed;
       if(qty > remaining){ toast('消耗量超过剩余量（剩余 '+remaining+' '+item.unit+'）'); return; }
       item.consumption.push({date, quantity: qty, note});
-      // 如果消耗完，自动标记为已用完
       const totalConsumed = alreadyConsumed + qty;
       if(totalConsumed >= item.quantity) item.status = '已用完';
       save(); toast('已记录消耗'); overlay.remove(); navigate('stock-overview');
     });
   });
-  // 忽略过期提醒
   document.querySelectorAll("[data-dismiss-expiry]").forEach(b=>b.addEventListener("click",()=>{
     const idx = num(b.dataset.dismissExpiry);
     const item = state.stock[idx];
@@ -498,69 +409,44 @@ function bindStockAdd(){
   catSel.addEventListener("change", updateSubAndUnit);
   updateSubAndUnit();
 
-  // Emoji 选择器
-  let selectedIcon = null;
   const currentIconDisplay = document.getElementById("currentStockIconAdd");
   const nameInput = document.getElementById("stockForm")["s-name"];
-  const hintEl = document.getElementById("stockStickerHintAdd");
-  
-  function updateIconDisplay() {
+  let generatedStickerUrl = null; // 存储 AI 生成的贴纸 URL
+
+  function updateStickerDisplay() {
     if (currentIconDisplay) {
       const typedName = (nameInput && nameInput.value.trim()) || "新品";
-      const tempItem = { category: catSel.value, name: typedName, icon: selectedIcon };
+      const tempItem = { category: catSel.value, name: typedName };
+      if(generatedStickerUrl) tempItem.stickerUrl = generatedStickerUrl;
       currentIconDisplay.innerHTML = renderStockSticker(tempItem, "md");
-      // 提示当前匹配状态：手绘贴纸命中与否
-      if(hintEl){
-        hintEl.textContent = getStockSticker(tempItem)
-          ? "已按名称自动匹配内置手绘贴纸"
-          : (selectedIcon ? "" : "未匹配到内置贴纸，将显示 emoji 图标");
-      }
     }
-    // 更新选中样式
-    document.querySelectorAll(".emoji-option").forEach(opt => {
-      const emoji = opt.dataset.emoji;
-      const color = getCategoryColor(catSel.value);
-      if (emoji === selectedIcon) {
-        opt.style.border = `2px solid ${color.text}`;
-        opt.style.background = color.bg;
-      } else {
-        opt.style.border = "1px solid transparent";
-        opt.style.background = "transparent";
-      }
-    });
   }
-  
-  // 绑定 emoji 选项点击事件
-  document.querySelectorAll(".emoji-option").forEach(opt => {
-    opt.addEventListener("click", () => {
-      selectedIcon = opt.dataset.emoji;
-      updateIconDisplay();
-    });
-  });
-  updateIconDisplay();
 
-  // 输入品名时实时联想匹配手绘贴纸
-  if(nameInput) nameInput.addEventListener("input", updateIconDisplay);
-  
-  // 分类变化时更新 emoji 选项
-  catSel.addEventListener("change", () => {
-    // 重新渲染 emoji picker
-    const newPicker = renderEmojiPicker(null, catSel.value);
-    document.querySelector(".emoji-picker")?.replaceWith(new DOMParser().parseFromString(newPicker, 'text/html').body.firstChild);
-    // 重新绑定事件
-    document.querySelectorAll(".emoji-option").forEach(opt => {
-      opt.addEventListener("click", () => {
-        selectedIcon = opt.dataset.emoji;
-        updateIconDisplay();
-      });
-    });
-    updateIconDisplay();
+  if(nameInput) nameInput.addEventListener("input", updateStickerDisplay);
+  catSel.addEventListener("change", updateStickerDisplay);
+
+  const aiStickerBtn = document.getElementById("stockAiStickerBtn");
+  if(aiStickerBtn) aiStickerBtn.addEventListener("click", async ()=>{
+    const typedName = (nameInput && nameInput.value.trim()) || "新品";
+    if(!typedName || typedName === "新品"){ toast("请先输入物品名称"); return; }
+    aiStickerBtn.disabled = true;
+    const origHtml = aiStickerBtn.innerHTML;
+    aiStickerBtn.textContent = "生成中…";
+    try{
+      const tempItem = { category: catSel.value, name: typedName };
+      await autoGenerateSticker(tempItem);
+      if(tempItem.stickerUrl){
+        generatedStickerUrl = tempItem.stickerUrl;
+        currentIconDisplay.innerHTML = renderStockSticker(tempItem, "md");
+      }
+    }finally{
+      aiStickerBtn.disabled = false;
+      aiStickerBtn.innerHTML = origHtml;
+    }
   });
 
-  // AI识图（拍照识别商品名称，照片不保存到物品）
   const aiBtn = document.getElementById("stockAiBtn");
   if(aiBtn) aiBtn.addEventListener("click", ()=>{
-    // 动态创建临时拍照输入，识别完即丢弃照片
     const tmpInput = document.createElement('input');
     tmpInput.type = 'file';
     tmpInput.accept = 'image/*';
@@ -583,6 +469,7 @@ function bindStockAdd(){
               catSel.value = info.category;
               updateSubAndUnit();
             }
+            updateStickerDisplay();
             toast("已识别，请核对信息");
           }
         }catch(err){ toast("识别失败："+err.message); }
@@ -593,7 +480,6 @@ function bindStockAdd(){
     tmpInput.click();
   });
 
-  // 扫码后自动置入商品信息（条码库查询 + 分类/单位推断）
   async function fillBarcodeResult(code){
     const f = document.getElementById("stockForm");
     if(!f) return;
@@ -605,7 +491,6 @@ function bindStockAdd(){
         catSel.value = cat;
         updateSubAndUnit();
       }
-      // 依据 spec 推断单位（ml/毫升 → ml，L/升 → L，g/克 → g，kg/千克 → kg）
       const spec = info.spec || "";
       if(unitSel){
         const m = spec.match(/(\d+(?:\.\d+)?)\s*(ml|毫升|L|l|升|g|克|kg|千克)/);
@@ -615,14 +500,15 @@ function bindStockAdd(){
           if((STOCK_UNITS[catSel.value]||[]).includes(u)) unitSel.value = u;
         }
       }
+      updateStickerDisplay();
       toast("已自动填充：" + info.name);
     } else {
       f["s-name"].value = '扫码: ' + code;
+      updateStickerDisplay();
       toast('条码库未收录，已填入条码号，可手动完善');
     }
   }
 
-  // 扫码录入
   const barcodeBtn = document.getElementById("stockBarcodeBtn");
   if(barcodeBtn) barcodeBtn.addEventListener("click", async ()=>{
     try{
@@ -641,7 +527,6 @@ function bindStockAdd(){
       let scanned = false;
       let detectInterval = null;
       
-      // 优先使用原生 BarcodeDetector
       if('BarcodeDetector' in window){
         const detector = new BarcodeDetector({formats:['ean_13','ean_8','upc_a','upc_e','code_128','code_39','qr_code']});
         detectInterval = setInterval(async ()=>{
@@ -658,7 +543,6 @@ function bindStockAdd(){
           }catch(e){}
         }, 500);
       } else {
-        // 降级方案：动态加载 html5-qrcode
         await scanWithHtml5Qrcode(video).then(code => {
           if(code){
             scanned = true;
@@ -678,16 +562,13 @@ function bindStockAdd(){
     }
   });
 
-  // 清理资源
   function cleanup(stream, overlay){
     stream.getTracks().forEach(t=>t.stop());
     if(overlay.parentNode) overlay.remove();
   }
 
-  // 使用 html5-qrcode 扫码（降级方案）
   async function scanWithHtml5Qrcode(videoElement) {
     return new Promise((resolve) => {
-      // 动态加载 html5-qrcode
       const script = document.createElement('script');
       script.src = 'https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js';
       script.onload = async () => {
@@ -701,10 +582,9 @@ function bindStockAdd(){
             (decodedText) => {
               html5QrCode.stop().then(() => resolve(decodedText));
             },
-            () => {} // 忽略扫描失败的回调
+            () => {}
           );
           
-          // 60 秒超时
           setTimeout(() => {
             if (!html5QrCode.isScanning) {
               resolve(null);
@@ -723,7 +603,6 @@ function bindStockAdd(){
     });
   }
 
-  // 表单提交
   const f = document.getElementById("stockForm");
   if(!f) return;
   f.addEventListener("submit", e=>{
@@ -743,12 +622,12 @@ function bindStockAdd(){
       bestBeforeDate: f["s-bestBefore"] ? (f["s-bestBefore"].value || "") : "",
       storageLocation: f["s-location"].value,
       status: f["s-status"].value,
-      icon: selectedIcon, // 保存选择的 emoji
       notes: f["s-notes"].value.trim(),
       tags: f["s-tags"] ? f["s-tags"].value.split(/[,，]/).map(t=>t.trim()).filter(Boolean) : [],
       minStock: num(f["s-minStock"]?.value) || 1,
       consumption: [],
       dismissedExpiry: false,
+      stickerUrl: generatedStickerUrl || "",
     };
     state.stock.push(r);
     state.stock.sort((a,b)=>a.name<b.name?-1:a.name>b.name?1:0);
@@ -763,7 +642,6 @@ function bindStockAll(){
   const spaceTop = document.getElementById("stockFilterSpaceTop");
   const spaceSub = document.getElementById("stockFilterSpaceSub");
   const tagFilter = document.getElementById("stockFilterTag");
-  // 级联：选中一级空间时更新二级空间下拉
   function updateSubSpaces(){
     const topId = spaceTop.value;
     const topSpaces = (state.settings.spaces.children||[]);
@@ -784,9 +662,7 @@ function bindStockAll(){
     if(q) filtered = filtered.filter(i=>i.name.toLowerCase().includes(q));
     if(cat) filtered = filtered.filter(i=>i.category===cat);
     if(st) filtered = filtered.filter(i=>i.status===st);
-    // 级联空间过滤
     if(topId){
-      // 找到该一级空间及其所有子空间的ID
       const topSpaces = (state.settings.spaces.children||[]);
       const topNode = topSpaces.find(s => s.id === topId);
       if(!topNode){ filterAndRender(); return; }
@@ -822,6 +698,7 @@ function bindStockActions(){
 }
 
 function bindStockDetail(idx){
+  const r = state.stock[idx];
   document.querySelectorAll("[data-back]").forEach(b=>b.addEventListener("click",()=>{ navigate(b.dataset.back); }));
   const f = document.getElementById("stockEditForm");
   const catSel = document.getElementById("seCategory");
@@ -838,48 +715,38 @@ function bindStockDetail(idx){
   }
   if(catSel) catSel.addEventListener("change", updateSubAndUnit);
 
-  // Emoji 选择器
-  let selectedIcon = r.icon || getStockIcon(r);
   const currentIconDisplay = document.getElementById("currentStockIcon");
   const nameInput = f ? f["se-name"] : null;
-  const hintEl = document.getElementById("stockStickerHint");
-  
-  function updateIconDisplay() {
-    if (currentIconDisplay) {
-      const tempItem = { ...r, name: (nameInput && nameInput.value.trim()) || r.name, icon: selectedIcon };
-      currentIconDisplay.innerHTML = renderStockSticker(tempItem, "md");
-      // 提示当前匹配状态：手绘贴纸命中与否
-      if(hintEl){
-        hintEl.textContent = getStockSticker(tempItem)
-          ? "已按名称自动匹配内置手绘贴纸"
-          : (selectedIcon ? "" : "未匹配到内置贴纸，将显示 emoji 图标");
-      }
-    }
-    // 更新选中样式
-    document.querySelectorAll(".emoji-option").forEach(opt => {
-      const emoji = opt.dataset.emoji;
-      const color = getCategoryColor(r.category);
-      if (emoji === selectedIcon) {
-        opt.style.border = `2px solid ${color.text}`;
-        opt.style.background = color.bg;
-      } else {
-        opt.style.border = "1px solid transparent";
-        opt.style.background = "transparent";
-      }
-    });
-  }
-  
-  // 绑定 emoji 选项点击事件
-  document.querySelectorAll(".emoji-option").forEach(opt => {
-    opt.addEventListener("click", () => {
-      selectedIcon = opt.dataset.emoji;
-      updateIconDisplay();
-    });
-  });
-  updateIconDisplay();
 
-  // 修改品名时实时联想匹配手绘贴纸
-  if(nameInput) nameInput.addEventListener("input", updateIconDisplay);
+  function updateStickerDisplay() {
+    if (currentIconDisplay) {
+      const typedName = (nameInput && nameInput.value.trim()) || r.name;
+      const tempItem = { ...r, name: typedName };
+      currentIconDisplay.innerHTML = renderStockSticker(tempItem, "md");
+    }
+  }
+
+  if(nameInput) nameInput.addEventListener("input", updateStickerDisplay);
+  if(catSel) catSel.addEventListener("change", updateStickerDisplay);
+
+  const aiStickerBtn = document.getElementById("stockAiStickerBtnDetail");
+  if(aiStickerBtn) aiStickerBtn.addEventListener("click", async ()=>{
+    const typedName = (nameInput && nameInput.value.trim()) || r.name;
+    aiStickerBtn.disabled = true;
+    const origHtml = aiStickerBtn.innerHTML;
+    aiStickerBtn.textContent = "生成中…";
+    try{
+      const tempItem = { ...r, name: typedName };
+      await autoGenerateSticker(tempItem);
+      if(tempItem.stickerUrl){
+        r.stickerUrl = tempItem.stickerUrl;
+        currentIconDisplay.innerHTML = renderStockSticker(r, "md");
+      }
+    }finally{
+      aiStickerBtn.disabled = false;
+      aiStickerBtn.innerHTML = origHtml;
+    }
+  });
 
   const saveBtn = document.getElementById("saveStockEdit");
   if(saveBtn) saveBtn.addEventListener("click",()=>{
@@ -897,12 +764,10 @@ function bindStockDetail(idx){
     r.bestBeforeDate = f["se-bestBefore"] ? (f["se-bestBefore"].value || "") : "";
     r.storageLocation = f["se-location"].value;
     r.status = f["se-status"].value;
-    r.icon = selectedIcon; // 保存选择的 emoji
     r.notes = f["se-notes"].value.trim();
     r.tags = f["se-tags"] ? f["se-tags"].value.split(/[,，]/).map(t=>t.trim()).filter(Boolean) : [];
     r.minStock = num(f["se-minStock"]?.value) || 1;
     save(); toast("已保存修改"); navigate("stock-overview");
-    if(!getStockSticker(r)) autoGenerateSticker(r);
   });
   const delBtn = document.getElementById("deleteStockEdit");
   if(delBtn) delBtn.addEventListener("click",()=>{
@@ -912,7 +777,6 @@ function bindStockDetail(idx){
   });
 }
 
-/* ============== 页面：空间管理 ============== */
 function pageStockSpaces(){
   const tree = state.settings.spaces;
   const countMap = {};
@@ -1008,7 +872,6 @@ function bindStockSpaces(){
   document.querySelectorAll("[data-del-space]").forEach(b => b.addEventListener("click", ()=>{
     const id = b.dataset.delSpace;
     if(!confirm('确定删除此空间及其子空间？')) return;
-    // 收集所有将被删除的空间ID（含子空间）
     const idsToRemove = new Set();
     function collectIds(nodes){
       for(const n of nodes){
@@ -1033,7 +896,6 @@ function bindStockSpaces(){
       return false;
     }
     rm([state.settings.spaces], id);
-    // 清理指向被删除空间的物品引用
     state.stock.forEach(item => {
       if(idsToRemove.has(item.storageLocation)) item.storageLocation = '';
     });
@@ -1049,7 +911,6 @@ function bindStockSpaces(){
   });
 }
 
-/* AI识图 - 识别产品 */
 async function recognizeProduct(dataUrl){
   const {endpoint, key, model, enabled} = state.settings.api;
   
@@ -1057,18 +918,15 @@ async function recognizeProduct(dataUrl){
     throw new Error("请先在设置中开启 AI 功能并配置 API Key");
   }
   
-  // 检查是否使用 Supabase Edge Function 代理（避免前端暴露 API Key）
   const useEdgeFunction = supabaseClient && supabaseClient.isReady();
   
   if(useEdgeFunction){
     try {
-      // 先上传图片到 Storage
       const compressed = await compressImage(new File([dataUrlToBlob(dataUrl)], 'image/jpeg', {type: 'image/jpeg'}));
       const fileName = `ai_recognize_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.jpg`;
       const imageUrl = await supabaseClient.uploadImage(fileName, compressed.blob, 'image/jpeg');
       
       if(imageUrl){
-        // 调用 Edge Function
         const { data, error } = await supabaseClient.functions.invoke('recognize-product', {
           body: { image_url: imageUrl, model: model }
         });
@@ -1084,7 +942,6 @@ async function recognizeProduct(dataUrl){
     }
   }
   
-  // 降级方案：直接调用 API（Key 暴露在前端）
   const body = {
     model,
     messages:[
@@ -1109,7 +966,6 @@ async function recognizeProduct(dataUrl){
   }
 }
 
-// 辅助函数：将 base64 data URL 转换为 Blob
 function dataUrlToBlob(dataUrl) {
   const arr = dataUrl.split(',');
   const mime = arr[0].match(/:(.*?);/)[1];
@@ -1120,7 +976,6 @@ function dataUrlToBlob(dataUrl) {
   return new Blob([u8], {type: mime});
 }
 
-/* Expose to global scope */
 window.pageStockOverview = pageStockOverview;
 window.pageStockAdd = pageStockAdd;
 window.pageStockAll = pageStockAll;
