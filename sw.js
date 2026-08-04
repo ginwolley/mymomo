@@ -1,6 +1,16 @@
-const CACHE = "momo-v2";
+const CACHE = "momo-v3";
 const PRECACHE = [
   "工作台.html",
+  "css/style.css",
+  "js/core.js",
+  "js/sync.js",
+  "js/fitness.js",
+  "js/overview.js",
+  "js/salary.js",
+  "js/settings.js",
+  "js/stock.js",
+  "js/passwords.js",
+  "js/app.js",
   "manifest.json",
   "icon.jpg",
   "icon.svg"
