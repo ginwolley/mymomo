@@ -529,15 +529,17 @@ function bindStockAdd(){
   if(barcodeBtn) barcodeBtn.addEventListener("click", async ()=>{
     try{
       const stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
-      const video = document.createElement('video');
-      video.srcObject = stream;
-      video.play();
       const overlay = document.createElement('div');
       overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:1000;display:flex;flex-direction:column;align-items:center;justify-content:center';
-      overlay.innerHTML = `<video id="barcodeVideo" style="max-width:100%;max-height:70vh;border-radius:12px"></video>
-        <div style="color:#fff;margin-top:12px;font-size:14px">正在扫描条码…</div>
-        <button class="btn ghost" id="barcodeCancel" style="margin-top:12px;color:#fff;border-color:rgba(255,255,255,.3)">取消</button>`;
-      overlay.querySelector('#barcodeVideo').srcObject = stream;
+      overlay.innerHTML = `<video id="barcodeVideo" style="max-width:100%;max-height:70vh;border-radius:12px;object-fit:contain;background:#000"></video>
+        <div style="color:#fff;margin-top:8px;font-size:14px">正在扫描条码…</div>
+        <button class="btn ghost" id="barcodeCancel" style="margin-top:8px;color:#fff;border-color:rgba(255,255,255,.3)">取消</button>`;
+      const videoEl = overlay.querySelector('#barcodeVideo');
+      videoEl.srcObject = stream;
+      videoEl.setAttribute('playsinline', '');
+      videoEl.setAttribute('autoplay', '');
+      videoEl.setAttribute('muted', '');
+      await videoEl.play();
       document.body.appendChild(overlay);
       
       let scanned = false;
@@ -548,7 +550,7 @@ function bindStockAdd(){
         detectInterval = setInterval(async ()=>{
           if(scanned) return;
           try{
-            const barcodes = await detector.detect(video);
+            const barcodes = await detector.detect(videoEl);
             if(barcodes.length > 0){
               scanned = true;
               clearInterval(detectInterval);
@@ -559,7 +561,7 @@ function bindStockAdd(){
           }catch(e){}
         }, 500);
       } else {
-        await scanWithHtml5Qrcode(video).then(code => {
+        await scanWithHtml5Qrcode(videoEl).then(code => {
           if(code){
             scanned = true;
             cleanup(stream, overlay);
