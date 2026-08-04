@@ -5351,22 +5351,21 @@ function compressImage(file, maxWidth = 800, quality = 0.8) {
 async function handleStockPhotoUpload(file) {
   try {
     const compressed = await compressImage(file);
-    
-    // 如果 Supabase 已配置且可用，尝试上传
+    let photoUrl = null;
+
+    // 如果 Supabase 已配置且可用，尝试上传（失败自动回退 Base64，不中断流程）
     if (supabaseClient && supabaseClient.isReady()) {
       try {
         const fileName = `stock_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.jpg`;
         const url = await supabaseClient.uploadImage(fileName, compressed.blob, 'image/jpeg');
-        if (url) {
-          return url; // 返回 Supabase URL
-        }
+        if (url) photoUrl = url;
       } catch (e) {
         console.warn("Supabase upload failed, falling back to base64:", e);
       }
     }
-    
-    // 回退：返回 Base64 Data URL
-    return compressed.dataUrl;
+
+    // 上传成功返回云 URL，失败回退 Base64 Data URL
+    return photoUrl || compressed.dataUrl;
   } catch (e) {
     console.error("Image processing failed:", e);
     throw e;
