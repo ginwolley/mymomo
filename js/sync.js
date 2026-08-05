@@ -167,6 +167,12 @@ function getSyncData(){
     });
   }
   
+  // 清理 deletedIds 中过期的记录（超过 7 天）
+  if(Array.isArray(d.deletedIds)){
+    const cutoff = Date.now() - 7*24*60*60*1000;
+    d.deletedIds = d.deletedIds.filter(del => del.deletedAt > cutoff);
+  }
+  
   return d;
 }
 
@@ -178,7 +184,7 @@ function fmtTime(t){
 
 function countRecords(d){
   let n = 0;
-  ["periods","salary","housingAllowance","weight","measure","diet","exercise","stock"].forEach(k=>{
+  ["periods","salary","housingAllowance","weight","measure","diet","exercise","stock","passwords"].forEach(k=>{
     if(Array.isArray(d[k])) n += d[k].length;
   });
   return n;
@@ -186,6 +192,18 @@ function countRecords(d){
 
 function mergeRemote(remote){
   if(!remote || !remote.meta) return false;
+  
+  // ========== 第一步：处理远端 deletedIds（跨设备同步删除） ==========
+  if(Array.isArray(remote.deletedIds) && remote.deletedIds.length > 0){
+    const removed = applyRemoteDeletions(remote.deletedIds);
+    if(removed > 0){
+      glog("mergeRemote: 根据远端 deletedIds 删除了 " + removed + " 条本地记录");
+      // 清理已同步的删除记录
+      cleanupSyncedDeletedIds(remote.deletedIds);
+      // 继续合并，确保数量对比正确
+    }
+  }
+  
   const lc = countRecords(state);
   const rc = countRecords(remote);
   
@@ -217,7 +235,7 @@ function mergeRemote(remote){
         glog("mergeRemote: " + key + " 本地" + localCount + "→" + remoteCount + "（云端覆盖）");
         merged = true;
       } else if(remoteCount < localCount){
-        // 本地这个表比云端多，保留本地数据
+        // 本地这个表比云端多（可能因为远端删除了一些），保留本地数据
         glog("mergeRemote: " + key + " 本地" + localCount + " > 云端" + remoteCount + "（保留本地）");
       } else {
         // 数量相同，检查是否需要更新
@@ -269,6 +287,48 @@ function mergeRemote(remote){
   }
   
   if(hasUpdate){
+    state.meta.lastModified = Math.max(state.meta.lastModified || 0, remote.meta.lastModified || 0);
+    glog("mergeRemote: 合并完成");
+    return true;
+  }
+  
+  // 即使数量相同，也检查远端是否有更新的记录（逐表按 id/date 对比）
+  let refinedUpdate = false;
+  for(const key of MERGE_KEYS){
+    const localArr = state[key] || [];
+    const remoteArr = remote[key] || [];
+    if(!Array.isArray(remoteArr) || remoteArr.length === 0) continue;
+    if(remoteArr.length !== localArr.length) continue;
+    
+    // 按 id 或 date 对比，找到需要更新的记录
+    const localMap = new Map();
+    for(item of localArr){
+      const id = item.id || item.date || (key + "_" + (item.start || ''));
+      localMap.set(id, item);
+    }
+    
+    for(const remoteItem of remoteArr){
+      const id = remoteItem.id || remoteItem.date || (key + "_" + (remoteItem.start || ''));
+      const localItem = localMap.get(id);
+      if(localItem){
+        const localTs = localItem.updatedAt || localItem.createdAt || localItem.date || 0;
+        const remoteTs = remoteItem.updatedAt || remoteItem.createdAt || remoteItem.date || 0;
+        if(remoteTs > localTs){
+          const idx = localArr.indexOf(localItem);
+          if(idx >= 0){
+            localArr[idx] = remoteItem;
+            refinedUpdate = true;
+          }
+        }
+      }
+    }
+    
+    if(refinedUpdate){
+      glog("mergeRemote: " + key + " 有逐记录更新");
+    }
+  }
+  
+  if(refinedUpdate){
     state.meta.lastModified = Math.max(state.meta.lastModified || 0, remote.meta.lastModified || 0);
     glog("mergeRemote: 合并完成");
     return true;

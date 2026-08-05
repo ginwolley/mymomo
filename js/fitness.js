@@ -714,7 +714,7 @@ function bindWeight(){
     save(); toast("已保存"); navigate("weight");
   });
   document.querySelectorAll("[data-del-weight]").forEach(b=>b.addEventListener("click",()=>{
-    state.weight=state.weight.filter(d=>d.date!==b.dataset.delWeight); save(); navigate("weight");
+    deleteRecord("weight", {date: b.dataset.delWeight}); save(); navigate("weight");
   }));
 }
 
@@ -735,7 +735,7 @@ function bindMeasure(){
     save(); toast("已保存"); navigate("measure");
   });
   document.querySelectorAll("[data-del-measure]").forEach(b=>b.addEventListener("click",()=>{
-    state.measure=state.measure.filter(d=>d.date!==b.dataset.delMeasure); save(); navigate("measure");
+    deleteRecord("measure", {date: b.dataset.delMeasure}); save(); navigate("measure");
   }));
 }
 
@@ -1214,6 +1214,10 @@ function bindHistoryView(){
   if(bp) bp.addEventListener("click",()=>{ historyMode=false; navigate("period"); });
   document.querySelectorAll("[data-del-period]").forEach(b=>b.addEventListener("click",()=>{
     const idx=num(b.dataset.delPeriod);
+    const period = state.periods[idx];
+    if(period){
+      markDeleted("periods", period.id || ("periods_" + period.start));
+    }
     state.periods.splice(idx,1); save(); refPeriod();
   }));
 }
@@ -1246,6 +1250,7 @@ function bindPeriodPage(){
     } else {
       if(ui.editingPeriod && ui.editingPeriod.start === selDate){
         // 取消该条经期记录
+        markDeleted("periods", ui.editingPeriod.id || ("periods_" + ui.editingPeriod.start));
         state.periods = state.periods.filter(p => p !== ui.editingPeriod);
         save(); toast("已取消经期开始"); refPeriod();
       } else if(ui.editingPeriod){
@@ -1256,6 +1261,7 @@ function bindPeriodPage(){
           // 删掉末尾一天
           const newEnd = addDays(selDate, -1);
           if(newEnd < p.start){
+            markDeleted("periods", p.id || ("periods_" + p.start));
             state.periods = state.periods.filter(x => x !== p);
           } else {
             p.end = newEnd;
@@ -1306,6 +1312,10 @@ function bindPeriodPage(){
   // 历史记录删除
   document.querySelectorAll("[data-del-period]").forEach(b=>b.addEventListener("click",()=>{
     const idx=num(b.dataset.delPeriod);
+    const period = state.periods[idx];
+    if(period){
+      markDeleted("periods", period.id || ("periods_" + period.start));
+    }
     state.periods.splice(idx,1); save(); refPeriod();
   }));
   // 历史展开至新页面

@@ -708,7 +708,10 @@ function bindStockAll(){
 
 function bindStockActions(){
   document.querySelectorAll("[data-del-stock]").forEach(b=>b.addEventListener("click",()=>{
-    state.stock.splice(num(b.dataset.delStock),1); save(); navigate("stock-all");
+    const idx = num(b.dataset.delStock);
+    const item = state.stock[idx];
+    if(item) markDeleted("stock", getRecordId("stock", item) || ("stock_" + idx));
+    state.stock.splice(idx,1); save(); navigate("stock-all");
   }));
   document.querySelectorAll("[data-view-stock]").forEach(b=>b.addEventListener("click",()=>{
     currentStockIdx = num(b.dataset.viewStock);
@@ -808,6 +811,8 @@ function bindStockDetail(idx){
   const delBtn = document.getElementById("deleteStockEdit");
   if(delBtn) delBtn.addEventListener("click",()=>{
     if(confirm("确定删除此物品？")){
+      const item = state.stock[idx];
+      if(item) markDeleted("stock", getRecordId("stock", item) || ("stock_" + idx));
       state.stock.splice(idx,1); save(); toast("已删除"); navigate("stock-overview");
     }
   });

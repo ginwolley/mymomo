@@ -280,6 +280,7 @@ function bindPasswords(){
     b.addEventListener("click", ()=>{
       if(!confirm("确定删除这条密码记录？")) return;
       const id = b.dataset.pwdDel;
+      markDeleted("passwords", id);
       state.passwords = (state.passwords || []).filter(x => x.id !== id);
       save();
       navigate("passwords");
@@ -317,6 +318,7 @@ function bindPasswordDetail(id){
   });
   document.getElementById("pwdDetailDel")?.addEventListener("click", ()=>{
     if(!confirm("确定删除这条密码记录？")) return;
+    markDeleted("passwords", id);
     state.passwords = (state.passwords || []).filter(x => x.id !== id);
     save();
     toast("已删除");

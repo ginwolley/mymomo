@@ -159,7 +159,10 @@ function pageSalarySummary(){
 
 function bindSalaryCommon(navBack){
   document.querySelectorAll("[data-del-salary]").forEach(b=>b.addEventListener("click",()=>{
-    state.salary.splice(num(b.dataset.delSalary),1); save(); navigate(navBack);
+    const idx = num(b.dataset.delSalary);
+    const item = state.salary[idx];
+    if(item) markDeleted("salary", getRecordId("salary", item) || ("salary_" + item.date));
+    state.salary.splice(idx,1); save(); navigate(navBack);
   }));
   document.querySelectorAll("[data-view-salary]").forEach(b=>b.addEventListener("click",()=>{
     currentSalaryIdx = num(b.dataset.viewSalary);
@@ -213,6 +216,8 @@ function bindSalaryDetail(idx){
   const delBtn = document.getElementById("deleteSalaryEdit");
   if(delBtn) delBtn.addEventListener("click",()=>{
     if(confirm("确定删除此条工资记录？")){
+      const item = state.salary[idx];
+      if(item) markDeleted("salary", getRecordId("salary", item) || ("salary_" + item.date));
       state.salary.splice(idx,1); save(); toast("已删除"); navigate("salary-basic");
     }
   });
@@ -220,7 +225,10 @@ function bindSalaryDetail(idx){
 
 function bindHousingCommon(navBack){
   document.querySelectorAll("[data-del-housing]").forEach(b=>b.addEventListener("click",()=>{
-    state.housingAllowance.splice(num(b.dataset.delHousing),1); save(); navigate(navBack);
+    const idx = num(b.dataset.delHousing);
+    const item = state.housingAllowance[idx];
+    if(item) markDeleted("housingAllowance", getRecordId("housingAllowance", item) || ("housingAllowance_" + item.date));
+    state.housingAllowance.splice(idx,1); save(); navigate(navBack);
   }));
   document.querySelectorAll("[data-view-housing]").forEach(b=>b.addEventListener("click",()=>{
     currentHousingIdx = num(b.dataset.viewHousing);
@@ -276,6 +284,8 @@ function bindHousingDetail(idx){
   const delBtn = document.getElementById("deleteHousingEdit");
   if(delBtn) delBtn.addEventListener("click",()=>{
     if(confirm("确定删除此条房补记录？")){
+      const item = state.housingAllowance[idx];
+      if(item) markDeleted("housingAllowance", getRecordId("housingAllowance", item) || ("housingAllowance_" + item.date));
       state.housingAllowance.splice(idx,1); save(); toast("已删除"); navigate("salary-housing");
     }
   });

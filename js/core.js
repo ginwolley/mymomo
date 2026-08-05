@@ -2,7 +2,7 @@
 "use strict";
 /* ============== 常量与默认数据 ============== */
 const STORE_KEY = "fit_workbench_v1";
-const DATA_VERSION = 4; // 数据版本号，每次新增迁移时递增（同步更新 migrateData 函数）
+const DATA_VERSION = 5; // 数据版本号，每次新增迁移时递增（同步更新 migrateData 函数）
 
 /* 多级导航树：分组(group)可折叠，叶子(leaf)为页面 */
 const DEFAULTS = {
@@ -33,6 +33,7 @@ const DEFAULTS = {
   housingAllowance: window.__SEED_DATA__.housing,
   stock: [],
   passwords: [],
+  deletedIds: [], // [{table, id, deletedAt}] 已删除记录索引，用于跨设备同步删除
 };
 
 /* ============== 状态与持久化 ============== */
@@ -94,6 +95,13 @@ function migrateData(data){
     }
     v = 4;
   }
+  // v4→v5: 添加 deletedIds 字段用于跨设备同步删除
+  if(v < 5){
+    if(!Array.isArray(data.deletedIds)){
+      data.deletedIds = [];
+    }
+    v = 5;
+  }
   // 后续迁移在此追加，逐级递增版本号
   data.meta = data.meta || {};
   data.meta.version = v;
@@ -106,6 +114,92 @@ function save(shouldSync = true){
   if(shouldSync && state.settings.supabaseUrl && state.settings.supabaseKey){
     syncToSupabase(false); // 静默同步，不显示 toast
   }
+}
+
+/* ============== 删除记录索引（跨设备同步删除） ============== */
+// 支持的表名
+const DELETED_TABLES = ["periods","salary","housingAllowance","weight","measure","diet","exercise","stock","passwords"];
+
+// 生成记录的稳定唯一 ID（有 id 用 id，无 id 用 date 或复合键）
+function getRecordId(table, record){
+  if(!record) return null;
+  if(record.id) return record.id;
+  if(record.date) return table + "_" + record.date;
+  return null;
+}
+
+function markDeleted(table, id){
+  if(!DELETED_TABLES.includes(table) || !id) return;
+  if(!Array.isArray(state.deletedIds)) state.deletedIds = [];
+  const exists = state.deletedIds.some(d => d.table === table && d.id === id);
+  if(exists) return;
+  state.deletedIds.push({ table, id, deletedAt: Date.now() });
+  // 清理超过 7 天的删除记录
+  const cutoff = Date.now() - 7*24*60*60*1000;
+  state.deletedIds = state.deletedIds.filter(d => d.deletedAt > cutoff);
+}
+
+// 从本地表中删除指定记录（自动处理 id 或 date 键）
+function deleteRecord(table, record){
+  if(!DELETED_TABLES.includes(table) || !record) return false;
+  const arr = state[table] || [];
+  const id = getRecordId(table, record);
+  let idx = -1;
+  
+  if(record.id){
+    idx = arr.findIndex(item => item && item.id === record.id);
+  } else if(record.date){
+    idx = arr.findIndex(item => item && item.date === record.date);
+  }
+  
+  if(idx >= 0){
+    arr.splice(idx, 1);
+    if(id) markDeleted(table, id);
+    return true;
+  }
+  return false;
+}
+
+// 应用远端的删除记录到本地（处理 deletedIds 同步删除）
+function applyRemoteDeletions(remoteDeletedIds){
+  if(!Array.isArray(remoteDeletedIds) || remoteDeletedIds.length === 0) return 0;
+  let removed = 0;
+  for(const del of remoteDeletedIds){
+    if(!DELETED_TABLES.includes(del.table) || !del.id) continue;
+    const arr = state[del.table] || [];
+    // 尝试按 id 删除
+    let idx = arr.findIndex(item => item && item.id === del.id);
+    // 尝试按 date 复合键删除（如 weight_2026-08-01）
+    if(idx < 0){
+      const prefix = del.table + "_";
+      if(del.id.startsWith(prefix)){
+        const dateKey = del.id.slice(prefix.length);
+        // 按 date 匹配（weight, measure, salary, housingAllowance）
+        idx = arr.findIndex(item => item && item.date === dateKey);
+        // 按 start 匹配（periods）
+        if(idx < 0){
+          idx = arr.findIndex(item => item && item.start === dateKey);
+        }
+      }
+    }
+    if(idx >= 0){
+      arr.splice(idx, 1);
+      removed++;
+    }
+  }
+  return removed;
+}
+
+// 清理已同步的删除记录（处理完远端 deletedIds 后调用）
+function cleanupSyncedDeletedIds(remoteDeletedIds){
+  if(!Array.isArray(remoteDeletedIds) || !Array.isArray(state.deletedIds)) return;
+  const remoteSet = new Set(remoteDeletedIds.map(r => r.table + ":" + r.id));
+  const before = state.deletedIds.length;
+  state.deletedIds = state.deletedIds.filter(local => {
+    const key = local.table + ":" + local.id;
+    return !remoteSet.has(key);
+  });
+  return before - state.deletedIds.length;
 }
 function deepMerge(base, over){
   if(Array.isArray(base)) return Array.isArray(over) ? over : base;
