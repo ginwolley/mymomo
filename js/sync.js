@@ -152,6 +152,21 @@ let supabaseClient = null;
 function getSyncData(){
   const d = {...state};
   delete d.settings; // 不上传 token 和偏好设置
+  
+  // 关键：过滤 stock 中的 stickerUrl（图片数据太大，单条可能上 MB，超过 Supabase 1MB 限制）
+  // stickerUrl 存的是 Supabase Storage 链接或 Base64，需要在同步时剥离 Base64
+  if(Array.isArray(d.stock)){
+    d.stock = d.stock.map(item => {
+      const { stickerUrl, ...rest } = item;
+      // 如果 stickerUrl 是 Supabase Storage URL (https://xxx.supabase.co/storage/...)，保留
+      // 如果是 Base64 (data:image/...)，剥离掉，因为太大了
+      if(stickerUrl && !stickerUrl.startsWith('data:')){
+        return item; // 保留云端 URL
+      }
+      return rest; // 剥离 stickerUrl
+    });
+  }
+  
   return d;
 }
 
@@ -313,7 +328,36 @@ async function syncToSupabase(showToast = true) {
     const loggedIn = await supabaseClient.ensureLoggedIn(s.supabaseEmail, s.supabasePass);
     if (!loggedIn) throw new Error("Supabase 未登录（请检查登录邮箱/密码）");
     const dataToSync = getSyncData();
-    const success = await supabaseClient.syncAll(dataToSync, 'user_default');
+    let uploadData = dataToSync;
+    const jsonSize = JSON.stringify(dataToSync).length;
+    glog("syncToSupabase: 数据大小=" + (jsonSize/1024).toFixed(1) + "KB，记录数=" + countRecords(dataToSync));
+    
+    // 检查数据大小，Supabase RPC 限制为 1MB
+    if(jsonSize > 900000){
+      glog("syncToSupabase: 数据过大 (" + (jsonSize/1024).toFixed(1) + "KB)，精简后上传");
+      uploadData = {
+        meta: dataToSync.meta,
+        periods: dataToSync.periods || [],
+        salary: dataToSync.salary || [],
+        weight: dataToSync.weight || [],
+        measure: dataToSync.measure || [],
+        diet: dataToSync.diet || [],
+        exercise: dataToSync.exercise || [],
+        stock: (dataToSync.stock || []).map(item => {
+          const { stickerUrl, consumption, notes, ...rest } = item;
+          return rest; // 剥离图片、消耗记录和备注等大字段
+        }),
+        passwords: dataToSync.passwords || [],
+        housingAllowance: dataToSync.housingAllowance || [],
+      };
+      const minimalSize = JSON.stringify(uploadData).length;
+      glog("syncToSupabase: 精简后大小=" + (minimalSize/1024).toFixed(1) + "KB");
+      if(minimalSize > 900000){
+        throw new Error("数据过大：即使精简后仍超过 900KB，请清理囤货或密码数据");
+      }
+    }
+    
+    const success = await supabaseClient.syncAll(uploadData, 'user_default');
     
     if (success) {
       state.settings.supabaseLastSync = Date.now();
