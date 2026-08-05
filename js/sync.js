@@ -198,143 +198,74 @@ function mergeRemote(remote){
     const removed = applyRemoteDeletions(remote.deletedIds);
     if(removed > 0){
       glog("mergeRemote: 根据远端 deletedIds 删除了 " + removed + " 条本地记录");
-      // 清理已同步的删除记录
       cleanupSyncedDeletedIds(remote.deletedIds);
-      // 继续合并，确保数量对比正确
     }
   }
   
-  const lc = countRecords(state);
-  const rc = countRecords(remote);
-  
-  glog("mergeRemote: 本地=" + lc + "条，云端=" + rc + "条");
-  
-  // 如果云端记录数 > 本地，说明有新数据，直接合并
-  if(rc > lc){
-    glog("mergeRemote: 云端比本地多 " + (rc - lc) + " 条，执行合并");
-    // 逐表检查差异并合并
-    const MERGE_KEYS = ["periods","salary","housingAllowance","weight","measure","diet","exercise","stock","passwords"];
-    let merged = false;
-    
-    for(const key of MERGE_KEYS){
-      const localArr = state[key] || [];
-      const remoteArr = remote[key] || [];
-      if(!Array.isArray(remoteArr) || remoteArr.length === 0) continue;
-      
-      const localCount = localArr.length;
-      const remoteCount = remoteArr.length;
-      
-      if(remoteCount > localCount){
-        // 云端这个表有更多数据，直接用云端数据覆盖
-        state[key] = remoteArr;
-        state[key].sort((a,b) => {
-          const tsA = a.updatedAt || a.createdAt || a.date || 0;
-          const tsB = b.updatedAt || b.createdAt || b.date || 0;
-          return tsB - tsA;
-        });
-        glog("mergeRemote: " + key + " 本地" + localCount + "→" + remoteCount + "（云端覆盖）");
-        merged = true;
-      } else if(remoteCount < localCount){
-        // 本地这个表比云端多（可能因为远端删除了一些），保留本地数据
-        glog("mergeRemote: " + key + " 本地" + localCount + " > 云端" + remoteCount + "（保留本地）");
-      } else {
-        // 数量相同，检查是否需要更新
-        let changed = false;
-        for(let i = 0; i < remoteArr.length && i < localArr.length; i++){
-          const localTs = localArr[i].updatedAt || localArr[i].createdAt || localArr[i].date || 0;
-          const remoteTs = remoteArr[i].updatedAt || remoteArr[i].createdAt || remoteArr[i].date || 0;
-          if(remoteTs > localTs){
-            localArr[i] = remoteArr[i];
-            changed = true;
-          }
-        }
-        if(changed){
-          state[key] = localArr;
-          glog("mergeRemote: " + key + " 本地" + localCount + "条（有更新）");
-          merged = true;
-        }
-      }
-    }
-    
-    if(merged){
-      state.meta.lastModified = Math.max(state.meta.lastModified || 0, remote.meta.lastModified || 0);
-      glog("mergeRemote: 合并完成");
-      return true;
-    }
-    glog("mergeRemote: 云端虽多但无可合并差异");
-    return false;
-  }
-  
-  // 云端 <= 本地：检查是否有更新的记录
-  if(rc === 0 && lc > 0){
-    glog("mergeRemote: 云端为空，保留本地数据");
-    return false;
-  }
-  
-  // 云端 <= 本地，但检查是否有更新
+  // ========== 第二步：逐表按 ID 合并（并集策略） ==========
   const MERGE_KEYS = ["periods","salary","housingAllowance","weight","measure","diet","exercise","stock","passwords"];
-  let hasUpdate = false;
-  for(const key of MERGE_KEYS){
-    const localArr = state[key] || [];
-    const remoteArr = remote[key] || [];
+  let totalAdded = 0;
+  let totalUpdated = 0;
+  
+  for(const table of MERGE_KEYS){
+    const localArr = state[table] || [];
+    const remoteArr = remote[table] || [];
     if(!Array.isArray(remoteArr) || remoteArr.length === 0) continue;
     
-    if(remoteArr.length > localArr.length){
-      state[key] = remoteArr;
-      hasUpdate = true;
-      glog("mergeRemote: " + key + " 本地" + localArr.length + "→" + remoteArr.length + "（云端覆盖）");
-    }
-  }
-  
-  if(hasUpdate){
-    state.meta.lastModified = Math.max(state.meta.lastModified || 0, remote.meta.lastModified || 0);
-    glog("mergeRemote: 合并完成");
-    return true;
-  }
-  
-  // 即使数量相同，也检查远端是否有更新的记录（逐表按 id/date 对比）
-  let refinedUpdate = false;
-  for(const key of MERGE_KEYS){
-    const localArr = state[key] || [];
-    const remoteArr = remote[key] || [];
-    if(!Array.isArray(remoteArr) || remoteArr.length === 0) continue;
-    if(remoteArr.length !== localArr.length) continue;
-    
-    // 按 id 或 date 对比，找到需要更新的记录
+    // 构建本地记录的 Map（用 getRecordId 生成稳定 key）
     const localMap = new Map();
-    for(item of localArr){
-      const id = item.id || item.date || (key + "_" + (item.start || ''));
-      localMap.set(id, item);
+    for(const item of localArr){
+      if(!item) continue;
+      const key = getRecordId(table, item) || (table + "_idx_" + localArr.indexOf(item));
+      localMap.set(key, item);
     }
+    
+    let added = 0;
+    let updated = 0;
     
     for(const remoteItem of remoteArr){
-      const id = remoteItem.id || remoteItem.date || (key + "_" + (remoteItem.start || ''));
-      const localItem = localMap.get(id);
-      if(localItem){
-        const localTs = localItem.updatedAt || localItem.createdAt || localItem.date || 0;
-        const remoteTs = remoteItem.updatedAt || remoteItem.createdAt || remoteItem.date || 0;
-        if(remoteTs > localTs){
-          const idx = localArr.indexOf(localItem);
-          if(idx >= 0){
-            localArr[idx] = remoteItem;
-            refinedUpdate = true;
-          }
+      if(!remoteItem) continue;
+      const key = getRecordId(table, remoteItem);
+      if(!key) continue; // 无法识别的记录，跳过
+      
+      if(!localMap.has(key)){
+        // 本地没有 → 新增
+        localMap.set(key, remoteItem);
+        added++;
+      } else {
+        // 本地有 → 比较时间戳，远端新则覆盖
+        const localItem = localMap.get(key);
+        const localTs = localItem.updatedAt || localItem.createdAt || localItem.lastModified || 0;
+        const remoteTs = remoteItem.updatedAt || remoteItem.createdAt || remoteItem.lastModified || 0;
+        // 如果时间戳无法比较（都是0），用 meta.lastModified 兜底
+        if(remoteTs > localTs || (remoteTs === 0 && localTs === 0 && remote.meta.lastModified > (state.meta.lastModified || 0))){
+          localMap.set(key, remoteItem);
+          updated++;
         }
       }
     }
     
-    if(refinedUpdate){
-      glog("mergeRemote: " + key + " 有逐记录更新");
+    if(added > 0 || updated > 0){
+      state[table] = Array.from(localMap.values());
+      // 排序
+      state[table].sort((a,b) => {
+        const tsA = a.updatedAt || a.createdAt || a.date || a.start || 0;
+        const tsB = b.updatedAt || b.createdAt || b.date || b.start || 0;
+        return tsB - tsA;
+      });
+      glog("mergeRemote: " + table + " 新增" + added + " 更新" + updated + "（本地" + localArr.length + "→" + state[table].length + "）");
+      totalAdded += added;
+      totalUpdated += updated;
     }
   }
   
-  if(refinedUpdate){
+  if(totalAdded > 0 || totalUpdated > 0){
     state.meta.lastModified = Math.max(state.meta.lastModified || 0, remote.meta.lastModified || 0);
-    glog("mergeRemote: 合并完成");
+    glog("mergeRemote: 合并完成（共新增" + totalAdded + " 更新" + totalUpdated + "）");
     return true;
   }
   
-  glog("mergeRemote: 无变化（本地≥云端）");
+  glog("mergeRemote: 无变化");
   return false;
 }
 
@@ -395,6 +326,15 @@ async function initSupabase() {
 
 // 同步到 Supabase
 async function syncToSupabase(showToast = true) {
+  // showToast=true 表示手动触发，跳过暂停检查；false 表示自动同步，需检查暂停
+  if (showToast && state.settings.supabaseUploadPaused) {
+    state.settings.supabaseUploadPaused = false; // 手动同步清除暂停
+    glog("syncToSupabase: 手动同步，清除上传暂停标志");
+  }
+  if (!showToast && state.settings.supabaseUploadPaused) {
+    glog("syncToSupabase: 上传已暂停（合并保护），跳过自动上传");
+    return;
+  }
   if (!supabaseClient || !supabaseClient.isReady()) {
     glog("syncToSupabase: Supabase not ready, mark pending sync");
     state.settings.supabasePendingSync = true;
@@ -492,7 +432,6 @@ async function initSync() {
   await initSupabase();
   if (!supabaseClient || !supabaseClient.isReady()) {
     glog("initSync: Supabase 未配置或 SDK 未加载");
-    // 即使未配置也保持本地存储可用
     state.settings.supabaseLastSync = Date.now();
     state.settings.supabaseLastSyncStatus = "local_only";
     save(false);
@@ -508,12 +447,16 @@ async function initSync() {
   glog("initSync: 合并=" + merged + "，本地记录数 " + lcBefore + "→" + lcAfter);
   
   if (merged) {
-    save(false); // 写回 localStorage
+    state.settings.supabaseUploadPaused = false; // 合并成功，恢复自动上传
+    save(false);
     toast("已从云端同步最新数据（" + lcAfter + " 条）");
-    // 刷新当前页面以显示最新数据
     if(typeof navigate === 'function' && currentPage){
       navigate(currentPage);
     }
+  } else if (remote && countRecords(remote) > lcAfter) {
+    // 云端有更多数据但合并失败 → 暂停自动上传，防止旧数据覆盖云端
+    glog("initSync: 警告：云端(" + countRecords(remote) + ")>本地(" + lcAfter + ")但合并失败，暂停自动上传");
+    state.settings.supabaseUploadPaused = true;
   }
   
   state.settings.supabaseLastSync = Date.now();
@@ -522,7 +465,7 @@ async function initSync() {
   updateSyncStatus();
   
   // 如有待补传数据（上次同步失败/离线），自动重新同步
-  if (state.settings.supabasePendingSync) {
+  if (state.settings.supabasePendingSync && !state.settings.supabaseUploadPaused) {
     glog("initSync: 检测到待补传数据，自动重新同步");
     await syncToSupabase(false);
     state.settings.supabasePendingSync = false;

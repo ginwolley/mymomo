@@ -110,8 +110,8 @@ function save(shouldSync = true){
   state.meta.lastModified = Date.now();
   try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
   catch(e){ toast("保存失败：" + e.message); }
-  // 自动同步到 Supabase（如果已配置）
-  if(shouldSync && state.settings.supabaseUrl && state.settings.supabaseKey){
+  // 自动同步到 Supabase（如果已配置且未暂停）
+  if(shouldSync && state.settings.supabaseUrl && state.settings.supabaseKey && !state.settings.supabaseUploadPaused){
     syncToSupabase(false); // 静默同步，不显示 toast
   }
 }
