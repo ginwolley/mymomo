@@ -827,7 +827,7 @@ function bindDiet(){
 /* 构建食物历史索引（普通食物 + 包装食品分开） */
 function buildFoodHistory(){
   const foodHistory = {}; // name -> {name, baseKcal, lastQty, unit, lastUsed}
-  const pkgHistory = {};  // name -> {name, kjPer100g, unit, lastUsed}
+  const pkgHistory = {};  // name -> {name, kjPer100g, lastQty, unit, lastUsed}
   state.diet.forEach(d => {
     (d.items || []).forEach(item => {
       const isPkg = item.isPackage || false;
@@ -838,9 +838,16 @@ function buildFoodHistory(){
           pkgHistory[key] = {
             name: item.name,
             kjPer100g: item.kjPer100g || 0,
+            lastQty: item.qty || 100,
             unit: item.unit || 'g',
             lastUsed: d.date
           };
+        } else {
+          // 更新最近使用的重量和日期
+          if(item.qty){
+            pkgHistory[key].lastQty = item.qty;
+            pkgHistory[key].lastUsed = d.date;
+          }
         }
       } else {
         if(!foodHistory[key]){
@@ -1064,7 +1071,7 @@ function bindDietAdd(){
         .slice(0, 8);
       if(matches.length === 0){ pkgFoodHistory.style.display = "none"; return; }
       pkgFoodHistory.innerHTML = matches.map(f =>
-        '<div class="fh-item" data-name="'+esc(f.name)+'" data-kj="'+f.kjPer100g+'" data-unit="'+esc(f.unit)+'">' +
+        '<div class="fh-item" data-name="'+esc(f.name)+'" data-kj="'+f.kjPer100g+'" data-qty="'+(f.lastQty||100)+'" data-unit="'+esc(f.unit)+'">' +
           '<span class="fh-name">'+esc(f.name)+'</span>' +
           '<span class="fh-info">'+f.kjPer100g+' kJ/100'+esc(f.unit)+'</span>' +
         '</div>'
@@ -1077,12 +1084,14 @@ function bindDietAdd(){
       pkgFoodHistory.style.display = "none";
       pkgNameInput.value = item.dataset.name;
       document.getElementById("pkgKj").value = item.dataset.kj;
+      // 填入上次的重量
+      document.getElementById("pkgWeight").value = item.dataset.qty || 100;
       // 同步单位切换
       const unit = item.dataset.unit || "g";
       document.querySelectorAll("#pkgUnitTog button").forEach(btn => {
         btn.classList.toggle("active", btn.dataset.unit === unit);
       });
-      toast("已填入"+item.dataset.name+"，请修改净含量");
+      toast("已填入"+item.dataset.name+"，请确认净含量");
       calcPkgKcal();
     });
   }
