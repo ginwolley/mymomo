@@ -58,14 +58,17 @@ function pageOverview(){
     return '';
   })();
 
-  // 今日已入账（实时计时）
+  // 今日已入账（实时计时，仅工作日显示）
   const nowD = new Date();
   const curY = nowD.getFullYear(), curM = nowD.getMonth()+1;
   const curKey = curY+"."+curM;
   const salRec = state.salary.find(r => r.date === curKey);
   const houRec = state.housingAllowance.find(r => r.date === curKey);
+  // 判断是否为工作日（周一至周五）
+  const dayOfWeek = nowD.getDay(); // 0=周日, 1=周一, ..., 6=周六
+  const isWeekday = dayOfWeek >= 1 && dayOfWeek <= 5;
   let salaryCard = '';
-  if(salRec || houRec){
+  if((salRec || houRec) && isWeekday){
     const total = (salRec?num(salRec["实发工资"]):0) + (houRec?num(houRec.amount):0);
     const wd = workingDaysInMonth(curY, curM);
     const daily = total / wd;
