@@ -470,6 +470,18 @@ navigate(window.innerWidth <= 768 ? "tab-home" : "overview");
 // 启动后异步拉取 Gist 数据
 initSync();
 // 注册 Service Worker（PWA离线/全屏支持）
+// 注意：不要加时间戳参数，否则每次注册不同 URL 会导致 SW 频繁替换，PWA 安装一周后失效
 if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('sw.js?v='+Date.now()).catch(()=>{});
+  navigator.serviceWorker.register('sw.js').then(reg => {
+    // 检测到新 SW 时自动更新
+    reg.addEventListener('updatefound', () => {
+      const newSW = reg.installing;
+      newSW.addEventListener('statechange', () => {
+        if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
+          // 新版本已安装，等待下次页面加载时激活
+          console.log('momo PWA 新版本已缓存');
+        }
+      });
+    });
+  }).catch(() => {});
 }
