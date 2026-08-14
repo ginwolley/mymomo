@@ -102,6 +102,88 @@ const FOOD_DB = {
     {name:"蛋糕", kcal:347, unit:"100g"}, {name:"面包", kcal:266, unit:"100g"},
     {name:"冰淇淋", kcal:207, unit:"100g"}, {name:"糖果", kcal:400, unit:"100g"},
     {name:"辣条", kcal:420, unit:"100g"}, {name:"海苔", kcal:177, unit:"100g"},
+    {name:"果冻", kcal:70, unit:"100g"}, {name:"果丹皮", kcal:300, unit:"100g"},
+    {name:"爆米花", kcal:380, unit:"100g"}, {name:"薯条", kcal:290, unit:"100g"},
+    {name:"碎碎冰", kcal:150, unit:"100g"}, {name:"棒冰", kcal:80, unit:"根"},
+    {name:"雪糕", kcal:220, unit:"支"}, {name:"冰棍", kcal:90, unit:"根"},
+    {name:"蛋卷", kcal:450, unit:"100g"}, {name:"威化饼干", kcal:520, unit:"100g"},
+    {name:"蛋皮吐司", kcal:330, unit:"100g"}, {name:"吐司", kcal:290, unit:"100g"},
+    {name:"西麦燕麦片", kcal:370, unit:"100g"}, {name:"燕麦片", kcal:370, unit:"100g"},
+    {name:"酸奶块", kcal:480, unit:"100g"}, {name:"山楂片", kcal:350, unit:"100g"},
+  ],
+  "家常菜": [
+    {name:"西红柿炒鸡蛋", kcal:120, unit:"100g"}, {name:"青椒肉丝", kcal:180, unit:"100g"},
+    {name:"鱼香肉丝", kcal:240, unit:"100g"}, {name:"宫保鸡丁", kcal:210, unit:"100g"},
+    {name:"红烧肉", kcal:450, unit:"100g"}, {name:"糖醋里脊", kcal:300, unit:"100g"},
+    {name:"麻婆豆腐", kcal:150, unit:"100g"}, {name:"回锅肉", kcal:380, unit:"100g"},
+    {name:"水煮鱼", kcal:180, unit:"100g"}, {name:"酸菜鱼", kcal:120, unit:"100g"},
+    {name:"小炒肉", kcal:320, unit:"100g"}, {name:"土豆丝", kcal:110, unit:"100g"},
+    {name:"红烧茄子", kcal:140, unit:"100g"}, {name:"蒜蓉西兰花", kcal:80, unit:"100g"},
+    {name:"蚝油生菜", kcal:50, unit:"100g"}, {name:"可乐鸡翅", kcal:220, unit:"100g"},
+    {name:"红烧排骨", kcal:340, unit:"100g"}, {name:"糖醋排骨", kcal:360, unit:"100g"},
+    {name:"豆角炒肉", kcal:170, unit:"100g"}, {name:"西葫芦炒鸡蛋", kcal:100, unit:"100g"},
+    {name:"苦瓜炒蛋", kcal:130, unit:"100g"}, {name:"韭菜炒蛋", kcal:180, unit:"100g"},
+    {name:"蒸蛋", kcal:70, unit:"100g"}, {name:"番茄鸡蛋汤", kcal:40, unit:"100g"},
+    {name:"紫菜蛋花汤", kcal:35, unit:"100g"}, {name:"冬瓜汤", kcal:15, unit:"100g"},
+    {name:"紫菜汤", kcal:25, unit:"100g"}, {name:"排骨汤", kcal:180, unit:"100g"},
+    {name:"鸡汤", kcal:150, unit:"100g"}, {name:"牛肉汤", kcal:120, unit:"100g"},
+    {name:"蛋炒饭", kcal:180, unit:"100g"}, {name:"扬州炒饭", kcal:200, unit:"100g"},
+    {name:"炒河粉", kcal:230, unit:"100g"}, {name:"炒米粉", kcal:190, unit:"100g"},
+    {name:"炒饼", kcal:210, unit:"100g"}, {name:"拌面", kcal:240, unit:"100g"},
+    {name:"炸酱面", kcal:300, unit:"100g"}, {name:"担担面", kcal:330, unit:"100g"},
+    {name:"牛肉面", kcal:280, unit:"100g"}, {name:"兰州拉面", kcal:260, unit:"100g"},
+    {name:"螺蛳粉", kcal:300, unit:"100g"}, {name:"米线", kcal:150, unit:"100g"},
+    {name:"馄饨", kcal:240, unit:"100g"}, {name:"小笼包", kcal:230, unit:"100g"},
+    {name:"烧麦", kcal:220, unit:"100g"}, {name:"春卷", kcal:260, unit:"100g"},
+    {name:"煎饼果子", kcal:340, unit:"份"}, {name:"肉夹馍", kcal:450, unit:"份"},
+    {name:"手抓饼", kcal:380, unit:"份"}, {name:"鸡蛋灌饼", kcal:320, unit:"份"},
+    {name:"烧饼", kcal:300, unit:"个"}, {name:"肉包子", kcal:228, unit:"个"},
+    {name:"韭菜盒子", kcal:280, unit:"个"}, {name:"锅贴", kcal:240, unit:"100g"},
+  ],
+  "甜品烘焙": [
+    {name:"蛋糕", kcal:347, unit:"100g"}, {name:"奶油蛋糕", kcal:420, unit:"100g"},
+    {name:"提拉米苏", kcal:350, unit:"100g"}, {name:"慕斯蛋糕", kcal:280, unit:"100g"},
+    {name:"芝士蛋糕", kcal:360, unit:"100g"}, {name:"布朗尼", kcal:480, unit:"100g"},
+    {name:"泡芙", kcal:380, unit:"100g"}, {name:"蛋挞", kcal:320, unit:"个"},
+    {name:"马卡龙", kcal:450, unit:"100g"}, {name:"曲奇", kcal:520, unit:"100g"},
+    {name:"司康", kcal:380, unit:"100g"}, {name:"华夫饼", kcal:350, unit:"份"},
+    {name:"松饼", kcal:330, unit:"份"}, {name:"千层蛋糕", kcal:320, unit:"100g"},
+    {name:"雪媚娘", kcal:280, unit:"个"}, {name:"麻薯", kcal:320, unit:"100g"},
+    {name:"绿豆糕", kcal:340, unit:"100g"}, {name:"红豆沙", kcal:240, unit:"100g"},
+    {name:"双皮奶", kcal:90, unit:"100g"}, {name:"姜撞奶", kcal:85, unit:"100g"},
+    {name:"芋圆", kcal:200, unit:"100g"}, {name:"烧仙草", kcal:120, unit:"份"},
+    {name:"布丁", kcal:130, unit:"100g"}, {name:"奶冻", kcal:100, unit:"100g"},
+  ],
+  "包装零食": [
+    {name:"奥利奥", kcal:490, unit:"100g"}, {name:"趣多多", kcal:480, unit:"100g"},
+    {name:"士力架", kcal:490, unit:"100g"}, {name:"德芙巧克力", kcal:540, unit:"100g"},
+    {name:"费列罗", kcal:600, unit:"100g"}, {name:"好丽友派", kcal:430, unit:"个"},
+    {name:"蛋黄派", kcal:400, unit:"个"}, {name:"达利园", kcal:420, unit:"100g"},
+    {name:"旺旺雪饼", kcal:460, unit:"100g"}, {name:"旺旺仙贝", kcal:430, unit:"100g"},
+    {name:"QQ糖", kcal:330, unit:"100g"}, {name:"旺仔牛奶糖", kcal:430, unit:"100g"},
+    {name:"大白兔奶糖", kcal:400, unit:"100g"}, {name:"不二家棒棒糖", kcal:400, unit:"100g"},
+    {name:"卫龙辣条", kcal:420, unit:"100g"}, {name:"魔芋爽", kcal:120, unit:"100g"},
+    {name:"鸡爪", kcal:254, unit:"100g"}, {name:"鸭脖", kcal:280, unit:"100g"},
+    {name:"鸭翅", kcal:260, unit:"100g"}, {name:"藕片", kcal:80, unit:"100g"},
+    {name:"海带结", kcal:50, unit:"100g"}, {name:"豆腐干", kcal:140, unit:"100g"},
+    {name:"三只松鼠坚果", kcal:553, unit:"100g"}, {name:"良品铺子", kcal:500, unit:"100g"},
+    {name:"百草味", kcal:520, unit:"100g"}, {name:"每日坚果", kcal:553, unit:"袋"},
+  ],
+  "外卖快餐": [
+    {name:"黄焖鸡米饭", kcal:450, unit:"份"}, {name:"麻辣烫", kcal:500, unit:"份"},
+    {name:"麻辣香锅", kcal:600, unit:"份"}, {name:"烤鱼", kcal:700, unit:"份"},
+    {name:"烤肉拌饭", kcal:550, unit:"份"}, {name:"脆皮鸡饭", kcal:580, unit:"份"},
+    {name:"沙县小吃", kcal:480, unit:"份"}, {name:"兰州拉面(大份)", kcal:650, unit:"份"},
+    {name:"肯德基套餐", kcal:1200, unit:"份"}, {name:"麦当劳套餐", kcal:1100, unit:"份"},
+    {name:"汉堡王套餐", kcal:1150, unit:"份"}, {name:"华莱士套餐", kcal:900, unit:"份"},
+    {name:"炸鸡", kcal:320, unit:"100g"}, {name:"汉堡", kcal:450, unit:"个"},
+    {name:"薯条(大)", kcal:420, unit:"份"}, {name:"鸡块", kcal:290, unit:"100g"},
+    {name:"奥尔良烤翅", kcal:240, unit:"对"}, {name:"披萨", kcal:260, unit:"100g"},
+    {name:"寿司", kcal:150, unit:"100g"}, {name:"饭团", kcal:200, unit:"个"},
+    {name:"三明治", kcal:280, unit:"份"}, {name:"热狗", kcal:300, unit:"个"},
+    {name:"奶茶(大杯)", kcal:500, unit:"杯"}, {name:"果茶(大杯)", kcal:280, unit:"杯"},
+    {name:"星巴克拿铁", kcal:220, unit:"杯"}, {name:"星巴克星冰乐", kcal:380, unit:"杯"},
+    {name:"瑞幸拿铁", kcal:180, unit:"杯"}, {name:"瑞幸美式", kcal:10, unit:"杯"},
   ],
   "调味": [
     {name:"食用油", kcal:899, unit:"100g"}, {name:"食盐", kcal:0, unit:"g"},
@@ -824,6 +906,31 @@ function bindDiet(){
   });
 }
 
+/* 本地食物库模糊搜索 */
+function searchLocalFoodDB(keyword){
+  if(!keyword) return [];
+  const kw = keyword.trim().toLowerCase();
+  const results = [];
+  const seen = new Set();
+  for(const cat in FOOD_DB){
+    for(const f of FOOD_DB[cat]){
+      const nm = f.name.toLowerCase();
+      if(seen.has(nm)) continue;
+      if(nm === kw){
+        results.unshift({...f, _score: 100});
+        seen.add(nm);
+      } else if(nm.includes(kw)){
+        results.push({...f, _score: 80});
+        seen.add(nm);
+      } else if(kw.length >= 2 && (kw.split('').every(c => nm.includes(c)))){
+        results.push({...f, _score: 50});
+        seen.add(nm);
+      }
+    }
+  }
+  return results.sort((a,b) => b._score - a._score).slice(0, 8);
+}
+
 /* 构建食物历史索引（普通食物 + 包装食品分开） */
 function buildFoodHistory(){
   const foodHistory = {}; // name -> {name, baseKcal, lastQty, unit, lastUsed}
@@ -1013,7 +1120,7 @@ function bindDietAdd(){
     searchBtn.addEventListener("click", async ()=>{
       const val = searchInput.value.trim();
       if(!val){ toast("请输入食物名称"); return; }
-      // 先精确匹配历史
+      // 1. 先精确匹配历史
       const key = val.toLowerCase();
       if(foodHistory[key]){
         const f = foodHistory[key];
@@ -1022,9 +1129,20 @@ function bindDietAdd(){
         searchInput.value = "";
         return;
       }
-      // 未匹配 → AI估算
+      // 2. 查本地食物库
+      const localMatches = searchLocalFoodDB(val);
+      if(localMatches.length > 0){
+        const best = localMatches[0];
+        const unit = best.unit && best.unit.includes('/') ? best.unit.split('/').pop().replace('100','').trim() : 'g';
+        showFoodDetailPanel(best.name, best.kcal, unit, false, 100);
+        toast("本地库匹配："+best.name+"（约"+best.kcal+"kcal/100g）");
+        if(searchHint) searchHint.textContent = "";
+        searchInput.value = "";
+        return;
+      }
+      // 3. 未匹配 → AI估算（余额不足或失败自动降级到本地库模糊提示）
       if(!(state.settings.api.enabled && state.settings.api.key)){
-        toast("未在历史中找到，请先在设置中开启AI识别");
+        toast("未在历史或本地库中找到，请先在设置中开启AI识别");
         return;
       }
       searchBtn.disabled = true; searchBtn.textContent = "估算中…";
@@ -1035,9 +1153,31 @@ function bindDietAdd(){
           if(searchHint) searchHint.textContent = "";
           searchInput.value = "";
         } else {
-          toast("AI未能估算，请尝试更具体的菜名");
+          // AI未返回有效结果，尝试本地库模糊结果
+          const fallback = localMatches[0];
+          if(fallback){
+            const unit = fallback.unit && fallback.unit.includes('/') ? fallback.unit.split('/').pop().replace('100','').trim() : 'g';
+            showFoodDetailPanel(fallback.name, fallback.kcal, unit, false, 100);
+            toast("AI未返回，参考本地库："+fallback.name);
+          } else {
+            toast("AI未能估算，请尝试更具体的菜名");
+          }
         }
-      }catch(err){ toast("估算失败：" + err.message); }
+      }catch(err){
+        const isBalanceErr = /402|Insufficient|余额|不足/i.test(err.message);
+        const fallback = localMatches[0];
+        if(isBalanceErr && fallback){
+          const unit = fallback.unit && fallback.unit.includes('/') ? fallback.unit.split('/').pop().replace('100','').trim() : 'g';
+          showFoodDetailPanel(fallback.name, fallback.kcal, unit, false, 100);
+          toast("AI余额不足，已用本地库匹配："+fallback.name);
+        } else if(fallback){
+          const unit = fallback.unit && fallback.unit.includes('/') ? fallback.unit.split('/').pop().replace('100','').trim() : 'g';
+          showFoodDetailPanel(fallback.name, fallback.kcal, unit, false, 100);
+          toast("AI失败("+err.message.split(' ')[0]+")，已用本地库匹配："+fallback.name);
+        } else {
+          toast("估算失败：" + err.message);
+        }
+      }
       finally{ searchBtn.disabled = false; searchBtn.textContent = "搜索"; }
     });
   }

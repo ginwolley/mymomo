@@ -48,7 +48,16 @@ function pageOverview(){
       </div>`;
     }
     if(pred){
-      const gap = Math.max(0, daysBetween(t, pred.start));
+      const gap = daysBetween(t, pred.start);
+      if(gap <= 0){
+        // 预测日期已过但生理期未到 → 显示延迟
+        const delay = Math.abs(gap);
+        return `<div class="card" style="cursor:pointer" data-nav="period">
+        <h2>生理期 <span class="pill rose">延迟 ${delay} 天</span></h2>
+        <div style="font-size:13px;color:var(--ink-light)">预计 ${pred.start.slice(5)} 开始，已延迟 ${delay} 天</div>
+        <div class="hint">周期 ${pred.avgCycle} 天 · 经期 ${pred.avgLen} 天</div>
+      </div>`;
+      }
       return `<div class="card" style="cursor:pointer" data-nav="period">
         <h2>生理期 <span class="pill rose">预测中</span></h2>
         <div style="font-size:13px;color:var(--ink-light)">下次预计 <b style="font-family:var(--font-mono);color:var(--ink)">${pred.start.slice(5)}</b> 开始 · 距今天还有 ${gap} 天</div>
