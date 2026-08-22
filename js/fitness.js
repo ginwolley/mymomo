@@ -209,6 +209,11 @@ function pageWeight(){
   const sorted = state.weight.slice().sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:0);
   const recent = filterPeriod(sorted, state.settings.period||90);
 
+  // 体重趋势图
+  const wDates = recent.map(d => d.date);
+  const wVals = recent.map(d => num(d.value));
+  const wChart = wVals.length > 1 ? lineChart([{data: wVals, color: "#36D1C9"}], wDates) : '';
+
   let body = `
     <div class="card">
       <h2>记录体重</h2>
@@ -220,6 +225,7 @@ function pageWeight(){
       </form>
     </div>
     ${periodSeg()}
+    ${wChart ? `<div class="card"><h2>趋势图</h2>${wChart}</div>` : ''}
     <div class="card">
       <h2>历史记录 <span class="sub">${recent.length} 条</span></h2>
       ${recent.length? `<table class="tbl"><thead><tr><th>日期</th><th class="num">体重</th><th></th></tr></thead><tbody>
@@ -235,6 +241,16 @@ function pageMeasure(){
   const sorted = state.measure.slice().sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:0);
   const recent = filterPeriod(sorted, state.settings.period||90);
 
+  // 围度趋势图（多线）
+  const mDates = recent.map(d => d.date);
+  const measColors = ["#36D1C9","#F5A623","#E74C3C","#9B59B6","#2ECC71"];
+  const measSeries = [];
+  MEAS_KEYS.forEach((m, i) => {
+    const vals = recent.map(d => d[m.k] != null ? num(d[m.k]) : null);
+    if(vals.some(v => v != null)) measSeries.push({data: vals, color: measColors[i % measColors.length], label: m.name});
+  });
+  const mChart = measSeries.length > 0 && mDates.length > 1 ? lineChart(measSeries, mDates) : '';
+
   const inputs = MEAS_KEYS.map(m=>`<div class="field"><label>${m.name}</label><input type="number" step="0.1" name="${m.k}" placeholder="0"></div>`).join("");
 
   let body = `
@@ -247,6 +263,7 @@ function pageMeasure(){
       </form>
     </div>
     ${periodSeg()}
+    ${mChart ? `<div class="card"><h2>趋势图</h2>${mChart}<div class="meas-legend" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;justify-content:center">${measSeries.map(s=>`<span style="display:inline-flex;align-items:center;gap:4px;font-size:12px;color:var(--ink-muted)"><span style="width:10px;height:10px;border-radius:50%;background:${s.color};display:inline-block"></span>${s.label}</span>`).join("")}</div></div>` : ''}
     <div class="card">
       <h2>历史记录 <span class="sub">${recent.length} 条</span></h2>
       ${recent.length? `<div class="scroll"><table class="tbl"><thead><tr><th>日期</th>${MEAS_KEYS.map(m=>`<th class="num">${m.name}</th>`).join("")}<th></th></tr></thead><tbody>
