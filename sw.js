@@ -1,4 +1,4 @@
-const CACHE = "momo-v4"; // 更新版本号以触发新安装
+const CACHE = "momo-v5"; // 更新版本号以触发新安装
 const PRECACHE = [
   "工作台.html",
   "css/style.css",
@@ -31,6 +31,11 @@ self.addEventListener("activate", e => {
 });
 
 self.addEventListener("fetch", e => {
+  // sw.js 不缓存，确保浏览器始终获取最新版本进行更新
+  if (e.request.url.endsWith("sw.js")) {
+    e.respondWith(fetch(e.request));
+    return;
+  }
   // 主页面走网络优先，确保始终加载最新版本
   if (e.request.mode === "navigate" || e.request.url.endsWith("工作台.html")) {
     e.respondWith(
