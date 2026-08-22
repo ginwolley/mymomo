@@ -473,13 +473,15 @@ initSync();
 // 注意：不要加时间戳参数，否则每次注册不同 URL 会导致 SW 频繁替换，PWA 安装一周后失效
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('sw.js').then(reg => {
+    // 每次加载页面时立即检查 SW 更新
+    reg.update();
     // 检测到新 SW 时自动更新
     reg.addEventListener('updatefound', () => {
       const newSW = reg.installing;
       newSW.addEventListener('statechange', () => {
         if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
-          // 新版本已安装，等待下次页面加载时激活
-          console.log('momo PWA 新版本已缓存');
+          // 新版本已安装，自动刷新页面使新版本生效
+          window.location.reload();
         }
       });
     });
