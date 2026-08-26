@@ -206,7 +206,7 @@ const FOOD_DB = {
 /* ============== 页面：体重 ============== */
 function pageWeight(){
   const mode = state.settings.modules.weight;
-  const sorted = state.weight.slice().sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:0);
+  const sorted = state.weight.slice().sort(sortByDateKey);
   const recent = filterPeriod(sorted, state.settings.period||90);
 
   // 体重趋势图
@@ -238,7 +238,7 @@ function pageWeight(){
 /* ============== 页面：围度 ============== */
 function pageMeasure(){
   const mode = state.settings.modules.measure;
-  const sorted = state.measure.slice().sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:0);
+  const sorted = state.measure.slice().sort(sortByDateKey);
   const recent = filterPeriod(sorted, state.settings.period||90);
 
   // 围度趋势图（多线）
@@ -809,7 +809,7 @@ function bindWeight(){
     let rec=state.weight.find(d=>d.date===date);
     if(rec){ rec.value=value; rec.note=f.note.value; }
     else state.weight.push({date, value, note:f.note.value});
-    state.weight.sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:0);
+    state.weight.sort(sortByDateKey);
     save(); toast("已保存"); navigate("weight");
   });
   document.querySelectorAll("[data-del-weight]").forEach(b=>b.addEventListener("click",()=>{
@@ -830,7 +830,7 @@ function bindMeasure(){
     if(!has){ toast("至少填一项围度"); return; }
     const ex=state.measure.find(d=>d.date===date);
     if(ex){ Object.assign(ex, rec); } else state.measure.push(rec);
-    state.measure.sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:0);
+    state.measure.sort(sortByDateKey);
     save(); toast("已保存"); navigate("measure");
   });
   document.querySelectorAll("[data-del-measure]").forEach(b=>b.addEventListener("click",()=>{

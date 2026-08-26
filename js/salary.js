@@ -5,7 +5,7 @@ const SALARY_HEADERS = ["职务工资","级别工资","岗位工资","技术等�
 
 /* ============== 页面：基本工资 ============== */
 function pageSalaryBasic(){
-  const sorted = state.salary.slice().sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:0);
+  const sorted = state.salary.slice().sort(sortByDateKey);
   const recent = sorted.slice(-12);
   const recentRows = recent.slice().reverse().map((r)=>{ const idx = state.salary.indexOf(r); return `<tr><td>${r.date}</td><td class="num">${round(r["应发合计"])}</td><td class="num">${round(r["扣发合计"])}</td><td class="num">${round(r["实发工资"])}</td><td style="text-align:center"><button class="del" data-view-salary="${idx}"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="6.5" cy="6.5" r="4.5"/><line x1="9.8" y1="9.8" x2="14" y2="14"/></svg></button><button class="del" data-del-salary="${idx}">×</button></td></tr>`; }).join("");
   let body = `
@@ -35,7 +35,7 @@ function pageSalaryAdd(){
 
 /* ============== 页面：全部工资记录 ============== */
 function pageSalaryAll(){
-  const sorted = state.salary.slice().sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:0);
+  const sorted = state.salary.slice().sort(sortByDateKey);
   const rows = sorted.slice().reverse().map((r)=>{ const idx = state.salary.indexOf(r); return `<tr><td class="nowrap">${r.date}</td><td class="nowrap num">${round(r["应发合计"])}</td><td class="nowrap num">${round(r["扣发合计"])}</td><td class="nowrap num">${round(r["实发工资"])}</td><td class="nowrap"><button class="del" data-view-salary="${idx}"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="6.5" cy="6.5" r="4.5"/><line x1="9.8" y1="9.8" x2="14" y2="14"/></svg></button><button class="del" data-del-salary="${idx}">×</button></td></tr>`; }).join("");
   return `<div class="card">
       ${sorted.length ? `<div class="scroll"><table><thead><tr><th>日期</th><th>应发合计</th><th>扣发合计</th><th>实发工资</th><th>操作</th></tr></thead><tbody>${rows}</tbody></table></div>` : '<div class="empty"><div class="sym">💰</div>暂无工资记录</div>'}
@@ -61,7 +61,7 @@ function pageSalaryDetail(idx){
 
 /* ============== 页面：房补 ============== */
 function pageSalaryHousing(){
-  const sorted = state.housingAllowance.slice().sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:0);
+  const sorted = state.housingAllowance.slice().sort(sortByDateKey);
   const total = sorted.reduce((s,x)=>s+num(x.amount),0);
   const recent = sorted.slice(-12);
   const recentRows = recent.slice().reverse().map((r)=>{ const idx = state.housingAllowance.indexOf(r); return `<tr><td>${r.date}</td><td class="num">${round(r.amount)}</td><td style="text-align:center"><button class="del" data-view-housing="${idx}"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="6.5" cy="6.5" r="4.5"/><line x1="9.8" y1="9.8" x2="14" y2="14"/></svg></button><button class="del" data-del-housing="${idx}">×</button></td></tr>`; }).join("");
@@ -91,7 +91,7 @@ function pageHousingAdd(){
 
 /* ============== 页面：全部房补记录 ============== */
 function pageHousingAll(){
-  const sorted = state.housingAllowance.slice().sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:0);
+  const sorted = state.housingAllowance.slice().sort(sortByDateKey);
   const total = sorted.reduce((s,x)=>s+num(x.amount),0);
   const rows = sorted.slice().reverse().map((r)=>{ const idx = state.housingAllowance.indexOf(r); return `<tr><td class="nowrap">${r.date}</td><td class="nowrap num">${round(r.amount)}</td><td class="nowrap"><button class="del" data-view-housing="${idx}"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="6.5" cy="6.5" r="4.5"/><line x1="9.8" y1="9.8" x2="14" y2="14"/></svg></button><button class="del" data-del-housing="${idx}">×</button></td></tr>`; }).join("");
   return `<div class="card">
@@ -118,8 +118,8 @@ function pageHousingDetail(idx){
 
 /* ============== 页面：工资汇总 ============== */
 function pageSalarySummary(){
-  const sals = state.salary.slice().sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:0);
-  const housing = state.housingAllowance.slice().sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:0);
+  const sals = state.salary.slice().sort(sortByDateKey);
+  const housing = state.housingAllowance.slice().sort(sortByDateKey);
   const years = {};
   sals.forEach(r=>{ const y = r.date.split('.')[0]; if(!years[y]) years[y] = {salary:[], housing:[]}; years[y].salary.push(r); });
   housing.forEach(r=>{ const y = r.date.split('.')[0]; if(!years[y]) years[y] = {salary:[], housing:[]}; years[y].housing.push(r); });
@@ -189,7 +189,7 @@ function bindSalaryAdd(){
     SALARY_HEADERS.forEach(h=>{ r[h] = num(f["s-"+h].value); });
     if(state.salary.some(x=>x.date===date)){ toast("该月份已存在，请先删除再添加"); return; }
     state.salary.push(r);
-    state.salary.sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:0);
+    state.salary.sort(sortByDateKey);
     save(); toast("已保存 "+date); navigate("salary-basic");
   });
 }
@@ -210,7 +210,7 @@ function bindSalaryDetail(idx){
     if(newDate !== r.date && state.salary.some(x=>x.date===newDate)){ toast("该月份已存在"); return; }
     r.date = newDate;
     SALARY_HEADERS.forEach(h=>{ r[h] = num(f["sd-"+h].value); });
-    state.salary.sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:0);
+    state.salary.sort(sortByDateKey);
     save(); toast("已保存修改"); navigate("salary-basic");
   });
   const delBtn = document.getElementById("deleteSalaryEdit");
@@ -257,7 +257,7 @@ function bindHousingAdd(){
     if(!date||!amount){ toast("请填写日期和金额"); return; }
     if(state.housingAllowance.some(x=>x.date===date)){ toast("该月份已存在，请先删除再添加"); return; }
     state.housingAllowance.push({date, amount});
-    state.housingAllowance.sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:0);
+    state.housingAllowance.sort(sortByDateKey);
     save(); toast("已保存房补"); navigate("salary-housing");
   });
 }
@@ -278,7 +278,7 @@ function bindHousingDetail(idx){
     if(newDate !== r.date && state.housingAllowance.some(x=>x.date===newDate)){ toast("该月份已存在"); return; }
     r.date = newDate;
     r.amount = num(f["hd-amount"].value);
-    state.housingAllowance.sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:0);
+    state.housingAllowance.sort(sortByDateKey);
     save(); toast("已保存修改"); navigate("salary-housing");
   });
   const delBtn = document.getElementById("deleteHousingEdit");

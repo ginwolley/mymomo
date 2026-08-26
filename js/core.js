@@ -225,6 +225,12 @@ function greeting(){ const h=new Date().getHours(); if(h>=6&&h<12) return "早�
 function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
 function num(v){ const n=parseFloat(v); return isNaN(n)?0:n; }
 function round(n){ return Math.round(n*10)/10; }
+// 按日期排序（支持 "2026.08" 或 "2026.7" 格式，按数值比较而非字符串）
+function sortByDateKey(a, b){
+  const [ay, am] = String(a.date).split('.').map(Number);
+  const [by, bm] = String(b.date).split('.').map(Number);
+  return (ay||0) - (by||0) || (am||0) - (bm||0);
+}
 function std(arr){ if(arr.length<2) return 0; const m=arr.reduce((a,b)=>a+b,0)/arr.length; return Math.sqrt(arr.reduce((a,b)=>a+(b-m)*(b-m),0)/arr.length); }
 function workingDaysInMonth(year, month){
   const days=new Date(year, month, 0).getDate();
@@ -264,7 +270,7 @@ function stopSalaryTimer(){
 }
 
 function getDay(arr, date){ return arr.find(d=>d.date===date); }
-function ensureDay(arr, date){ let d=getDay(arr,date); if(!d){ d={date, items:[]}; arr.push(d); arr.sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:0); } return d; }
+function ensureDay(arr, date){ let d=getDay(arr,date); if(!d){ d={date, items:[]}; arr.push(d); arr.sort(sortByDateKey); } return d; }
 
 function latestWeight(){
   if(state.weight.length){ return state.weight[state.weight.length-1].value; }

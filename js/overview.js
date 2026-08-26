@@ -119,7 +119,7 @@ function pageOverview(){
     </div>`;
 
   // 围度趋势（近7天）
-  const mSorted = state.measure.slice().sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:0);
+  const mSorted = state.measure.slice().sort(sortByDateKey);
   const mRecent = mSorted.slice(-7);
   const mTrendCard = mRecent.length>=2 ? (()=>{
     const series = MEAS_KEYS.map((mk,i)=>{
