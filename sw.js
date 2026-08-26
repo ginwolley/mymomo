@@ -1,4 +1,4 @@
-const CACHE = "momo-v5"; // 更新版本号以触发新安装
+const CACHE = "momo-v6"; // 更新版本号以触发新安装
 const PRECACHE = [
   "工作台.html",
   "css/style.css",
@@ -17,8 +17,11 @@ const PRECACHE = [
 ];
 
 self.addEventListener("install", e => {
+  // 预缓存文件，但个别文件失败不阻止安装（否则 SW 无法更新）
   e.waitUntil(
-    caches.open(CACHE).then(c => c.addAll(PRECACHE)).then(() => self.skipWaiting())
+    caches.open(CACHE).then(c => 
+      Promise.allSettled(PRECACHE.map(url => c.add(url).catch(() => {})))
+    ).then(() => self.skipWaiting())
   );
 });
 
@@ -30,26 +33,27 @@ self.addEventListener("activate", e => {
   );
 });
 
+// 网络优先策略：所有请求都先从网络获取，失败时回退到缓存
+// 这样每次打开 app 都能拿到最新版本，同时支持离线访问
 self.addEventListener("fetch", e => {
-  // sw.js 不缓存，确保浏览器始终获取最新版本进行更新
-  if (e.request.url.endsWith("sw.js")) {
+  const url = e.request.url;
+  
+  // sw.js 不缓存，直接用网络（确保浏览器能检查到更新）
+  if (url.endsWith("sw.js")) {
     e.respondWith(fetch(e.request));
     return;
   }
-  // 主页面走网络优先，确保始终加载最新版本
-  if (e.request.mode === "navigate" || e.request.url.endsWith("工作台.html")) {
-    e.respondWith(
-      fetch(e.request).catch(() => caches.match(e.request))
-    );
-    return;
-  }
+  
   e.respondWith(
-    caches.match(e.request).then(r => r || fetch(e.request).then(res => {
-      if (res && res.ok && res.type === "basic") {
-        const copy = res.clone();
-        caches.open(CACHE).then(c => c.put(e.request, copy));
-      }
-      return res;
-    }))
+    fetch(e.request)
+      .then(res => {
+        // 成功获取 → 更新缓存（仅缓存同源的基本请求）
+        if (res && res.ok && res.type === "basic") {
+          const copy = res.clone();
+          caches.open(CACHE).then(c => c.put(e.request, copy));
+        }
+        return res;
+      })
+      .catch(() => caches.match(e.request))
   );
 });
