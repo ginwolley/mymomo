@@ -386,9 +386,14 @@ function predictNext(){
   return {start, end, avgCycle:cycle, avgLen:len};
 }
 // 返回某日期是否落在某条经期记录内
+// 如果结束日期等于开始日期（用户未手动结束），视为进行中，从 start 到 today 都算
 function periodAt(dateStr){
   return state.periods.find(p => {
     const end = p.end || p.start;
+    // 未结束的经期（end === start）：从 start 到任意未来日期都算
+    if(end === p.start || !p.end){
+      return dateStr >= p.start;
+    }
     return dateStr >= p.start && dateStr <= end;
   });
 }

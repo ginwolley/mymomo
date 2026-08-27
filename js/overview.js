@@ -41,10 +41,10 @@ function pageOverview(){
     const todayPeriod = periodAt(t);
     if(todayPeriod){
       const day = daysBetween(todayPeriod.start, t) + 1;
-      const len = daysBetween(todayPeriod.start, todayPeriod.end) + 1;
+      const isOngoing = !todayPeriod.end || todayPeriod.end === todayPeriod.start;
       return `<div class="card" style="cursor:pointer" data-nav="period">
         <h2>生理期 <span class="pill rose">第 ${day} 天</span></h2>
-        <div style="font-size:13px;color:var(--ink-light)">${todayPeriod.start} ~ ${todayPeriod.end} · 共 ${len} 天</div>
+        <div style="font-size:13px;color:var(--ink-light)">${todayPeriod.start}${isOngoing ? ' 开始 · 进行中' : ' ~ ' + todayPeriod.end + ' · 共 ' + (daysBetween(todayPeriod.start, todayPeriod.end) + 1) + ' 天'}</div>
       </div>`;
     }
     if(pred){
