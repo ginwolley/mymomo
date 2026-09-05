@@ -8,7 +8,7 @@ const DATA_VERSION = 5; // 数据版本号，每次新增迁移时递增（同�
 const DEFAULTS = {
   meta:{version:DATA_VERSION, createdAt:Date.now(), lastModified:Date.now()},
   profile:{weight:null, height:null, birth:null, gender:"female"},
-  periods: window.__SEED_DATA__.periods.map(p=>({...p})),
+  periods: [],
   settings:{
     api:{endpoint:"https://api.deepseek.com/chat/completions", key:"", model:"deepseek-chat", enabled:false},
     modules:{weight:"cumulative", measure:"cumulative", diet:"daily", exercise:"daily", balance:"cumulative"}, period:90, dietGoal:0, activityLevel:"sedentary",
@@ -29,8 +29,8 @@ const DEFAULTS = {
   measure:[],
   diet:[],
   exercise:[],
-  salary: window.__SEED_DATA__.salary,
-  housingAllowance: window.__SEED_DATA__.housing,
+  salary: [],
+  housingAllowance: [],
   stock: [],
   passwords: [],
   deletedIds: [], // [{table, id, deletedAt}] 已删除记录索引，用于跨设备同步删除
@@ -52,8 +52,6 @@ function load(){
       migrateData(parsed);
       const merged = deepMerge(structuredClone(DEFAULTS), parsed);
       if(!Array.isArray(merged.periods)) merged.periods = [];
-      if(!Array.isArray(merged.salary) || merged.salary.length === 0) merged.salary = window.__SEED_DATA__.salary;
-      if(!Array.isArray(merged.housingAllowance) || merged.housingAllowance.length === 0) merged.housingAllowance = window.__SEED_DATA__.housing;
       return merged;
     }
   }catch(e){ console.warn("读取失败", e); }
