@@ -333,9 +333,18 @@ async function initSupabase() {
   return false;
 }
 
+let syncInProgress = false;
+
 // 同步到 Supabase
 async function syncToSupabase(showToast = true) {
-  // showToast=true 表示手动触发，跳过暂停检查；false 表示自动同步，需检查暂停
+  // 防止并发：上次同步未完成时跳过
+  if (syncInProgress) {
+    glog("syncToSupabase: 上次同步尚未完成，跳过本次");
+    return;
+  }
+  syncInProgress = true;
+  try {
+    // showToast=true 表示手动触发，跳过暂停检查；false 表示自动同步，需检查暂停
   if (showToast && state.settings.supabaseUploadPaused) {
     state.settings.supabaseUploadPaused = false; // 手动同步清除暂停
     glog("syncToSupabase: 手动同步，清除上传暂停标志");
@@ -378,6 +387,7 @@ async function syncToSupabase(showToast = true) {
         }),
         passwords: dataToSync.passwords || [],
         housingAllowance: dataToSync.housingAllowance || [],
+        deletedIds: dataToSync.deletedIds || [],
       };
       const minimalSize = JSON.stringify(uploadData).length;
       glog("syncToSupabase: 精简后大小=" + (minimalSize/1024).toFixed(1) + "KB");
@@ -407,6 +417,8 @@ async function syncToSupabase(showToast = true) {
     save(false);
     updateSyncStatus();
     if (showToast) toast("同步失败：" + e.message);
+  } finally {
+    syncInProgress = false;
   }
 }
 
