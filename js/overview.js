@@ -1,4 +1,130 @@
 /* ============== momo 工作台 · overview 概览（由 工作台.html 拆分，维护请改本文件） ============== */
+/* ============== 鼓励语系统 ============== */
+// 根据日期种子从数组中随机选择一条
+function pickByDate(options) {
+  const t = todayStr();
+  let hash = 0;
+  for (let i = 0; i < t.length; i++) {
+    hash = ((hash << 5) - hash) + t.charCodeAt(i);
+  }
+  return options[Math.abs(hash) % options.length];
+}
+
+// 计算连续打卡天数（饮食/运动/体重/围度任一项有记录）
+function calcStreak() {
+  const t = todayStr();
+  let streak = 0;
+  let d = parseDate(t);
+  while (true) {
+    const dateStr = fmtDate(d);
+    const hasRecord =
+      (getDay(state.diet, dateStr) && getDay(state.diet, dateStr).items.length > 0) ||
+      (getDay(state.exercise, dateStr) && getDay(state.exercise, dateStr).items.length > 0) ||
+      state.weight.some(w => w.date === dateStr) ||
+      state.measure.some(m => m.date === dateStr);
+    if (hasRecord) { streak++; d.setDate(d.getDate() - 1); }
+    else break;
+  }
+  return streak;
+}
+
+// 根据近期动态生成鼓励语
+function getCheerMessage() {
+  const t = todayStr();
+  const dw = getDay(state.diet, t);
+  const ew = getDay(state.exercise, t);
+  const inK = dw ? dw.items.reduce((s,x)=>s+num(x.kcal),0) : 0;
+  const outK = ew ? ew.items.reduce((s,x)=>s+num(x.kcal),0) : 0;
+  const goal = (state.settings.dietGoal > 0) ? state.settings.dietGoal : (calcTDEE() || 1600);
+  const hasDiet = dw && dw.items.length > 0;
+  const hasExercise = ew && ew.items.length > 0;
+
+  // 1. 生理期安慰（最高优先级）
+  if (periodAt(t)) {
+    return pickByDate([
+      "特殊时期，好好休息，对自己好一点 ~",
+      "今天也要温柔对待自己 ~",
+    ]);
+  }
+
+  // 2. 连续打卡鼓励
+  const streak = calcStreak();
+  if (streak >= 3) {
+    const msgs = [
+      "已经连续打卡 " + streak + " 天，太棒了！",
+      "坚持了 " + streak + " 天，每天进步一点点 ~",
+    ];
+    if (streak >= 7) msgs.push("连续 " + streak + " 天，自律的人最可爱！");
+    if (streak >= 30) msgs.push("已经坚持了整整 " + streak + " 天，太厉害了！");
+    return pickByDate(msgs);
+  }
+
+  // 3. 体重趋势
+  const wTrend = state.weight.slice(-7).map(d => num(d.value));
+  if (wTrend.length >= 2) {
+    const diff = wTrend[wTrend.length - 1] - wTrend[0];
+    if (diff < -0.3) {
+      return pickByDate([
+        "体重在悄悄下降，继续加油！",
+        "每一分努力都在为更好的自己铺路 ~",
+        "体重稳步下降，保持这个节奏！",
+      ]);
+    }
+    if (diff > 0.3) {
+      return pickByDate([
+        "体重有波动是正常的，调整一下就好 ~",
+        "没关系，慢慢来，健康最重要！",
+        "偶尔的波动不算什么，坚持就是胜利！",
+      ]);
+    }
+  }
+
+  // 4. 今日饮食/运动表现
+  const pct = goal > 0 ? inK / goal : 0;
+  if (hasDiet && pct <= 0.9) {
+    if (hasExercise) {
+      return pickByDate([
+        "今天吃得健康又运动了，完美！",
+        "饮食运动两不误，今天状态满分！",
+      ]);
+    }
+    return pickByDate([
+      "今天吃得刚刚好，控制得不错！",
+      "饮食管理满分，今天也超棒！",
+    ]);
+  }
+  if (hasExercise) {
+    return pickByDate([
+      "今天运动了，活力满满！",
+      "运动的人最可爱！",
+      "燃烧卡路里，今天也很棒！",
+    ]);
+  }
+  if (hasDiet && pct > 1.1) {
+    return pickByDate([
+      "今天稍微吃多了一点，明天注意就好 ~",
+      "偶尔放纵一下也没关系，开心最重要！",
+      "吃饱了才有力气继续努力！",
+    ]);
+  }
+  // 有饮食记录但在目标范围内
+  if (hasDiet) {
+    return pickByDate([
+      "今天控制得不错，继续保持 ~",
+      "每一餐都在为更好的自己打基础！",
+    ]);
+  }
+
+  // 5. 一般鼓励
+  return pickByDate([
+    "今天也是元气满满的一天！",
+    "你是最棒的，加油！",
+    "每天都是新的开始 ~",
+    "今天也要好好爱自己！",
+    "生活不仅有诗和远方，还有眼前的美好 ~",
+  ]);
+}
+
 /* ============== 页面：概览 ============== */
 function pageOverview(){
   const t = todayStr();
@@ -26,6 +152,7 @@ function pageOverview(){
   const cards = `
     <div class="hero">
       <div class="hi">${greeting()}，master</div>
+      <div class="cheer">${getCheerMessage()}</div>
       <div class="big">${round(net)} <small>kcal</small></div>
       <div class="row">
         <div>摄入 <b>${round(inK)}</b> kcal</div>
