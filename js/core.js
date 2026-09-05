@@ -114,13 +114,21 @@ function migrateData(data){
   data.meta = data.meta || {};
   data.meta.version = v;
 }
+let syncDebounceTimer = null;
+const SYNC_DEBOUNCE_MS = 500;
+
 function save(shouldSync = true){
   state.meta.lastModified = Date.now();
   try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
   catch(e){ toast("保存失败：" + e.message); }
   // 自动同步到 Supabase（如果已配置且未暂停）
   if(shouldSync && state.settings.supabaseUrl && state.settings.supabaseKey && !state.settings.supabaseUploadPaused){
-    syncToSupabase(false); // 静默同步，不显示 toast
+    // 防抖：500ms 内多次 save 合并为一次同步，避免并发乱序
+    if(syncDebounceTimer) clearTimeout(syncDebounceTimer);
+    syncDebounceTimer = setTimeout(() => {
+      syncDebounceTimer = null;
+      syncToSupabase(false);
+    }, SYNC_DEBOUNCE_MS);
   }
 }
 
@@ -132,7 +140,17 @@ const DELETED_TABLES = ["periods","salary","housingAllowance","weight","measure"
 function getRecordId(table, record){
   if(!record) return null;
   if(record.id) return record.id;
-  if(record.date) return table + "_" + record.date;
+  if(record.date) {
+    // 规范化工资/房补的月键格式（2026.8 → 2026.08），避免跨设备 key 不一致
+    let dateStr = record.date;
+    if(table === "salary" || table === "housingAllowance"){
+      const parts = String(dateStr).split('.');
+      if(parts.length === 2){
+        dateStr = parts[0] + '.' + String(Number(parts[1])).padStart(2, '0');
+      }
+    }
+    return table + "_" + dateStr;
+  }
   return null;
 }
 

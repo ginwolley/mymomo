@@ -247,11 +247,20 @@ function mergeRemote(remote){
     
     if(added > 0 || updated > 0){
       state[table] = Array.from(localMap.values());
-      // 排序
+      // 排序（兼容字符串日期和数字时间戳）
       state[table].sort((a,b) => {
-        const tsA = a.updatedAt || a.createdAt || a.date || a.start || 0;
-        const tsB = b.updatedAt || b.createdAt || b.date || b.start || 0;
-        return tsB - tsA;
+        const getTs = item => {
+          const v = item.updatedAt || item.createdAt || item.date || item.start || 0;
+          if(typeof v === 'number') return v;
+          if(typeof v === 'string'){
+            const n = Number(v);
+            if(!isNaN(n)) return n;
+            const d = new Date(v).getTime();
+            return isNaN(d) ? 0 : d;
+          }
+          return 0;
+        };
+        return getTs(b) - getTs(a);
       });
       glog("mergeRemote: " + table + " 新增" + added + " 更新" + updated + "（本地" + localArr.length + "→" + state[table].length + "）");
       totalAdded += added;
@@ -457,6 +466,12 @@ async function initSync() {
     // 云端有更多数据但合并失败 → 暂停自动上传，防止旧数据覆盖云端
     glog("initSync: 警告：云端(" + countRecords(remote) + ")>本地(" + lcAfter + ")但合并失败，暂停自动上传");
     state.settings.supabaseUploadPaused = true;
+  } else {
+    // 恢复正常状态：合并无变化或本地数据更多，恢复自动上传
+    if (state.settings.supabaseUploadPaused) {
+      glog("initSync: 恢复自动上传（之前被暂停的状态已恢复正常）");
+      state.settings.supabaseUploadPaused = false;
+    }
   }
   
   state.settings.supabaseLastSync = Date.now();
@@ -470,6 +485,17 @@ async function initSync() {
     await syncToSupabase(false);
     state.settings.supabasePendingSync = false;
     save(false);
+  }
+  
+  // 拉取后自动推送本地更新：本地数据比云端多，或本地 lastModified 更新
+  if (remote) {
+    const localCount = countRecords(state);
+    const remoteCount = countRecords(remote);
+    const localNewer = (state.meta.lastModified || 0) > (remote.meta?.lastModified || 0);
+    if (localCount > remoteCount || localNewer) {
+      glog("initSync: 本地数据比云端更新（本地" + localCount + ">云端" + remoteCount + "或时间戳更新），自动推送");
+      await syncToSupabase(false);
+    }
   }
 }
 // 上传图片到 Supabase Storage 或返回压缩后的 Base64
