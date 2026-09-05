@@ -28,6 +28,44 @@ function calcStreak() {
   return streak;
 }
 
+// 判断今天是否周末
+function isWeekend() {
+  const d = new Date().getDay();
+  return d === 0 || d === 6;
+}
+
+// 计算里程碑数据（累计减重 / 累计运动消耗）
+function calcMilestones() {
+  const weights = state.weight;
+  let totalLoss = 0;
+  if (weights.length >= 2) {
+    const first = num(weights[0].value);
+    const last = num(weights[weights.length - 1].value);
+    totalLoss = round(first - last); // 正数 = 减重
+  }
+  let totalExKcal = 0;
+  (state.exercise || []).forEach(d => {
+    (d.items || []).forEach(item => { totalExKcal += num(item.kcal); });
+  });
+  return { totalLoss, totalExKcal: round(totalExKcal) };
+}
+
+// 健康小贴士池
+const HEALTH_TIPS = [
+  "每天喝够8杯水，皮肤会变好哦~",
+  "早餐吃好，一天精神好~",
+  "饭后散散步，帮助消化~",
+  "久坐别忘了起来活动一下~",
+  "多吃蔬菜水果，营养更均衡~",
+  "睡前泡个脚，睡得更香~",
+  "细嚼慢咽，更容易有饱腹感~",
+  "每天晒15分钟太阳，补充维生素D~",
+  "少吃精制糖，皮肤会感谢你~",
+  "规律作息比任何补品都有效~",
+  "每餐先吃蔬菜，自然就吃得少了~",
+  "深呼吸三次，压力瞬间减半~",
+];
+
 // 根据近期动态生成鼓励语
 function getCheerMessage() {
   const t = todayStr();
@@ -47,8 +85,20 @@ function getCheerMessage() {
     ]);
   }
 
-  // 2. 连续打卡鼓励
+  // 2. 数据里程碑
+  const { totalLoss, totalExKcal } = calcMilestones();
   const streak = calcStreak();
+  const milestoneMsgs = [];
+  if (totalLoss >= 0.5) milestoneMsgs.push("已经累计减了 " + totalLoss + " kg，太厉害了！");
+  if (totalLoss >= 1) milestoneMsgs.push("减重突破 1kg 大关，每一步都算数！");
+  if (totalLoss >= 2) milestoneMsgs.push("已经减了 " + totalLoss + " kg，你真的超棒！");
+  if (totalLoss >= 5) milestoneMsgs.push("减重 " + totalLoss + " kg！这是多么了不起的成就！");
+  if (totalExKcal >= 1000) milestoneMsgs.push("累计运动消耗已突破 " + totalExKcal + " kcal，活力满满！");
+  if (totalExKcal >= 5000) milestoneMsgs.push("运动消耗突破 " + totalExKcal + " kcal，运动达人就是你！");
+  if (streak >= 60) milestoneMsgs.push("连续打卡 " + streak + " 天，已经是生活方式了！");
+  if (milestoneMsgs.length > 0) return pickByDate(milestoneMsgs);
+
+  // 3. 连续打卡鼓励
   if (streak >= 3) {
     const msgs = [
       "已经连续打卡 " + streak + " 天，太棒了！",
@@ -59,7 +109,7 @@ function getCheerMessage() {
     return pickByDate(msgs);
   }
 
-  // 3. 体重趋势
+  // 4. 体重趋势
   const wTrend = state.weight.slice(-7).map(d => num(d.value));
   if (wTrend.length >= 2) {
     const diff = wTrend[wTrend.length - 1] - wTrend[0];
@@ -79,7 +129,17 @@ function getCheerMessage() {
     }
   }
 
-  // 4. 今日饮食/运动表现
+  // 5. 周末特别版
+  if (isWeekend()) {
+    return pickByDate([
+      "周末啦，好好享受生活 ~",
+      "休息日也要好好爱自己！",
+      "周末放松一下，充电满满再出发 ~",
+      "周末愉快，做点自己喜欢的事吧！",
+    ]);
+  }
+
+  // 6. 今日饮食/运动表现
   const pct = goal > 0 ? inK / goal : 0;
   if (hasDiet && pct <= 0.9) {
     if (hasExercise) {
@@ -115,13 +175,29 @@ function getCheerMessage() {
     ]);
   }
 
-  // 5. 一般鼓励
+  // 7. 小贴士 / 时间分段问候 / 一般鼓励
+  if (pickByDate([true, false, false, false])) {
+    return pickByDate(HEALTH_TIPS);
+  }
+  const h = new Date().getHours();
+  if (h >= 6 && h < 12) {
+    return pickByDate([
+      "早安，今天也要元气满满！",
+      "新的一天，新的开始，加油！",
+      "早上好，早餐吃了吗 ~",
+    ]);
+  }
+  if (h >= 12 && h < 18) {
+    return pickByDate([
+      "下午好，记得起来活动一下 ~",
+      "午后时光，也要保持好心情 ~",
+      "下午也要加油哦！",
+    ]);
+  }
   return pickByDate([
-    "今天也是元气满满的一天！",
-    "你是最棒的，加油！",
-    "每天都是新的开始 ~",
-    "今天也要好好爱自己！",
-    "生活不仅有诗和远方，还有眼前的美好 ~",
+    "今天辛苦了，好好放松 ~",
+    "晚上好，对自己好一点 ~",
+    "忙碌了一天，你真的很棒！",
   ]);
 }
 
