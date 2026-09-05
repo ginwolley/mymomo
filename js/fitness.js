@@ -416,6 +416,21 @@ function pageExercise(){
   const mode = state.settings.modules.exercise;
   const daily = mode==="daily";
   const w = weightForCalc();
+  // 近7天运动消耗汇总（含今天）
+  const ex7d = (() => {
+    const t = todayStr();
+    const days = [];
+    for(let i = 6; i >= 0; i--){
+      const d = addDays(t, -i);
+      const dayRec = getDay(state.exercise, d);
+      const kcal = dayRec ? dayRec.items.reduce((s, x) => s + num(x.kcal), 0) : 0;
+      days.push({date: d, kcal});
+    }
+    const total = days.reduce((s, d) => s + d.kcal, 0);
+    const hasData = days.some(d => d.kcal > 0);
+    const chart = hasData ? lineChart([{data: days.map(d => d.kcal), color: "#36D1C9"}], days.map(d => d.date.slice(5))) : '';
+    return {total, chart, hasData};
+  })();
   // 构建数据列表供输入提示
   // 构建 select + optgroup
   const allOpts = EX_TYPES.map(g => {
@@ -424,6 +439,10 @@ function pageExercise(){
   }).join("");
 
   let body = `
+    ${ex7d.hasData ? `<div class="card">
+      <h2>近7天运动消耗 <span class="sub">累计 ${round(ex7d.total)} kcal</span></h2>
+      ${ex7d.chart}
+    </div>` : ''}
     <div class="card">
       <h2>记录运动</h2>
       <form id="exerciseForm" class="ex-form">
