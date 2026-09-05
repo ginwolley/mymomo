@@ -18,7 +18,8 @@ function pageOverview(){
     </div>` : '';
 
   const pred = predictNext();
-  const goal = state.settings.dietGoal || 1600;
+  const isManual = state.settings.dietGoal > 0;
+  const goal = isManual ? state.settings.dietGoal : (calcTDEE() || 1600);
   const pct = goal > 0 ? Math.min(100, Math.round(inK/goal*100)) : 0;
   const overshoot = inK > goal;
 
@@ -32,7 +33,7 @@ function pageOverview(){
         <div>体重 <b>${lw ? round(num(lw.value)) : "—"}</b> kg</div>
       </div>
       <div class="prog-wrap">
-        <div class="prog-label"><span>今日摄入 ${round(inK)} / ${goal} kcal</span><span>${overshoot ? "超了 "+(round(inK-goal)) : "已用 "+pct+"%"}</span></div>
+        <div class="prog-label"><span>今日摄入 ${round(inK)} / ${goal} kcal${isManual?'':' · TDEE'}</span><span>${overshoot ? "超了 "+(round(inK-goal)) : "已用 "+pct+"%"}</span></div>
         <div class="prog-bar"><i style="width:${pct}%"></i></div>
       </div>
     </div>`;

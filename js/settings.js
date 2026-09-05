@@ -17,7 +17,16 @@ function pageSettings(){
       <h2>身体资料</h2>
       <div class="row">
         <div class="field"><label>默认体重 (kg)</label><input type="number" step="0.1" id="pWeight" value="${state.profile.weight!=null?state.profile.weight:""}" placeholder="用于运动热量估算"></div>
-        <div class="field"><label>身高 (cm)</label><input type="number" step="0.1" id="pHeight" value="${state.profile.height!=null?state.profile.height:""}" placeholder="可选"></div>
+        <div class="field"><label>身高 (cm)</label><input type="number" step="0.1" id="pHeight" value="${state.profile.height!=null?state.profile.height:""}" placeholder="必填，用于BMR计算"></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>出生日期</label><input type="date" id="pBirth" value="${state.profile.birth||""}"></div>
+        <div class="field"><label>性别</label>
+          <select id="pGender" style="width:100%;padding:8px 10px;border:1px solid var(--glass-border);border-radius:var(--radius);background:var(--bg);font:inherit;font-size:14px">
+            <option value="female"${state.profile.gender==="female"?" selected":""}>女</option>
+            <option value="male"${state.profile.gender==="male"?" selected":""}>男</option>
+          </select>
+        </div>
       </div>
       <div style="text-align:center"><button class="btn primary sm" id="saveProfile">保存资料</button></div>
     </div>
@@ -34,8 +43,18 @@ function pageSettings(){
 
     <div class="card">
       <h2>饮食热量目标</h2>
-      <div class="field"><label>每日热量目标 (kcal)</label><input type="number" id="dietGoal" value="${s.dietGoal||1600}" step="50" min="800" max="5000"></div>
+      <div class="field"><label>活动水平</label>
+        <select id="activityLevel" style="width:100%;padding:8px 10px;border:1px solid var(--glass-border);border-radius:var(--radius);background:var(--bg);font:inherit;font-size:14px">
+          <option value="sedentary"${s.activityLevel==="sedentary"?" selected":""}>久坐不动（办公室工作，几乎不运动）</option>
+          <option value="light"${s.activityLevel==="light"?" selected":""}>轻度活动（每周运动1-3天）</option>
+          <option value="moderate"${s.activityLevel==="moderate"?" selected":""}>中度活动（每周运动3-5天）</option>
+          <option value="active"${s.activityLevel==="active"?" selected":""}>积极活动（每周运动6-7天）</option>
+          <option value="very_active"${s.activityLevel==="very_active"?" selected":""}>高强度活动（体力劳动/每日训练）</option>
+        </select>
+      </div>
+      <div class="field"><label>手动热量目标 (kcal)</label><input type="number" id="dietGoal" value="${s.dietGoal||""}" step="50" min="800" max="5000" placeholder="留空则用BMR自动计算"></div>
       <div style="text-align:center"><button class="btn primary sm" id="saveDietGoal">保存</button></div>
+      <div class="hint">填写身高、出生日期和活动水平后，系统将根据最新体重自动计算 TDEE（基础代谢×活动系数）作为每日热量目标。留空手动目标即可启用自动计算。</div>
     </div>
 
     <div class="card">
@@ -100,6 +119,8 @@ function bindSettings(){
   if(sp) sp.addEventListener("click",()=>{
     state.profile.weight = document.getElementById("pWeight").value===""?null:num(document.getElementById("pWeight").value);
     state.profile.height = document.getElementById("pHeight").value===""?null:num(document.getElementById("pHeight").value);
+    state.profile.birth = document.getElementById("pBirth").value || null;
+    state.profile.gender = document.getElementById("pGender").value;
     save(); toast("已保存资料");
   });
   document.querySelectorAll(".seg[data-mode]").forEach(seg=>{
@@ -120,8 +141,11 @@ function bindSettings(){
   });
   const sdg=document.getElementById("saveDietGoal");
   if(sdg) sdg.addEventListener("click",()=>{
+    const al=document.getElementById("activityLevel");
+    if(al) state.settings.activityLevel = al.value;
     const v=parseInt(document.getElementById("dietGoal").value);
-    if(v>0){ state.settings.dietGoal=v; save(); toast("热量目标已保存"); }
+    state.settings.dietGoal = v>0 ? v : 0;
+    save(); toast("热量目标已保存");
   });
   const cp=document.getElementById("clearPeriods");
   if(cp) cp.addEventListener("click",()=>{

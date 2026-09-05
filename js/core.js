@@ -7,11 +7,11 @@ const DATA_VERSION = 5; // 数据版本号，每次新增迁移时递增（同�
 /* 多级导航树：分组(group)可折叠，叶子(leaf)为页面 */
 const DEFAULTS = {
   meta:{version:DATA_VERSION, createdAt:Date.now(), lastModified:Date.now()},
-  profile:{weight:null, height:null},
+  profile:{weight:null, height:null, birth:null, gender:"female"},
   periods: window.__SEED_DATA__.periods.map(p=>({...p})),
   settings:{
     api:{endpoint:"https://api.deepseek.com/chat/completions", key:"", model:"deepseek-chat", enabled:false},
-    modules:{weight:"cumulative", measure:"cumulative", diet:"daily", exercise:"daily", balance:"cumulative"}, period:90, dietGoal:1600,
+    modules:{weight:"cumulative", measure:"cumulative", diet:"daily", exercise:"daily", balance:"cumulative"}, period:90, dietGoal:0, activityLevel:"sedentary",
     navOpen:{fitness:false, period:false, salary:false},
     supabaseUrl:"", supabaseKey:"", supabaseEmail:"", supabasePass:"", supabaseLastSync:null, supabaseLastSyncStatus:"local_only", supabaseDebug:"",
     modelscopeToken:"", modelscopeModel:"iic/stable-diffusion-xl-base-1.0", apizeroKey:"",
@@ -279,6 +279,25 @@ function latestWeight(){
 function weightForCalc(){
   const w = latestWeight();
   return w ? num(w) : 60;
+}
+// Mifflin-St Jeor 基础代谢率公式
+function calcBMR(weightKg, heightCm, age, gender){
+  // 女性: 10×体重 + 6.25×身高 - 5×年龄 - 161
+  // 男性: 10×体重 + 6.25×身高 - 5×年龄 + 5
+  const base = 10 * weightKg + 6.25 * heightCm - 5 * age;
+  return gender === "male" ? base + 5 : base - 161;
+}
+// 活动系数
+const ACTIVITY_FACTORS = {sedentary:1.2, light:1.375, moderate:1.55, active:1.725, very_active:1.9};
+function calcTDEE(){
+  const w = weightForCalc();
+  const h = state.profile.height;
+  const birth = state.profile.birth;
+  if(!w || !h || !birth) return 0; // 资料不全，返回 0 表示交给用户手动设置
+  const age = Math.floor((Date.now() - new Date(birth).getTime()) / 31557600000);
+  const bmr = calcBMR(w, h, Math.max(age, 0), state.profile.gender || "female");
+  const factor = ACTIVITY_FACTORS[state.settings.activityLevel] || 1.2;
+  return Math.round(bmr * factor);
 }
 
 function toast(msg){

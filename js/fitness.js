@@ -278,7 +278,7 @@ function pageDiet(){
   const today = todayStr();
   const dw = getDay(state.diet, today);
   const items = dw ? dw.items : [];
-  const goal = state.settings.dietGoal || 1600;
+  const goal = state.settings.dietGoal > 0 ? state.settings.dietGoal : (calcTDEE() || 1600);
   const totalKcal = items.reduce((s,x) => s + num(x.kcal), 0);
   const pct = Math.min(100, Math.round(totalKcal / goal * 100));
   const overshoot = totalKcal > goal;
