@@ -55,6 +55,16 @@ function load(){
       return merged;
     }
   }catch(e){ console.warn("读取失败", e); }
+  // 首次加载：如果本地有 seed-data.js（仅开发环境），用种子数据初始化
+  // seed-data.js 已在 .gitignore 中，不会被推送到 GitHub，保障隐私安全
+  if(typeof window.__SEED_DATA__ !== "undefined" && window.__SEED_DATA__){
+    return structuredClone({
+      ...DEFAULTS,
+      periods: window.__SEED_DATA__.periods.map(p=>({...p})),
+      salary: window.__SEED_DATA__.salary,
+      housingAllowance: window.__SEED_DATA__.housing,
+    });
+  }
   return structuredClone(DEFAULTS);
 }
 function migrateData(data){
