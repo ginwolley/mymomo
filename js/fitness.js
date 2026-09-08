@@ -958,9 +958,6 @@ function searchLocalFoodDB(keyword){
       } else if(nm.includes(kw)){
         results.push({...f, _score: 80});
         seen.add(nm);
-      } else if(kw.length >= 2 && (kw.split('').every(c => nm.includes(c)))){
-        results.push({...f, _score: 50});
-        seen.add(nm);
       }
     }
   }
