@@ -445,6 +445,7 @@ function pageExercise(){
     </div>` : ''}
     <div class="card">
       <h2>记录运动</h2>
+      <div class="ex-recent" id="exRecentTypes"></div>
       <form id="exerciseForm" class="ex-form">
         <div class="field">
           <label>运动</label>
@@ -1028,6 +1029,29 @@ function buildFoodHistory(){
   return { foodHistory, pkgHistory };
 }
 
+/* 构建运动历史索引（用于自动填入上次时长和最近三项） */
+function buildExerciseHistory() {
+  const lastDuration = {}; // type -> 上次时长(分)
+  const allTypes = [];     // [{type, date}]
+  state.exercise.forEach(d => {
+    (d.items || []).forEach(item => {
+      const key = item.type.trim();
+      if (!key) return;
+      lastDuration[key] = item.duration;
+      allTypes.push({type: key, date: d.date});
+    });
+  });
+  // 按日期降序取最近3种不重复的运动类型
+  allTypes.sort((a, b) => a.date > b.date ? -1 : 1);
+  const seen = new Set();
+  const recentTypes = allTypes.filter(x => {
+    if (seen.has(x.type)) return false;
+    seen.add(x.type);
+    return true;
+  }).slice(0, 3).map(x => x.type);
+  return { lastDuration, recentTypes };
+}
+
 function bindDietAdd(){
   const pageEl = document.getElementById("page");
   const dietAddPage = pageEl.querySelector(".diet-add-page");
@@ -1326,6 +1350,26 @@ function bindExercise(){
   if(!form) return;
   const typeSelect = form.type;
   const preview=document.getElementById("exPreview");
+
+  // 构建运动历史：自动填入上次时长 + 最近3项快捷选择
+  const exHistory = buildExerciseHistory();
+  const recentDiv = document.getElementById("exRecentTypes");
+  if(recentDiv && exHistory.recentTypes.length > 0){
+    recentDiv.innerHTML = exHistory.recentTypes.map(t =>
+      '<button class="chip ex-chip" data-type="'+esc(t)+'">'+esc(t)+'</button>'
+    ).join("");
+    recentDiv.querySelectorAll(".ex-chip").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const type = btn.dataset.type;
+        typeSelect.value = type;
+        if(exHistory.lastDuration[type]){
+          form.duration.value = exHistory.lastDuration[type];
+        }
+        updatePreview();
+      });
+    });
+  }
+
   // 通过 select option 的 data-met 读取 MET，或者回退匹配
   function lookupMET(name){
     name = name.trim();
@@ -1352,7 +1396,13 @@ function bindExercise(){
       preview.textContent = "";
     }
   }
-  typeSelect.addEventListener("change", updatePreview);
+  typeSelect.addEventListener("change", ()=>{
+    // 切换运动类型时自动填入上次时长
+    if(exHistory.lastDuration[typeSelect.value]){
+      form.duration.value = exHistory.lastDuration[typeSelect.value];
+    }
+    updatePreview();
+  });
   form.duration.addEventListener("input", updatePreview);
 
   form.addEventListener("submit", e=>{

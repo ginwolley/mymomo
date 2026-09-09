@@ -198,6 +198,9 @@
   .ex-form .field{margin-bottom:6px;gap:6px;}
   .ex-form .field label{font-size:12px;min-width:4em;}
   .ex-form .field input,.ex-form .field select{padding:6px 8px;font-size:12px;border-radius:8px;}
+  .ex-recent{display:flex;gap:6px;flex-wrap:nowrap;margin-bottom:6px;overflow-x:auto;}
+  .ex-recent .ex-chip{background:var(--bg-soft);border:none;border-radius:16px;padding:4px 12px;font-size:11px;color:var(--ink-light);cursor:pointer;white-space:nowrap;transition:background .15s;}
+  .ex-recent .ex-chip:hover{background:var(--line);}
   /* 去掉number输入框的步进箭头 */
   input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0;}
   input[type=number]{-moz-appearance:textfield;}

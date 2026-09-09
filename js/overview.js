@@ -86,15 +86,13 @@ function getCheerMessage() {
   }
 
   // 2. 数据里程碑
-  const { totalLoss, totalExKcal } = calcMilestones();
+  const { totalLoss } = calcMilestones();
   const streak = calcStreak();
   const milestoneMsgs = [];
   if (totalLoss >= 0.5) milestoneMsgs.push("已经累计减了 " + totalLoss + " kg，太厉害了！");
   if (totalLoss >= 1) milestoneMsgs.push("减重突破 1kg 大关，每一步都算数！");
   if (totalLoss >= 2) milestoneMsgs.push("已经减了 " + totalLoss + " kg，你真的超棒！");
   if (totalLoss >= 5) milestoneMsgs.push("减重 " + totalLoss + " kg！这是多么了不起的成就！");
-  if (totalExKcal >= 1000) milestoneMsgs.push("累计运动消耗已突破 " + totalExKcal + " kcal，活力满满！");
-  if (totalExKcal >= 5000) milestoneMsgs.push("运动消耗突破 " + totalExKcal + " kcal，运动达人就是你！");
   if (streak >= 60) milestoneMsgs.push("连续打卡 " + streak + " 天，已经是生活方式了！");
   if (milestoneMsgs.length > 0) return pickByDate(milestoneMsgs);
 
