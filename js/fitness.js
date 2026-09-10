@@ -1362,10 +1362,8 @@ function bindExercise(){
       btn.addEventListener("click", () => {
         const type = btn.dataset.type;
         typeSelect.value = type;
-        if(exHistory.lastDuration[type]){
-          form.duration.value = exHistory.lastDuration[type];
-        }
-        updatePreview();
+        // 触发 change 事件让下拉框视觉同步，同时自动填入上次时长 + 更新预览
+        typeSelect.dispatchEvent(new Event('change', { bubbles: true }));
       });
     });
   }
