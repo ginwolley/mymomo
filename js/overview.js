@@ -272,9 +272,11 @@ function pageOverview(){
   // 今日已入账（实时计时，仅工作日显示）
   const nowD = new Date();
   const curY = nowD.getFullYear(), curM = nowD.getMonth()+1;
-  const curKey = curY+"."+curM;
-  const salRec = state.salary.find(r => r.date === curKey);
-  const houRec = state.housingAllowance.find(r => r.date === curKey);
+  const curKey = curY+"."+String(curM).padStart(2,'0');
+  const curKeyRaw = curY+"."+curM;
+  // 兼容补位(2026.09)与未补位(2026.9)两种历史格式
+  const salRec = state.salary.find(r => r.date === curKey || r.date === curKeyRaw);
+  const houRec = state.housingAllowance.find(r => r.date === curKey || r.date === curKeyRaw);
   // 判断是否为工作日（周一至周五）
   const dayOfWeek = nowD.getDay(); // 0=周日, 1=周一, ..., 6=周六
   const isWeekday = dayOfWeek >= 1 && dayOfWeek <= 5;

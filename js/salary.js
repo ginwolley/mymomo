@@ -23,11 +23,23 @@ function pageSalaryBasic(){
 
 /* ============== 页面：添加工资 ============== */
 function pageSalaryAdd(){
-  const fields = SALARY_HEADERS.map(h=>`<div class="field"><label>${esc(h)}</label><input type="text" name="s-${h}" value="0" placeholder="0"></div>`).join("");
+  // 取最近一条工资记录作为预置参考（工资变化小，便于核实修改）
+  const last = state.salary.length ? state.salary.slice().sort(sortByDateKey)[state.salary.length-1] : null;
+  // 默认日期取当前月；若当前月已有记录，则默认取最近记录的下一个月
+  let defDate = todayStr().slice(0,7).replace('-','.');
+  const hasCur = state.salary.some(r => r.date === defDate) || state.salary.some(r => r.date === defDate.replace(/\.0(\d)$/,'.$1'));
+  if(last && !hasCur){
+    const p = last.date.split('.');
+    let y = parseInt(p[0]), m = parseInt(p[1]) + 1;
+    if(m > 12){ m = 1; y++; }
+    defDate = y + "." + String(m).padStart(2,'0');
+  }
+  const fields = SALARY_HEADERS.map(h=>`<div class="field"><label>${esc(h)}</label><input type="text" name="s-${h}" value="${last ? (last[h]!=null?last[h]:'0') : '0'}" placeholder="0"></div>`).join("");
   return `<div class="card">
       <form id="salaryForm">
-        <div class="field"><label>日期</label><input type="text" name="s-date" placeholder="如 2025.08" value="${todayStr().slice(0,7).replace('-','.')}" required></div>
+        <div class="field"><label>日期</label><input type="text" name="s-date" placeholder="如 2025.08" value="${defDate}" required></div>
         <div class="grid grid-2">${fields}</div>
+        <div class="hint" style="text-align:center;margin-top:8px">已预置上一次记录的数字，请核实修改</div>
         <div style="text-align:center;margin-top:14px"><button class="btn primary" type="submit">保存</button></div>
       </form>
     </div>`;
