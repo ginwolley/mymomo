@@ -34,11 +34,11 @@ function pageSalaryAdd(){
     if(m > 12){ m = 1; y++; }
     defDate = y + "." + String(m).padStart(2,'0');
   }
-  const fields = SALARY_HEADERS.map(h=>`<div class="field"><label>${esc(h)}</label><input type="text" name="s-${h}" value="${last ? (last[h]!=null?last[h]:'0') : '0'}" placeholder="0"></div>`).join("");
+  const fields = SALARY_HEADERS.map(h=>`<div class="f"><label>${esc(h)}</label><input type="text" name="s-${h}" value="${last ? (last[h]!=null?last[h]:'0') : '0'}" placeholder="0"></div>`).join("");
   return `<div class="card">
       <form id="salaryForm">
         <div class="field"><label>日期</label><input type="text" name="s-date" placeholder="如 2025.08" value="${defDate}" required></div>
-        <div class="grid grid-2">${fields}</div>
+        <div class="salary-add-grid">${fields}</div>
         <div class="hint" style="text-align:center;margin-top:8px">已预置上一次记录的数字，请核实修改</div>
         <div style="text-align:center;margin-top:14px"><button class="btn primary" type="submit">保存</button></div>
       </form>

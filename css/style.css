@@ -193,6 +193,12 @@
   .field select:hover{background-color:var(--bg-soft);}
   .field select option{background:#fff;color:var(--ink);padding:6px 10px;font-size:12px;}
   .field select optgroup{font-size:12px;font-weight:600;color:var(--ink-muted);padding:4px 8px;}
+  /* 工资添加表单：紧凑网格，标签+数字同行，数字列宽一致 */
+  .salary-add-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:7px 12px;margin-bottom:4px;}
+  .salary-add-grid .f{display:flex;align-items:center;gap:6px;white-space:nowrap;}
+  .salary-add-grid .f label{flex:0 0 auto;max-width:120px;overflow:hidden;text-overflow:ellipsis;margin:0;font-size:12px;color:var(--ink-light);text-align:right;}
+  .salary-add-grid .f input{flex:0 0 112px;text-align:center;padding:6px 4px;font-size:12.5px;border:1.5px solid var(--line);border-radius:8px;background:var(--bg-soft);outline:none;transition:border-color .2s,background .2s;min-width:0;}
+  .salary-add-grid .f input:focus{border-color:var(--gold);background:#fff;box-shadow:0 0 0 3px rgba(54,209,201,.15);}
   .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--gold);background:#fff;box-shadow:0 0 0 3px rgba(54,209,201,.15);}
   /* 运动记录表单紧凑样式 */
   .ex-form .field{margin-bottom:6px;gap:6px;}
