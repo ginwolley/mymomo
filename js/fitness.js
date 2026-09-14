@@ -385,6 +385,31 @@ function pageDietAdd(meal){
       </div>
     </div>
 
+    <!-- 品牌/成品食物：按一份录入热量（如 瑞幸超大杯美式、蜜雪冰城草莓圣代） -->
+    <div class="card" style="margin-top:10px">
+      <div class="diet-manual-header">
+        <span class="diet-manual-title">品牌/成品食物（按份）</span>
+        <span class="muted" style="font-size:11px">一份直接记总热量，适合奶茶/冰淇淋等</span>
+      </div>
+      <div class="food-search-wrap" style="position:relative;margin-top:4px">
+        <input type="text" id="brandNameInput" placeholder="输入品名，如 瑞幸超大杯美式" style="width:100%;padding:6px 8px;border:1px solid var(--line);border-radius:6px;font-size:13px;background:white" autocomplete="off">
+        <div class="food-history-drop" id="brandFoodHistory"></div>
+      </div>
+      <div class="brand-size-row" id="brandSizeRow" style="margin-top:6px;display:flex;gap:6px;flex-wrap:nowrap;overflow-x:auto">
+        <button class="brand-size active" data-size="">标准</button>
+        <button class="brand-size" data-size="中杯">中杯</button>
+        <button class="brand-size" data-size="大杯">大杯</button>
+        <button class="brand-size" data-size="超大杯">超大杯</button>
+      </div>
+      <div class="diet-converter-row" style="margin-top:6px">
+        <span class="muted" style="font-size:11px;white-space:nowrap">一份</span>
+        <input type="number" id="brandKcal" placeholder="热量" style="flex:1;min-width:0" min="1">
+        <span class="muted" style="font-size:11px">kcal</span>
+        <button class="btn primary sm" id="brandUseBtn" style="font-size:11px;padding:3px 8px">添加</button>
+      </div>
+      <div class="hint" style="margin:4px 0 0;font-size:11px;color:var(--ink-muted)">比如蜜雪冰城草莓圣代约 xxx kcal，填总数即可，规格按钮会自动拼到品名后</div>
+    </div>
+
     <!-- 食物份量选择面板（搜索匹配或AI估算后显示） -->
     <div class="card" id="foodDetailPanel" style="display:none">
       <div class="fd-header">
@@ -1313,6 +1338,89 @@ function bindDietAdd(){
     const kcal = Math.round((w / 100) * (kj / 4.184));
     const d = ensureDay(state.diet, todayStr());
     d.items.push({name, kcal, meal, unit, qty: w, isPackage: true, kjPer100g: kj, img: null});
+    save(); toast("已添加 "+name+" "+kcal+" kcal"); navigate("diet");
+  });
+
+  // ============== 品牌/成品食物（按份） ==============
+  // 构建品牌食物历史索引（只保留按份记录：unit 非 g/ml 且 qty 取份数）
+  function buildBrandHistory(){
+    const brandHistory = {};
+    state.diet.forEach(d => {
+      (d.items || []).forEach(item => {
+        if(item.isPackage) return;
+        const unit = item.unit || 'g';
+        const isGram = unit.includes('g') || unit.includes('ml');
+        if(isGram) return; // 只取按份记录
+        const key = (item.name || '').trim().toLowerCase();
+        if(!key) return;
+        if(!brandHistory[key]){
+          brandHistory[key] = { name: item.name, kcal: Math.round(item.baseKcal || item.kcal), size: unit, lastUsed: d.date };
+        } else {
+          brandHistory[key].lastUsed = d.date;
+        }
+      });
+    });
+    return brandHistory;
+  }
+  const brandHistory = buildBrandHistory();
+  const brandNameInput = document.getElementById("brandNameInput");
+  const brandFoodHistory = document.getElementById("brandFoodHistory");
+  const brandKcalInput = document.getElementById("brandKcal");
+  let brandSize = "";
+  if(brandNameInput){
+    brandNameInput.addEventListener("input", ()=>{
+      const val = brandNameInput.value.trim().toLowerCase();
+      if(!val){ brandFoodHistory.style.display = "none"; return; }
+      const matches = Object.values(brandHistory)
+        .filter(f => f.name.toLowerCase().includes(val))
+        .sort((a, b) => (a.lastUsed || "") > (b.lastUsed || "") ? -1 : 1)
+        .slice(0, 8);
+      if(matches.length === 0){ brandFoodHistory.style.display = "none"; return; }
+      brandFoodHistory.innerHTML = matches.map(f =>
+        '<div class="fh-item" data-name="'+esc(f.name)+'" data-kcal="'+f.kcal+'" data-size="'+esc(f.size)+'">' +
+          '<span class="fh-name">'+esc(f.name)+'</span>' +
+          '<span class="fh-info">'+f.kcal+' kcal/'+(f.size==='份'?'份':esc(f.size))+'(按份)</span>' +
+        '</div>'
+      ).join("");
+      brandFoodHistory.style.display = "block";
+    });
+    brandFoodHistory.addEventListener("click", (e)=>{
+      const item = e.target.closest(".fh-item");
+      if(!item) return;
+      brandFoodHistory.style.display = "none";
+      brandNameInput.value = item.dataset.name;
+      brandKcalInput.value = item.dataset.kcal;
+      // 若历史规格非"份"，自动点亮对应规格按钮
+      const size = item.dataset.size;
+      if(size && size !== "份" && size !== "标准"){
+        brandSize = size;
+        document.querySelectorAll("#brandSizeRow .brand-size").forEach(btn => {
+          btn.classList.toggle("active", btn.dataset.size === size);
+        });
+      }
+      toast("已填入"+item.dataset.name+"，请确认热量");
+    });
+  }
+  // 规格按钮切换
+  document.querySelectorAll("#brandSizeRow .brand-size").forEach(btn => {
+    btn.addEventListener("click", ()=>{
+      document.querySelectorAll("#brandSizeRow .brand-size").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      brandSize = btn.dataset.size || "";
+    });
+  });
+  const brandUseBtn = document.getElementById("brandUseBtn");
+  if(brandUseBtn) brandUseBtn.addEventListener("click", ()=>{
+    let name = (brandNameInput && brandNameInput.value.trim()) || "";
+    const kcal = num(brandKcalInput ? brandKcalInput.value : 0);
+    if(!name){ toast("请输入品名"); return; }
+    if(kcal <= 0){ toast("请填写一份的热量"); return; }
+    // 规格自动拼到品名后，形成独立记录（不同规格不同热量）
+    if(brandSize && !name.includes(brandSize)){
+      name = name + " " + brandSize;
+    }
+    const d = ensureDay(state.diet, todayStr());
+    d.items.push({name, kcal, meal, unit: brandSize || "份", qty: 1, baseKcal: kcal, img: null});
     save(); toast("已添加 "+name+" "+kcal+" kcal"); navigate("diet");
   });
 
