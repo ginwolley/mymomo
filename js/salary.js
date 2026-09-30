@@ -1,7 +1,9 @@
 /* ============== momo 工作台 · salary 工资（由 工作台.html 拆分，维护请改本文件） ============== */
 
 /* 工资字段列表 */
-const SALARY_HEADERS = ["职务工资","级别工资","岗位工资","技术等级职务工资","见习期人员工资","生活性补贴","工作性津贴（职务）","工作性津贴（工作）","工作性津贴（领导）","工作性津贴（年度）","实际工作性津贴","绩效津贴","区县保留津贴","通讯工具补助","独生子女费","信访津贴","密码津贴","纪检补贴","物业补贴","采暖补贴","第十三月工资","平安建设奖","绩效考核奖励","年假未休补贴","优秀公务员奖励","公务交通补贴","上下班交通补贴","补发工资","应发合计","住房公积金","医疗保险","养老保险","职业年金","所得税","扣发合计","实发工资"];
+const SALARY_HEADERS = ["职务工资","级别工资","岗位工资","技术等级职务工资","见习期人员工资","生活性补贴","工作性津贴（职务）","工作性津贴（工作）","工作性津贴（领导）","工作性津贴（年度）","实际工作性津贴","绩效津贴","区县保留津贴","通讯工具补助","独生子女费","信访津贴","密码津贴","纪检补贴","物业补贴","采暖补贴","第十三月工资","平安建设奖","绩效考核奖励","年假未休补贴","优秀公务员奖励","公务交通补贴","上下班交通补贴","补发工资","应发合计","住房公积金","住房公积金(个人+单位)","医疗保险","养老保险","职业年金","所得税","扣发合计","实发工资"];
+// 计算公积金用于汇总结算：优先读「个人+单位到账」口径，未填则回退工资条上的个人缴存
+function salaryGjj(r){ const v = r["住房公积金(个人+单位)"]; return num(v!=null && v!=='' ? v : r["住房公积金"]); }
 
 /* ============== 页面：基本工资 ============== */
 function pageSalaryBasic(){
@@ -143,7 +145,7 @@ function pageSalarySummary(){
     const sg = s.reduce((a,x)=>a+num(x["应发合计"]),0);
     const sn = s.reduce((a,x)=>a+num(x["实发工资"]),0);
     const ht = h.reduce((a,x)=>a+num(x.amount),0);
-    const gjj = s.reduce((a,x)=>a+num(x["住房公积金"]),0);
+    const gjj = s.reduce((a,x)=>a+salaryGjj(x),0);
     grandTotal.salaryGross += sg;
     grandTotal.salaryNet += sn;
     grandTotal.housing += ht;
@@ -159,13 +161,13 @@ function pageSalarySummary(){
       </div>
       <div class="row-stats" style="margin-bottom:10px">
         <div class="stat sage"><div class="label">总房补</div><div class="value">${round(grandTotal.housing)}<small>元</small></div></div>
-        <div class="stat sky"><div class="label">总公积金</div><div class="value">${round(grandTotal.gjj)}<small>元</small></div></div>
+        <div class="stat sky"><div class="label">总公积金(到账)</div><div class="value">${round(grandTotal.gjj)}<small>元</small></div></div>
       </div>
       <div class="stat accent" style="text-align:center;margin-bottom:14px;padding:14px">
         <div class="label">总包</div>
         <div class="value" style="font-size:26px">${round(grandTotal.netPlusHousing)}<small>元</small></div>
       </div>
-      ${yearKeys.length ? `<div class="scroll"><table class="tbl"><thead><tr><th>年度</th><th class="num">应发</th><th class="num">实发</th><th class="num">房补</th><th class="num">公积金</th><th class="num">总包</th></tr></thead><tbody>${rows}</tbody></table></div>` : '<div class="empty"><div class="sym">💰</div>暂无数据</div>'}
+      ${yearKeys.length ? `<div class="scroll"><table class="tbl"><thead><tr><th>年度</th><th class="num">应发</th><th class="num">实发</th><th class="num">房补</th><th class="num">公积金(到账)</th><th class="num">总包</th></tr></thead><tbody>${rows}</tbody></table></div>` : '<div class="empty"><div class="sym">💰</div>暂无数据</div>'}
     </div>`;
 }
 
