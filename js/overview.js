@@ -199,6 +199,25 @@ function getCheerMessage() {
   ]);
 }
 
+/* ============== 法定节假日与调休日历 ==============
+  依据《国务院办公厅关于部分节假日安排的通知》，需逐年维护。
+  放假日期 → CN_HOLIDAYS[年份]；调休补班（周末上班）→ CN_HOLIDAYS[年份+"_work"]。
+  未收录的年份回退为普通周一~周五逻辑。 */
+const CN_HOLIDAYS = {
+  "2026": ["2026-01-01","2026-01-02","2026-01-03","2026-02-15","2026-02-16","2026-02-17","2026-02-18","2026-02-19","2026-02-20","2026-02-21","2026-02-22","2026-02-23","2026-04-04","2026-04-05","2026-04-06","2026-05-01","2026-05-02","2026-05-03","2026-05-04","2026-05-05","2026-06-19","2026-06-20","2026-06-21","2026-09-25","2026-09-26","2026-09-27","2026-10-01","2026-10-02","2026-10-03","2026-10-04","2026-10-05","2026-10-06","2026-10-07"],
+  "2026_work": ["2026-01-04","2026-02-14","2026-02-28","2026-05-09","2026-09-20","2026-10-10"],
+};
+// 判断某天是否是法定上班日（便于工资卡按实际出勤显示）
+function isCnWorkday(d){
+  const pad = n => String(n).padStart(2,'0');
+  const key = d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate());
+  const y = String(d.getFullYear());
+  if ((CN_HOLIDAYS[y + "_work"] || []).indexOf(key) >= 0) return true;  // 调休补班 → 上班
+  if ((CN_HOLIDAYS[y] || []).indexOf(key) >= 0) return false;            // 法定假 → 休息
+  const dow = d.getDay();                                                // 默认周一~周五
+  return dow >= 1 && dow <= 5;
+}
+
 /* ============== 页面：概览 ============== */
 function pageOverview(){
   const t = todayStr();
@@ -277,9 +296,8 @@ function pageOverview(){
   // 兼容补位(2026.09)与未补位(2026.9)两种历史格式
   const salRec = state.salary.find(r => r.date === curKey || r.date === curKeyRaw);
   const houRec = state.housingAllowance.find(r => r.date === curKey || r.date === curKeyRaw);
-  // 判断是否为工作日（周一至周五）
-  const dayOfWeek = nowD.getDay(); // 0=周日, 1=周一, ..., 6=周六
-  const isWeekday = dayOfWeek >= 1 && dayOfWeek <= 5;
+  // 判断是否为实际出勤日（周一~周五，排除法定节假，含调休补班）
+  const isWeekday = isCnWorkday(nowD);
   let salaryCard = '';
   if((salRec || houRec) && isWeekday){
     const total = (salRec?num(salRec["实发工资"]):0) + (houRec?num(houRec.amount):0);
