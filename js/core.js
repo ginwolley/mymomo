@@ -251,11 +251,11 @@ function greeting(){ const h=new Date().getHours(); if(h>=6&&h<12) return "早�
 function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
 function num(v){ const n=parseFloat(v); return isNaN(n)?0:n; }
 function round(n){ return Math.round(n*10)/10; }
-// 按日期排序（支持 "2026.08" 或 "2026.7" 格式，按数值比较而非字符串）
+// 按日期排序（兼容 "2026.08"/"2026.7" 工资月键 与 "2026-08-01" 健身日期，按数值比较而非字符串）
 function sortByDateKey(a, b){
-  const [ay, am] = String(a.date).split('.').map(Number);
-  const [by, bm] = String(b.date).split('.').map(Number);
-  return (ay||0) - (by||0) || (am||0) - (bm||0);
+  const [ay, am, ad] = String(a.date||"").split(/[.\-]/).map(Number);
+  const [by, bm, bd] = String(b.date||"").split(/[.\-]/).map(Number);
+  return (ay||0) - (by||0) || (am||0) - (bm||0) || (ad||0) - (bd||0);
 }
 function std(arr){ if(arr.length<2) return 0; const m=arr.reduce((a,b)=>a+b,0)/arr.length; return Math.sqrt(arr.reduce((a,b)=>a+(b-m)*(b-m),0)/arr.length); }
 function workingDaysInMonth(year, month){
@@ -387,12 +387,30 @@ function lineChart(series, dates, opts){
     const pts=[];
     s.data.forEach((v,i)=>{ if(v!=null) pts.push(X(i).toFixed(1)+","+Y(v).toFixed(1)); });
     if(pts.length>1){
-      svg+=`<polyline points="${pts.join(" ")}" fill="none" stroke="${s.color}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>`;
+      const sw = s.width || 2.2;
+      const dash = s.dashed ? ' stroke-dasharray="6 5"' : '';
+      svg+=`<polyline points="${pts.join(" ")}" fill="none" stroke="${s.color}" stroke-width="${sw}" stroke-linejoin="round" stroke-linecap="round"${dash}/>`;
     }
-    s.data.forEach((v,i)=>{ if(v!=null) svg+=`<circle cx="${X(i).toFixed(1)}" cy="${Y(v).toFixed(1)}" r="3" fill="${s.color}"/>`; });
+    // s.dots === false 时不画数据点（点数过多时减少杂乱）
+    if(s.dots !== false){
+      s.data.forEach((v,i)=>{ if(v!=null) svg+=`<circle cx="${X(i).toFixed(1)}" cy="${Y(v).toFixed(1)}" r="3" fill="${s.color}"/>`; });
+    }
   });
   svg+=`</svg>`;
   return svg;
+}
+
+// 简单移动平均（趋势线）：MA[i] = 最近 win 个有效点的均值；点数不足时用已有部分
+function movingAverage(vals, win){
+  const w = Math.max(2, win|0);
+  const out = [];
+  for(let i=0;i<vals.length;i++){
+    const start = Math.max(0, i-w+1);
+    let sum=0, cnt=0;
+    for(let j=start;j<=i;j++){ if(vals[j]!=null && !isNaN(vals[j])){ sum+=vals[j]; cnt++; } }
+    out.push(cnt ? sum/cnt : null);
+  }
+  return out;
 }
 
 /* ============== 生理期：统计与预测 ============== */

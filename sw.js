@@ -1,4 +1,4 @@
-const CACHE = "momo-v6"; // 更新版本号以触发新安装
+const CACHE = "momo-v7"; // 更新版本号以触发新安装
 const PRECACHE = [
   "工作台.html",
   "css/style.css",

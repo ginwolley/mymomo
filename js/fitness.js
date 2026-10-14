@@ -204,15 +204,95 @@ const FOOD_DB = {
   ],
 };
 /* ============== 页面：体重 ============== */
-function pageWeight(){
-  const mode = state.settings.modules.weight;
-  const sorted = state.weight.slice().sort(sortByDateKey);
-  const recent = filterPeriod(sorted, state.settings.period||90);
+let weightExpand = false;       // 历史是否展开为逐条原始记录
+let weightExpandPeriod = null;  // 展开时对应的周期，切换周期后自动收起
 
-  // 体重趋势图
+// 体重历史聚合：week=以最新记录为基准每 7 天一个点；month=按自然月
+function aggregateWeight(arr, bucket){
+  if(!arr || !arr.length) return [];
+  const asc = arr.slice().sort(sortByDateKey);
+  const avgOf = items => round(items.reduce((s,x)=>s+num(x.value),0)/items.length);
+  if(bucket === "month"){
+    const map = new Map();
+    asc.forEach(d=>{
+      const key = String(d.date).slice(0,7);
+      if(!map.has(key)) map.set(key, []);
+      map.get(key).push(d);
+    });
+    return Array.from(map.entries()).map(([key, items])=>{
+      const [y,m] = key.split("-");
+      return { label:`${y}年${Number(m)}月`, avg:avgOf(items), count:items.length };
+    });
+  }
+  // week：以最新一条为基准，向前每 7 天为一组
+  const lastMs = parseDate(asc[asc.length-1].date).getTime();
+  const map = new Map();
+  asc.forEach(d=>{
+    const diff = Math.floor((lastMs - parseDate(d.date).getTime())/86400000);
+    const idx = Math.max(0, Math.floor(diff/7));
+    if(!map.has(idx)) map.set(idx, []);
+    map.get(idx).push(d);
+  });
+  return Array.from(map.entries()).sort((a,b)=>b[0]-a[0]).map(([, items])=>{
+    const first = items[0].date, end = items[items.length-1].date;
+    return { label:`${first.slice(5)} ~ ${end.slice(5)}`, avg:avgOf(items), count:items.length };
+  });
+}
+
+// 历史明细表（原始逐条，可删除）
+function weightRawTable(recent){
+  return `<div class="scroll"><table class="tbl"><thead><tr><th>日期</th><th class="num">体重(kg)</th><th></th></tr></thead><tbody>
+    ${recent.slice().reverse().map(d=>`<tr><td>${d.date}</td><td class="num">${round(num(d.value))}</td><td style="text-align:center"><button class="del" data-del-weight="${d.date}">×</button></td></tr>`).join("")}
+  </tbody></table></div>`;
+}
+
+// 历史区块：按周期选择聚合粒度 + 展开/收起
+function weightHistoryBlock(recent, period){
+  if(!recent.length) return '<div class="empty"><div class="sym">🍃</div>该周期内还没有记录</div>';
+  // 近 7 天或记录很少时，直接显示逐条明细
+  if(period === 7 || recent.length <= 8) return weightRawTable(recent);
+
+  const expanded = weightExpand && weightExpandPeriod === period;
+  const bucket = period === 30 ? "week" : "month"; // 30天按周；90天/全部按月
+  let html;
+  if(expanded){
+    html = weightRawTable(recent);
+  } else {
+    const rows = aggregateWeight(recent, bucket);
+    html = `<table class="tbl"><thead><tr><th>${bucket==="week"?"时间段":"月份"}</th><th class="num">平均(kg)</th><th class="num">次数</th></tr></thead><tbody>
+      ${rows.slice().reverse().map(g=>`<tr><td>${g.label}</td><td class="num">${g.avg}</td><td class="num" style="color:var(--ink-muted)">${g.count}</td></tr>`).join("")}
+    </tbody></table>`;
+  }
+  const tip = expanded ? `收起，按${bucket==="week"?"周":"月"}汇总` : `展开全部 ${recent.length} 条明细`;
+  html += `<div style="text-align:center"><button class="btn soft sm" id="weightExpandBtn" style="display:inline-flex;align-items:center;gap:5px;margin-top:10px">
+    ${tip} <svg viewBox="0 0 24 24" width="14" height="14" style="stroke:currentColor;fill:none;stroke-width:2;transform:rotate(${expanded?180:0}deg)"><path d="M6 9l6 6 6-6"/></svg>
+  </button></div>`;
+  return html;
+}
+
+function pageWeight(){
+  const period = state.settings.period || 90;
+  const sorted = state.weight.slice().sort(sortByDateKey);
+  const recent = filterPeriod(sorted, period);
+
+  // 趋势图：每日体重折线 + 移动平均趋势线
   const wDates = recent.map(d => d.date);
   const wVals = recent.map(d => num(d.value));
-  const wChart = wVals.length > 1 ? lineChart([{data: wVals, color: "#36D1C9"}], wDates) : '';
+  let wChart = '', wLegend = '';
+  if(wVals.length > 2){
+    const win = Math.min(7, Math.max(2, Math.round(wVals.length/3)));
+    const ma = movingAverage(wVals, win);
+    wChart = lineChart([
+      {data: wVals, color:"#36D1C9", dots: wVals.length <= 45},
+      {data: ma,    color:"#7CC4E8", dashed:true, dots:false, width:2},
+    ], wDates);
+    wLegend = `<div style="display:flex;flex-wrap:wrap;gap:14px;margin-top:8px;justify-content:center">
+      <span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--ink-muted)"><span style="width:14px;height:2px;background:#36D1C9;display:inline-block"></span>每日体重</span>
+      <span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--ink-muted)"><span style="width:14px;height:0;border-top:2px dashed #7CC4E8;display:inline-block"></span>趋势（${win} 次移动平均）</span>
+    </div>`;
+  } else if(wVals.length > 1){
+    wChart = lineChart([{data: wVals, color:"#36D1C9"}], wDates);
+  }
 
   let body = `
     <div class="card">
@@ -225,12 +305,10 @@ function pageWeight(){
       </form>
     </div>
     ${periodSeg()}
-    ${wChart ? `<div class="card"><h2>趋势图</h2>${wChart}</div>` : ''}
+    ${wChart ? `<div class="card"><h2>趋势图</h2>${wChart}${wLegend}</div>` : ''}
     <div class="card">
       <h2>历史记录 <span class="sub">${recent.length} 条</span></h2>
-      ${recent.length? `<table class="tbl"><thead><tr><th>日期</th><th class="num">体重</th><th></th></tr></thead><tbody>
-        ${recent.slice().reverse().map(d=>`<tr><td>${d.date}</td><td class="num">${round(num(d.value))}</td><td style="text-align:center"><button class="del" data-del-weight="${d.date}">×</button></td></tr>`).join("")}
-      </tbody></table>` : '<div class="empty"><div class="sym">🍃</div>该周期内还没有记录</div>'}
+      ${weightHistoryBlock(recent, period)}
     </div>`;
   return body;
 }
@@ -860,6 +938,14 @@ function bindWeight(){
   document.querySelectorAll("[data-del-weight]").forEach(b=>b.addEventListener("click",()=>{
     deleteRecord("weight", {date: b.dataset.delWeight}); save(); navigate("weight");
   }));
+  // 历史记录展开 / 收起（按周期记忆，切换周期后自动收起）
+  const expBtn = document.getElementById("weightExpandBtn");
+  if(expBtn) expBtn.addEventListener("click", ()=>{
+    const p = state.settings.period || 90;
+    if(weightExpandPeriod === p) weightExpand = !weightExpand;
+    else { weightExpandPeriod = p; weightExpand = true; }
+    navigate("weight");
+  });
 }
 
 function bindMeasure(){
